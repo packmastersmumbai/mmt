@@ -1069,9 +1069,11 @@ function loadAnalyticsView() {
       _boardData = data;
       renderAnalytics(data);
     })
-    .withFailureHandler(function() {
+    .withFailureHandler(function(e) {
+      var msg = (e&&e.message)||'server error';
       document.getElementById('analytics-content').innerHTML =
-        '<div style="padding:20px;color:#dc2626">Failed to load analytics.</div>';
+        '<div style="padding:20px;color:#dc2626">Failed to load analytics: ' + esc(msg) + '</div>';
+      showStatus('⚠ Analytics load failed: ' + msg, 'error', 6000);
     })
     .getKanbanData();
 }
@@ -1699,9 +1701,11 @@ function loadBoardRecords(type) {
       _boardRecordsCache[type] = d;
       renderBoardRecords(type, d);
     })
-    .withFailureHandler(function() {
+    .withFailureHandler(function(e) {
+      var msg = (e&&e.message)||'server error';
       var el = document.getElementById('board-' + _boardPanelId(type) + '-list');
-      if (el) el.innerHTML = '<div style="padding:20px;color:#dc2626;font-size:13px">Failed to load records.</div>';
+      if (el) el.innerHTML = '<div style="padding:20px;color:#dc2626;font-size:13px">Failed to load records: ' + esc(msg) + '</div>';
+      showStatus('⚠ Board load failed: ' + msg, 'error', 6000);
     })
     .getAllBoardRecords(type);
 }
@@ -2265,11 +2269,15 @@ var _statusTimer = null;
  * @param {string} type        - 'info' | 'success' | 'error'
  * @param {number} [durationMs] - Auto-hide after ms (0 = permanent)
  */
-function showStatus(msg, type, durationMs) {
+function showStatus(msg, type, durationMs, detail) {
   var bar = document.getElementById('status-bar');
   var content = document.getElementById('app-content');
   bar.className = 'status-bar ' + (type || 'info');
-  bar.textContent = msg;
+  if (detail) {
+    bar.innerHTML = esc(msg) + ' <span style="opacity:0.7;font-size:11px;cursor:pointer" title="Tap to copy details" onclick="(function(){try{navigator.clipboard.writeText(' + JSON.stringify(detail) + ');}catch(e){}})()">📋 copy details</span>';
+  } else {
+    bar.textContent = msg;
+  }
   content.classList.add('has-status');
 
   if (_statusTimer) clearTimeout(_statusTimer);
@@ -2284,6 +2292,19 @@ function hideStatus() {
   bar.className = 'status-bar';
   content.classList.remove('has-status');
 }
+
+// ═══════════════════════════════════════════════════════
+// GLOBAL ERROR REPORTER — catches uncaught JS errors
+// ═══════════════════════════════════════════════════════
+window.onerror = function(msg, src, line, col, err) {
+  var detail = (src ? src.split('/').pop() : '') + (line ? ':' + line : '') + (col ? ':' + col : '') + (err && err.stack ? '\n' + err.stack : '');
+  showStatus('⚠ JS Error: ' + msg, 'error', 0, detail);
+  return false;
+};
+window.onunhandledrejection = function(ev) {
+  var msg = ev.reason ? (ev.reason.message || String(ev.reason)) : 'Unhandled promise rejection';
+  showStatus('⚠ Error: ' + msg, 'error', 0, ev.reason && ev.reason.stack ? ev.reason.stack : msg);
+};
 
 // ═══════════════════════════════════════════════════════
 // CLOCK
@@ -2468,8 +2489,8 @@ function clLoadOperatorOptions(callback) {
       });
       if (callback) callback();
     })
-    .withFailureHandler(function() {
-      // Silently fail — operator dropdown stays with placeholder only
+    .withFailureHandler(function(e) {
+      showStatus('⚠ Could not load operator list: ' + ((e&&e.message)||'check server'), 'error', 6000);
       if (callback) callback();
     })
     .getAppConfig();
@@ -3571,7 +3592,10 @@ function loadMachineFormData(machineId, cb) {
       if (d && d.success) _mfdCache[machineId] = d;
       cb(d && d.success ? d : null);
     })
-    .withFailureHandler(function() { cb(null); })
+    .withFailureHandler(function(e) {
+      showStatus('⚠ Could not load machine form data: ' + ((e&&e.message)||'server error'), 'error', 6000);
+      cb(null);
+    })
     .getFullMachineFormData(machineId);
 }
 
