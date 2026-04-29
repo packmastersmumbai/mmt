@@ -2370,6 +2370,8 @@ var _taskTimes   = {};
 var _remarks     = {};
 var _b64         = {};
 var _clPhotoTarget = null;
+var _clPmBatch   = '';   // persists across section submissions
+var _clBulkBatch = '';
 
 var CL_STD = {
   '1':5,'2':3,'3a':5,'3b':5,'3c':7,'4':5,'5':5,'6':5,'7':3,
@@ -2401,6 +2403,8 @@ function initChecklist(machineId) {
   _remarks     = {};
   _b64         = {};
   _clPhotoTarget = null;
+  _clPmBatch   = '';
+  _clBulkBatch = '';
 
   // ── STEP 1: Hide ALL checklist content, show loading spinner ──
   var clView = document.getElementById('view-checklist');
@@ -2773,28 +2777,34 @@ function clCheckResume(onComplete) {
       if (info && info.found) {
         // ── Today's record found — pre-fill fields from existing row ──
         if (info.pmBatch) {
+          _clPmBatch = info.pmBatch;
           var pmB = document.getElementById('pmBatch');
           if (pmB) { pmB.value = info.pmBatch; pmB.readOnly = true; pmB.style.background = '#f1f5f9'; }
         }
         if (info.bulkBatch) {
+          _clBulkBatch = info.bulkBatch;
           var blB = document.getElementById('bulkBatch');
           if (blB) { blB.value = info.bulkBatch; blB.readOnly = true; blB.style.background = '#f1f5f9'; }
         }
         // Pre-select shift
         if (info.shift) {
           var shiftSel = document.getElementById('cl-shift');
-          for (var i = 0; i < shiftSel.options.length; i++) {
-            if (shiftSel.options[i].text === info.shift || shiftSel.options[i].value === info.shift) {
-              shiftSel.selectedIndex = i; break;
+          if (shiftSel) {
+            for (var i = 0; i < shiftSel.options.length; i++) {
+              if (shiftSel.options[i].text === info.shift || shiftSel.options[i].value === info.shift) {
+                shiftSel.selectedIndex = i; break;
+              }
             }
           }
         }
         // Pre-select operator
         if (info.operator) {
           var opSel = document.getElementById('cl-operator');
-          for (var i = 0; i < opSel.options.length; i++) {
-            if (opSel.options[i].value === info.operator) {
-              opSel.selectedIndex = i; break;
+          if (opSel) {
+            for (var i = 0; i < opSel.options.length; i++) {
+              if (opSel.options[i].value === info.operator) {
+                opSel.selectedIndex = i; break;
+              }
             }
           }
         }
@@ -2910,11 +2920,14 @@ function clSubmitSection(sec) {
     if (_b64[id]) images[id] = _b64[id];
   });
 
-  var pmBatch   = document.getElementById('pmBatch').value.trim();
-  var bulkBatch = document.getElementById('bulkBatch').value.trim();
+  var pmBatchEl   = document.getElementById('pmBatch');
+  var bulkBatchEl = document.getElementById('bulkBatch');
+  var pmBatch   = pmBatchEl   ? pmBatchEl.value.trim()   : _clPmBatch;
+  var bulkBatch = bulkBatchEl ? bulkBatchEl.value.trim() : _clBulkBatch;
 
   if (sec === 'before') {
     if (!pmBatch || !bulkBatch) { alert('PM Batch No and Bulk Batch No are required.'); return; }
+    _clPmBatch = pmBatch; _clBulkBatch = bulkBatch;
   } else {
     if (!pmBatch) { alert('PM Batch No is missing. Cannot submit without a batch number.'); return; }
   }
