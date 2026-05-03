@@ -2026,7 +2026,7 @@ function renderBoardRecords(type, d) {
           ageStr = d > 0 ? d + 'd ' + (h % 24) + 'h open' : h + 'h open';
         }
       }
-      var ageColor = ageStr ? (parseInt(ageStr) >= 24 ? '#dc2626' : '#ea580c') : '';
+      var ageColor = ageStr ? (d >= 1 ? '#dc2626' : '#ea580c') : '';
       return '<div class="rec-row" style="cursor:pointer" onclick="openRecordDetail(\''+slip+'\',\'bd\',\''+mid+'\',\''+mn+'\')">'+
         '<div class="rec-dot" style="background:'+(isOpen?'#dc2626':'#16a34a')+'"></div>'+
         '<div class="rec-body">'+
