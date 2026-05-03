@@ -3043,11 +3043,17 @@ function loadBD(machineId) {
       }
       el.innerHTML = d.items.map(function(item) {
         var isClosed = item.status === 'Closed';
+        var closeBtn = !isClosed
+          ? '<button onclick="showBDCloseForm(\'' + esc(machineId) + '\',\'' + esc(item.slip) + '\',' + item.rowNum + ')" style="font-size:11px;padding:4px 10px;background:#16a34a;color:white;border:none;border-radius:5px;cursor:pointer;font-weight:600">&#x2713; Close BD</button>'
+          : '';
+        var waBtn = '<button onclick="shareBDWhatsApp(\'' + esc(item.slip) + '\',\'' + esc(machineId) + '\')" style="font-size:11px;padding:4px 8px;background:#25d366;color:white;border:none;border-radius:5px;cursor:pointer">&#x1F4F1;</button>';
         return '<div class="bd-card' + (isClosed ? ' closed' : '') + '">' +
-          '<div style="display:flex;justify-content:space-between;align-items:center">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px">' +
           '<span class="bd-slip">BD #' + esc(item.slip) + '</span>' +
-          '<span class="' + (isClosed ? 'bd-status-closed' : 'bd-status-open') + '">' + esc(item.status) + '</span>' +
-          '</div>' +
+          '<div style="display:flex;gap:5px;align-items:center">' +
+          waBtn + (closeBtn || '<span class="bd-status-closed">Closed</span>') +
+          (!isClosed ? '<span class="bd-status-open">Open</span>' : '') +
+          '</div></div>' +
           '<div class="bd-problem">' + esc(item.problem) + '</div>' +
           '<div class="bd-meta">' + esc(item.date) + (item.rectified ? ' &nbsp;&#183;&nbsp; ' + esc(item.rectified) : '') + '</div>' +
           '</div>';
@@ -3727,30 +3733,19 @@ function showBDForm(machineId) {
       '<div style="background:#fff1f2;border-left:4px solid #b71c1c;padding:8px 12px;border-radius:0 6px 6px 0;margin-bottom:12px;font-size:12px;color:#7f1d1d;font-weight:600">' +
         '&#x1F534; ' + esc(machineId) + (machineLbl ? ' &nbsp;·&nbsp; ' + machineLbl : '') +
       '</div>' +
+      '<div style="font-size:11px;color:#64748b;margin-bottom:10px;padding:6px 10px;background:#fef9c3;border-radius:6px">Step 1 of 2 — Report the breakdown. Technician will close it after repair.</div>' +
       '<div class="form-row-2">' +
         '<div class="form-row"><label>Start Date *</label><input type="date" id="f-sd" value="'+td+'"></div>' +
         '<div class="form-row"><label>Start Time *</label><input type="time" id="f-st" value="'+tn+'"></div>' +
-      '</div>' +
-      '<div class="form-row-2">' +
-        '<div class="form-row"><label>End Date *</label><input type="date" id="f-ed" value="'+td+'"></div>' +
-        '<div class="form-row"><label>End Time</label><input type="time" id="f-et"></div>' +
       '</div>' +
       '<div class="form-row-2">' +
         '<div class="form-row"><label>Shift *</label><select id="f-shift"><option value="">Select…</option>'+shOpts+'</select></div>' +
         '<div class="form-row"><label>Root Cause *</label><select id="f-rc"><option value="">Select…</option>'+rcOpts+'</select></div>' +
       '</div>' +
       '<div class="form-row"><label>Problem Description * <span style="color:#94a3b8;font-weight:400">(समस्या विवरण)</span></label>' +
-        '<textarea id="f-desc" rows="2" placeholder="Describe the breakdown… / खराबी का विवरण दें…"></textarea></div>' +
-      '<div class="form-row"><label>Action Taken <span style="color:#94a3b8;font-weight:400">(की गई कार्रवाई)</span></label>' +
-        '<textarea id="f-action" rows="2" placeholder="Steps taken to fix… / ठीक करने के कदम…"></textarea></div>' +
-      '<div class="form-row-2">' +
-        '<div class="form-row"><label>Parts Changed</label><input id="f-parts" placeholder="e.g. Bearing, Belt"></div>' +
-        '<div class="form-row"><label>Spare Cost (₹)</label><input type="number" id="f-cost" min="0" step="0.01" placeholder="0"></div>' +
-      '</div>' +
-      '<div class="form-row"><label>Rectified By * <span style="color:#94a3b8;font-weight:400">(किसने ठीक किया)</span></label>' +
-        '<select id="f-rby"><option value="">Select…</option>'+personnel+'</select></div>' +
+        '<textarea id="f-desc" rows="3" placeholder="Describe the breakdown… / खराबी का विवरण दें…"></textarea></div>' +
       '<div class="form-row"><label>Remarks <span style="color:#94a3b8;font-weight:400">(टिप्पणी)</span></label><input id="f-rmk" placeholder="Optional"></div>' +
-      '<button class="form-submit-btn" id="f-submit" style="background:#b71c1c" onclick="submitBDForm(\''+esc(machineId)+'\')">&#x1F534; Submit Breakdown</button>' +
+      '<button class="form-submit-btn" id="f-submit" style="background:#b71c1c" onclick="submitBDForm(\''+esc(machineId)+'\')">&#x1F534; Report Breakdown</button>' +
       '<div class="form-msg" id="f-msg"></div>';
   });
 }
@@ -3761,44 +3756,167 @@ function submitBDForm(machineId) {
   var desc = (document.getElementById('f-desc').value||'').trim();
   var rc   = document.getElementById('f-rc').value;
   var shift= document.getElementById('f-shift').value;
-  var rby  = document.getElementById('f-rby').value;
   if (!shift) { msg.className='form-msg err'; msg.textContent='Select shift. / शिफ्ट चुनें।'; return; }
   if (!rc)    { msg.className='form-msg err'; msg.textContent='Select root cause. / मूल कारण चुनें।'; return; }
   if (!desc)  { msg.className='form-msg err'; msg.textContent='Problem description required. / समस्या विवरण आवश्यक है।'; return; }
-  if (!rby)   { msg.className='form-msg err'; msg.textContent='Select who rectified. / किसने ठीक किया, चुनें।'; return; }
   btn.disabled = true; btn.textContent = 'Submitting…';
   msg.className = 'form-msg'; msg.textContent = '';
   google.script.run
     .withSuccessHandler(function(r) {
-      btn.disabled = false; btn.textContent = '&#x1F534; Submit Breakdown';
+      btn.disabled = false; btn.textContent = '&#x1F534; Report Breakdown';
       if (r && r.success) {
-        document.getElementById('form-modal-body').innerHTML = _buildSuccessPanel('bd', r);
+        var bodyEl = document.getElementById('form-modal-body');
+        bodyEl.innerHTML =
+          '<div style="padding:20px;text-align:center">' +
+          '<div style="font-size:40px">&#x1F534;</div>' +
+          '<div style="font-size:16px;font-weight:800;color:#b71c1c;margin:8px 0">Breakdown Reported!</div>' +
+          '<div style="font-family:monospace;font-size:14px;background:#f8fafc;padding:4px 12px;border-radius:6px;display:inline-block;margin:4px 0">' + esc(r.slipNo) + '</div>' +
+          '<div style="font-size:12px;color:#64748b;margin:8px 0">Status: <b style="color:#dc2626">Open</b> — Technician will close after repair.</div>' +
+          '<div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">' +
+          (r.waUrl ? '<a href="' + esc(r.waUrl) + '" target="_blank" style="display:block;padding:12px;background:#25d366;color:white;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">&#x1F4F1; Share on WhatsApp</a>' : '') +
+          '<button onclick="document.getElementById(\'form-modal\').classList.remove(\'open\')" style="padding:10px;background:#64748b;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer">Done</button>' +
+          '</div></div>';
         loadBD(machineId);
-        _boardRecordsCache['bd'] = null; // invalidate cache
+        _boardRecordsCache['bd'] = null;
       } else {
         msg.className = 'form-msg err'; msg.textContent = (r && r.message) || 'Submission failed.';
       }
     })
     .withFailureHandler(function(e) {
-      btn.disabled = false; btn.textContent = '&#x1F534; Submit Breakdown';
+      btn.disabled = false; btn.textContent = '&#x1F534; Report Breakdown';
       msg.className = 'form-msg err'; msg.textContent = 'Error: ' + esc((e && e.message) || 'unknown');
     })
-    .submitBDRecord({
+    .submitBDPhase1({
       machineId:    machineId,
-      descriptionEn:(document.getElementById('f-desc').value||'').trim(),
+      descriptionEn: desc,
       rootCause:    rc,
       startDate:    document.getElementById('f-sd').value,
       startTime:    document.getElementById('f-st').value,
-      endDate:      document.getElementById('f-ed').value,
-      endTime:      document.getElementById('f-et').value,
       shift:        shift,
-      rectifiedBy:  rby,
-      actionEn:     (document.getElementById('f-action').value||'').trim(),
-      partsChanged: (document.getElementById('f-parts').value||'').trim(),
-      spareCost:    (document.getElementById('f-cost').value||'0'),
-      capaRequired: 'No',
       remarks:      (document.getElementById('f-rmk').value||'').trim()
     });
+}
+
+function showBDCloseForm(machineId, slipNo, rowNum) {
+  document.getElementById('form-modal-title').textContent = 'Close BD — ' + slipNo;
+  var bodyEl = document.getElementById('form-modal-body');
+  bodyEl.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8">Loading…</div>';
+  document.getElementById('form-modal').classList.add('open');
+
+  loadMachineFormData(machineId, function(fd) {
+    var td = _todayStr(); var tn = _nowTimeStr();
+    var personnel = ((fd && fd.personnel) || App.personnelList || []).map(function(p){return '<option>'+esc(p)+'</option>';}).join('');
+    bodyEl.innerHTML =
+      '<div style="background:#f0fdf4;border-left:4px solid #16a34a;padding:8px 12px;border-radius:0 6px 6px 0;margin-bottom:12px;font-size:12px;color:#14532d;font-weight:600">' +
+        '&#x2713; Closing ' + esc(slipNo) + ' &nbsp;·&nbsp; ' + esc(machineId) +
+      '</div>' +
+      '<div style="font-size:11px;color:#64748b;margin-bottom:10px;padding:6px 10px;background:#fef9c3;border-radius:6px">Step 2 of 2 — Fill repair details to close this breakdown.</div>' +
+      '<div class="form-row-2">' +
+        '<div class="form-row"><label>End Date *</label><input type="date" id="f-ed" value="'+td+'"></div>' +
+        '<div class="form-row"><label>End Time *</label><input type="time" id="f-et" value="'+tn+'"></div>' +
+      '</div>' +
+      '<div class="form-row"><label>Action Taken * <span style="color:#94a3b8;font-weight:400">(की गई कार्रवाई)</span></label>' +
+        '<textarea id="f-action" rows="3" placeholder="Steps taken to fix… / ठीक करने के कदम…"></textarea></div>' +
+      '<div class="form-row-2">' +
+        '<div class="form-row"><label>Parts Changed</label><input id="f-parts" placeholder="e.g. Bearing, Belt"></div>' +
+        '<div class="form-row"><label>Spare Cost (₹)</label><input type="number" id="f-cost" min="0" step="0.01" placeholder="0"></div>' +
+      '</div>' +
+      '<div class="form-row"><label>Rectified By * <span style="color:#94a3b8;font-weight:400">(किसने ठीक किया)</span></label>' +
+        '<select id="f-rby"><option value="">Select…</option>'+personnel+'</select></div>' +
+      '<div class="form-row"><label>Remarks <span style="color:#94a3b8;font-weight:400">(टिप्पणी)</span></label><input id="f-rmk" placeholder="Optional"></div>' +
+      '<div class="form-row"><label>Photo <span style="color:#94a3b8;font-weight:400">(after repair / मरम्मत के बाद)</span></label>' +
+        '<input type="file" id="f-img" accept="image/*" capture="environment" style="padding:6px 0"></div>' +
+      '<button class="form-submit-btn" id="f-submit" style="background:#16a34a" onclick="submitBDCloseForm(\''+esc(machineId)+'\',\''+esc(slipNo)+'\','+rowNum+')">&#x2713; Close Breakdown</button>' +
+      '<div class="form-msg" id="f-msg"></div>';
+  });
+}
+
+function submitBDCloseForm(machineId, slipNo, rowNum) {
+  var btn    = document.getElementById('f-submit');
+  var msg    = document.getElementById('f-msg');
+  var action = (document.getElementById('f-action').value||'').trim();
+  var rby    = document.getElementById('f-rby').value;
+  var edVal  = document.getElementById('f-ed').value;
+  var etVal  = document.getElementById('f-et').value;
+  if (!edVal) { msg.className='form-msg err'; msg.textContent='End date required.'; return; }
+  if (!etVal) { msg.className='form-msg err'; msg.textContent='End time required.'; return; }
+  if (!action){ msg.className='form-msg err'; msg.textContent='Action taken required. / कार्रवाई विवरण आवश्यक है।'; return; }
+  if (!rby)   { msg.className='form-msg err'; msg.textContent='Select who rectified. / किसने ठीक किया, चुनें।'; return; }
+
+  btn.disabled = true; btn.textContent = 'Closing…';
+  msg.className = 'form-msg'; msg.textContent = '';
+
+  var imgFile = document.getElementById('f-img') && document.getElementById('f-img').files[0];
+
+  function _doSubmit(imageBase64) {
+    google.script.run
+      .withSuccessHandler(function(r) {
+        btn.disabled = false; btn.textContent = '&#x2713; Close Breakdown';
+        if (r && r.success) {
+          var bodyEl = document.getElementById('form-modal-body');
+          bodyEl.innerHTML =
+            '<div style="padding:20px;text-align:center">' +
+            '<div style="font-size:40px">&#x2705;</div>' +
+            '<div style="font-size:16px;font-weight:800;color:#16a34a;margin:8px 0">Breakdown Closed!</div>' +
+            '<div style="font-family:monospace;font-size:14px;background:#f8fafc;padding:4px 12px;border-radius:6px;display:inline-block;margin:4px 0">' + esc(slipNo) + '</div>' +
+            '<div style="font-size:12px;color:#64748b;margin:8px 0">Downtime: <b>' + esc(r.downtime) + ' hrs</b></div>' +
+            (r.imageUrl ? '<div style="margin:8px 0"><a href="'+esc(r.imageUrl)+'" target="_blank" style="font-size:12px;color:#2563eb">&#x1F4F8; View Photo</a></div>' : '') +
+            '<div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">' +
+            (r.waUrl ? '<a href="' + esc(r.waUrl) + '" target="_blank" style="display:block;padding:12px;background:#25d366;color:white;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">&#x1F4F1; Share on WhatsApp</a>' : '') +
+            '<button onclick="document.getElementById(\'form-modal\').classList.remove(\'open\')" style="padding:10px;background:#64748b;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer">Done</button>' +
+            '</div></div>';
+          loadBD(machineId);
+          _boardRecordsCache['bd'] = null;
+        } else {
+          msg.className = 'form-msg err'; msg.textContent = (r && r.message) || 'Failed.';
+        }
+      })
+      .withFailureHandler(function(e) {
+        btn.disabled = false; btn.textContent = '&#x2713; Close Breakdown';
+        msg.className = 'form-msg err'; msg.textContent = 'Error: ' + esc((e && e.message) || 'unknown');
+      })
+      .closeBDRecord({
+        rowNum:      rowNum,
+        slipNo:      slipNo,
+        machineId:   machineId,
+        endDate:     edVal,
+        endTime:     etVal,
+        actionEn:    action,
+        partsChanged:(document.getElementById('f-parts').value||'').trim(),
+        spareCost:   (document.getElementById('f-cost').value||'0'),
+        rectifiedBy: rby,
+        remarks:     (document.getElementById('f-rmk').value||'').trim(),
+        imageBase64: imageBase64 || ''
+      });
+  }
+
+  if (imgFile) {
+    var reader = new FileReader();
+    reader.onload = function(e) { _doSubmit(e.target.result); };
+    reader.readAsDataURL(imgFile);
+  } else {
+    _doSubmit('');
+  }
+}
+
+function shareBDWhatsApp(slipNo, machineId) {
+  google.script.run
+    .withSuccessHandler(function(d) {
+      if (!d || !d.success) return;
+      var r = d;
+      var status = r.status || 'Open';
+      var msg = (status === 'Closed' ? '✅' : '🔴') + ' *BREAKDOWN ' + status.toUpperCase() + ' — PACK MASTERS*\n\n' +
+        '*Slip No:* ' + slipNo + '\n' +
+        '*Machine:* ' + r.machineId + (r.machineName ? ' — ' + r.machineName : '') + '\n' +
+        '*Date:* ' + r.startDate + '\n' +
+        '*Shift:* ' + r.shift + '\n' +
+        '*Root Cause:* ' + r.rootCause + '\n' +
+        '*Description:* ' + r.description + '\n' +
+        (r.status === 'Closed' ? '\n— Pack Masters MMS' : '\n— Pack Masters MMS');
+      window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+    })
+    .withFailureHandler(function(){})
+    .getBDDetail(slipNo, machineId);
 }
 
 function showPMForm(machineId) {
