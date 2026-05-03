@@ -3042,19 +3042,16 @@ function loadBD(machineId) {
       }
       el.innerHTML = d.items.map(function(item) {
         var isClosed = item.status === 'Closed';
-        var closeBtn = !isClosed
-          ? '<button onclick="showBDCloseForm(\'' + esc(machineId) + '\',\'' + esc(item.slip) + '\',' + item.rowNum + ')" style="font-size:11px;padding:4px 10px;background:#16a34a;color:white;border:none;border-radius:5px;cursor:pointer;font-weight:600">&#x2713; Close BD</button>'
-          : '';
         var waBtn = '<button onclick="shareBDWhatsApp(\'' + esc(item.slip) + '\',\'' + esc(machineId) + '\')" style="font-size:11px;padding:4px 8px;background:#25d366;color:white;border:none;border-radius:5px;cursor:pointer">&#x1F4F1;</button>';
         return '<div class="bd-card' + (isClosed ? ' closed' : '') + '">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px">' +
           '<span class="bd-slip">BD #' + esc(item.slip) + '</span>' +
           '<div style="display:flex;gap:5px;align-items:center">' +
-          waBtn + (closeBtn || '<span class="bd-status-closed">Closed</span>') +
-          (!isClosed ? '<span class="bd-status-open">Open</span>' : '') +
+          waBtn + (isClosed ? '<span class="bd-status-closed">Closed</span>' : '<span class="bd-status-open">Open</span>') +
           '</div></div>' +
           '<div class="bd-problem">' + esc(item.problem) + '</div>' +
           '<div class="bd-meta">' + esc(item.date) + (item.rectified ? ' &nbsp;&#183;&nbsp; ' + esc(item.rectified) : '') + '</div>' +
+          (!isClosed ? '<button onclick="showBDCloseForm(\'' + esc(machineId) + '\',\'' + esc(item.slip) + '\',' + item.rowNum + ')" style="display:block;width:100%;margin-top:10px;padding:10px;background:#16a34a;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px;letter-spacing:0.3px">&#x2713; Close BD</button>' : '') +
           '</div>';
       }).join('');
     })
@@ -3729,7 +3726,7 @@ function showBDForm(machineId) {
       .map(function(v){return '<option>'+v+'</option>';}).join('');
 
     bodyEl.innerHTML =
-      '<div style="background:#fff1f2;border-left:4px solid #b71c1c;padding:8px 12px;border-radius:0 6px 6px 0;margin-bottom:12px;font-size:12px;color:#7f1d1d;font-weight:600">' +
+      '<div style="background:#fff1f2;border:1.5px solid #fca5a5;padding:8px 12px;border-radius:6px;margin-bottom:12px;font-size:12px;color:#7f1d1d;font-weight:600">' +
         '&#x1F534; ' + esc(machineId) + (machineLbl ? ' &nbsp;·&nbsp; ' + machineLbl : '') +
       '</div>' +
       '<div style="font-size:11px;color:#64748b;margin-bottom:10px;padding:6px 10px;background:#fef9c3;border-radius:6px">Step 1 of 2 — Report the breakdown. Technician will close it after repair.</div>' +
@@ -3739,7 +3736,7 @@ function showBDForm(machineId) {
       '</div>' +
       '<div class="form-row-2">' +
         '<div class="form-row"><label>Shift *</label><select id="f-shift"><option value="">Select…</option>'+shOpts+'</select></div>' +
-        '<div class="form-row"><label>Root Cause *</label><select id="f-rc"><option value="">Select…</option>'+rcOpts+'</select></div>' +
+        '<div class="form-row"><label>Root Cause <span style="font-weight:400;color:#64748b">(best guess)</span></label><select id="f-rc"><option value="">Unknown / पता नहीं</option>'+rcOpts+'</select></div>' +
       '</div>' +
       '<div class="form-row"><label>Problem Description * <span style="color:#94a3b8;font-weight:400">(समस्या विवरण)</span></label>' +
         '<textarea id="f-desc" rows="3" placeholder="Describe the breakdown… / खराबी का विवरण दें…"></textarea></div>' +
@@ -3756,7 +3753,6 @@ function submitBDForm(machineId) {
   var rc   = document.getElementById('f-rc').value;
   var shift= document.getElementById('f-shift').value;
   if (!shift) { msg.className='form-msg err'; msg.textContent='Select shift. / शिफ्ट चुनें।'; return; }
-  if (!rc)    { msg.className='form-msg err'; msg.textContent='Select root cause. / मूल कारण चुनें।'; return; }
   if (!desc)  { msg.className='form-msg err'; msg.textContent='Problem description required. / समस्या विवरण आवश्यक है।'; return; }
   btn.disabled = true; btn.textContent = 'Submitting…';
   msg.className = 'form-msg'; msg.textContent = '';
@@ -3806,7 +3802,7 @@ function showBDCloseForm(machineId, slipNo, rowNum) {
     var td = _todayStr(); var tn = _nowTimeStr();
     var personnel = ((fd && fd.personnel) || App.personnelList || []).map(function(p){return '<option>'+esc(p)+'</option>';}).join('');
     bodyEl.innerHTML =
-      '<div style="background:#f0fdf4;border-left:4px solid #16a34a;padding:8px 12px;border-radius:0 6px 6px 0;margin-bottom:12px;font-size:12px;color:#14532d;font-weight:600">' +
+      '<div style="background:#f0fdf4;border:1.5px solid #86efac;padding:8px 12px;border-radius:6px;margin-bottom:12px;font-size:12px;color:#14532d;font-weight:600">' +
         '&#x2713; Closing ' + esc(slipNo) + ' &nbsp;·&nbsp; ' + esc(machineId) +
       '</div>' +
       '<div style="font-size:11px;color:#64748b;margin-bottom:10px;padding:6px 10px;background:#fef9c3;border-radius:6px">Step 2 of 2 — Fill repair details to close this breakdown.</div>' +
@@ -3814,6 +3810,10 @@ function showBDCloseForm(machineId, slipNo, rowNum) {
         '<div class="form-row"><label>End Date *</label><input type="date" id="f-ed" value="'+td+'"></div>' +
         '<div class="form-row"><label>End Time *</label><input type="time" id="f-et" value="'+tn+'"></div>' +
       '</div>' +
+      '<div class="form-row"><label>Root Cause * <span style="color:#94a3b8;font-weight:400">(मूल कारण)</span></label>' +
+        '<select id="f-rc2"><option value="">Select…</option>' +
+        ['Mechanical Failure','Electrical Failure','Operator Error','Consumable / Wear Part','External Power Failure','No Fault Found','Other'].map(function(o){return '<option>'+o+'</option>';}).join('') +
+        '</select></div>' +
       '<div class="form-row"><label>Action Taken * <span style="color:#94a3b8;font-weight:400">(की गई कार्रवाई)</span></label>' +
         '<textarea id="f-action" rows="3" placeholder="Steps taken to fix… / ठीक करने के कदम…"></textarea></div>' +
       '<div class="form-row-2">' +
@@ -3835,10 +3835,12 @@ function submitBDCloseForm(machineId, slipNo, rowNum) {
   var msg    = document.getElementById('f-msg');
   var action = (document.getElementById('f-action').value||'').trim();
   var rby    = document.getElementById('f-rby').value;
+  var rc2    = document.getElementById('f-rc2').value;
   var edVal  = document.getElementById('f-ed').value;
   var etVal  = document.getElementById('f-et').value;
   if (!edVal) { msg.className='form-msg err'; msg.textContent='End date required.'; return; }
   if (!etVal) { msg.className='form-msg err'; msg.textContent='End time required.'; return; }
+  if (!rc2)   { msg.className='form-msg err'; msg.textContent='Select root cause. / मूल कारण चुनें।'; return; }
   if (!action){ msg.className='form-msg err'; msg.textContent='Action taken required. / कार्रवाई विवरण आवश्यक है।'; return; }
   if (!rby)   { msg.className='form-msg err'; msg.textContent='Select who rectified. / किसने ठीक किया, चुनें।'; return; }
 
@@ -3880,6 +3882,7 @@ function submitBDCloseForm(machineId, slipNo, rowNum) {
         machineId:   machineId,
         endDate:     edVal,
         endTime:     etVal,
+        rootCause:   rc2,
         actionEn:    action,
         partsChanged:(document.getElementById('f-parts').value||'').trim(),
         spareCost:   (document.getElementById('f-cost').value||'0'),
@@ -3949,7 +3952,7 @@ function showPMForm(machineId) {
     var tasksJson = JSON.stringify(pmItems.map(function(it){ return {label:it.en}; }));
 
     bodyEl.innerHTML =
-      '<div style="background:#f0fdf4;border-left:4px solid #1b5e20;padding:8px 12px;border-radius:0 6px 6px 0;margin-bottom:12px;font-size:12px;color:#14532d;font-weight:600">' +
+      '<div style="background:#f0fdf4;border:1.5px solid #86efac;padding:8px 12px;border-radius:6px;margin-bottom:12px;font-size:12px;color:#14532d;font-weight:600">' +
         '&#x1F7E2; ' + esc(machineId) + (machineLbl ? ' &nbsp;·&nbsp; ' + machineLbl : '') +
       '</div>' +
       '<div class="form-row-2">' +
