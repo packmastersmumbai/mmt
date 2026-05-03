@@ -283,7 +283,7 @@ body {
 .mcard-act:hover { background:#e0f2fe; border-color:#7dd3fc; box-shadow:0 1px 4px rgba(0,0,0,0.12); transform:translateY(-1px); }
 .mcard-act:active { background:#e2e8f0; transform:translateY(0); box-shadow:none; }
 .mcard-act-icon { font-size:18px; line-height:1; }
-.mcard-act-label { font-size:9px; color:#64748b; font-weight:600; line-height:1; margin-top:1px; letter-spacing:0.2px; }
+.mcard-act-label { font-size:11px; color:#64748b; font-weight:600; line-height:1; margin-top:1px; letter-spacing:0.2px; }
 
 /* Category group — collapsible */
 .cat-group { margin-bottom:14px; }
@@ -335,7 +335,7 @@ body {
 .bar-val { font-size:11px; font-weight:700; color:#0f172a; width:24px; text-align:right; flex-shrink:0; }
 /* Image hover enlarge */
 .img-zoomable { cursor:zoom-in; transition:transform 0.25s ease, box-shadow 0.25s ease; }
-.img-zoomable:hover { transform:scale(2.5); box-shadow:0 8px 30px rgba(0,0,0,0.3); z-index:100; position:relative; border-radius:4px; }
+.img-zoomable:hover { transform:scale(1.5); box-shadow:0 8px 30px rgba(0,0,0,0.3); z-index:100; position:relative; border-radius:4px; }
 /* Progress ring mini */
 .stat-bar-wrap { height:5px; background:#f1f5f9; border-radius:3px; margin-top:8px; overflow:hidden; }
 .stat-bar-fill { height:100%; border-radius:3px; transform-origin:left; transition:transform 0.6s ease; }
@@ -1194,6 +1194,8 @@ function renderBoard(data) {
     if (!machines) return;
     var filtered = activeFloor === 'all' ? machines : machines.filter(function(m) { return m.floor === activeFloor; });
     if (!filtered.length) return;
+    // Float machines with open BDs to the top
+    filtered = filtered.slice().sort(function(a, b) { return (b.openBD || 0) - (a.openBD || 0); });
 
     var color = CAT_COLORS[cat] || '#64748b';
     var catOpenBD = filtered.reduce(function(sum, m) { return sum + (m.openBD || 0); }, 0);
@@ -2010,10 +2012,21 @@ function renderBoardRecords(type, d) {
 
   if (type === 'bd') {
     if (_bdStatusFilter !== 'all') items = items.filter(function(i){return i.status === _bdStatusFilter;});
+    var now = Date.now();
     el.innerHTML = items.map(function(item) {
       var isOpen = item.status !== 'Closed';
       var mid = esc(item.machineId), mn = esc(item.machineName||item.machineId);
       var slip = esc(String(item.slip||''));
+      var ageStr = '';
+      if (isOpen && item.date) {
+        var ms = now - new Date(item.date).getTime();
+        if (!isNaN(ms) && ms > 0) {
+          var h = Math.floor(ms / 3600000);
+          var d = Math.floor(h / 24);
+          ageStr = d > 0 ? d + 'd ' + (h % 24) + 'h open' : h + 'h open';
+        }
+      }
+      var ageColor = ageStr ? (parseInt(ageStr) >= 24 ? '#dc2626' : '#ea580c') : '';
       return '<div class="rec-row" style="cursor:pointer" onclick="openRecordDetail(\''+slip+'\',\'bd\',\''+mid+'\',\''+mn+'\')">'+
         '<div class="rec-dot" style="background:'+(isOpen?'#dc2626':'#16a34a')+'"></div>'+
         '<div class="rec-body">'+
@@ -2021,6 +2034,7 @@ function renderBoardRecords(type, d) {
           '<div class="rec-sub">'+esc(item.problem||'')+'</div>'+
           '<div class="rec-sub" style="font-family:monospace">'+mid+' &nbsp;·&nbsp; '+esc(item.date)+(slip?' &nbsp;·&nbsp; Slip '+slip:'')+'</div>'+
         '</div>'+
+        (ageStr ? '<span style="font-size:11px;font-weight:700;color:'+ageColor+';white-space:nowrap;flex-shrink:0">'+ageStr+'</span>' : '') +
         '<div class="rec-tag rec-tag-'+(isOpen?'open':'closed')+'">'+esc(item.status)+'</div>'+
         arrowIcon+
       '</div>';
