@@ -224,12 +224,12 @@ body {
 .dash-seg { height:8px; border-radius:4px; flex-shrink:0; }
 
 /* Board tab bar */
-.board-tabs { display:flex; background:white; border-bottom:2px solid #f1f5f9; padding:0 4px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+.board-tabs { display:flex; background:#f1f5f9; border-bottom:2px solid #e2e8f0; padding:6px 8px; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
 .board-tabs::-webkit-scrollbar { display:none; }
-.board-tab { padding:14px 22px; font-size:15px; font-weight:700; color:#94a3b8; cursor:pointer;
-  border-bottom:3px solid transparent; margin-bottom:-3px; white-space:nowrap; flex-shrink:0; transition:color 0.2s,background 0.2s; letter-spacing:0.3px; }
-.board-tab:hover { color:#475569; background:#f8fafc; }
-.board-tab.active { color:#0f172a; border-bottom-color:#ea6c0a; background:white; }
+.board-tab { flex:1; padding:10px 8px; font-size:15px; font-weight:700; color:#64748b; cursor:pointer; text-align:center;
+  border-radius:8px; border:none; white-space:nowrap; flex-shrink:0; transition:all 0.18s; letter-spacing:0.2px; background:transparent; }
+.board-tab:hover { color:#0f172a; background:rgba(255,255,255,0.7); }
+.board-tab.active { color:#0f172a; background:white; box-shadow:0 1px 4px rgba(0,0,0,0.10); }
 
 /* Kanban sub-tabs (inside kanban panel) */
 .board-sub-tabs { display:flex; background:#f8fafc; border-bottom:1px solid #e2e8f0; padding:0 4px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
@@ -240,13 +240,13 @@ body {
 .board-sub-tab.active { color:#0f172a; border-bottom-color:#0284c7; background:white; }
 
 /* Record row cards (BD/CLIT/Checklist in board tabs) */
-.rec-row { background:white; border-radius:8px; padding:10px 12px; margin-bottom:6px;
-  border:1px solid #e2e8f0; display:flex; gap:10px; align-items:flex-start; }
-.rec-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+.rec-row { background:white; border-radius:10px; padding:12px 14px; margin-bottom:8px;
+  border:1px solid #e2e8f0; display:flex; gap:12px; align-items:flex-start; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
+.rec-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:5px; }
 .rec-body { flex:1; min-width:0; }
-.rec-title { font-size:14px; font-weight:600; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.rec-sub { font-size:12px; color:#64748b; margin-top:2px; }
-.rec-tag { font-size:11px; font-weight:700; padding:2px 7px; border-radius:10px; flex-shrink:0; white-space:nowrap; }
+.rec-title { font-size:15px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rec-sub { font-size:12px; color:#64748b; margin-top:3px; line-height:1.5; }
+.rec-tag { font-size:11px; font-weight:700; padding:3px 9px; border-radius:10px; flex-shrink:0; white-space:nowrap; }
 .rec-tag-open    { background:#fee2e2; color:#dc2626; }
 .rec-tag-closed  { background:#dcfce7; color:#16a34a; }
 .rec-tag-done    { background:#dcfce7; color:#16a34a; }
@@ -255,63 +255,63 @@ body {
 
 /* Machine card — with QR thumbnail */
 .mcard {
-  background:white; border-radius:7px; padding:5px 8px;
-  margin-bottom:2px; border:1px solid #e2e8f0;
-  display:flex; align-items:center; gap:7px;
-  cursor:pointer; transition:background 0.1s;
+  background:white; border-radius:10px; padding:10px 12px;
+  margin-bottom:6px; border:1px solid #e2e8f0;
+  display:flex; align-items:center; gap:10px;
+  cursor:pointer; transition:background 0.1s; box-shadow:0 1px 3px rgba(0,0,0,0.04);
 }
 .mcard:active { background:#f8fafc; }
 .mcard.highlight { border-color:#f97316; box-shadow:0 0 0 2px rgba(249,115,22,0.25); }
-.mcard-stripe { width:4px; border-radius:2px; align-self:stretch; flex-shrink:0; min-height:34px; }
-.mcard-icon { width:34px; height:34px; flex-shrink:0; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; color:white; letter-spacing:-0.3px; text-align:center; line-height:1.1; }
+.mcard-stripe { width:4px; border-radius:2px; align-self:stretch; flex-shrink:0; min-height:42px; }
+.mcard-icon { width:42px; height:42px; flex-shrink:0; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:white; letter-spacing:-0.3px; text-align:center; line-height:1.1; }
 .mcard-action-btn { background:none; border:none; font-size:13px; cursor:pointer; padding:2px 4px; border-radius:4px; opacity:0.7; transition:opacity 0.15s; }
 .mcard-action-btn:hover { opacity:1; background:rgba(0,0,0,0.06); }
 .mcard-body { flex:1; min-width:0; }
 .mcard-top { display:flex; align-items:baseline; gap:6px; min-width:0; }
-.mcard-id { font-family:'Courier New',monospace; font-size:12px; color:#64748b; font-weight:700; flex-shrink:0; }
-.mcard-name { font-size:14px; font-weight:600; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.mcard-sub { font-size:11px; color:#64748b; margin-top:1px; }
+.mcard-id { font-family:'Courier New',monospace; font-size:11px; color:#94a3b8; font-weight:700; flex-shrink:0; }
+.mcard-name { font-size:15px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mcard-sub { font-size:12px; color:#64748b; margin-top:2px; }
 .mcard-right { display:flex; align-items:center; gap:5px; flex-shrink:0; }
 .badge-cl-done    { background:#dcfce7; color:#16a34a; }
 .badge-cl-partial { background:#fef9c3; color:#a16207; }
 .badge-cl-pending { background:#f1f5f9; color:#64748b; }
 .badge-bd-open    { background:#fee2e2; color:#dc2626; }
-.mbadge { font-size:9px; font-weight:700; padding:2px 6px; border-radius:8px; text-transform:uppercase; letter-spacing:0.3px; }
+.mbadge { font-size:10px; font-weight:700; padding:3px 8px; border-radius:8px; text-transform:uppercase; letter-spacing:0.3px; }
 
-.mcard-actions { display:flex; gap:4px; margin-top:5px; flex-wrap:nowrap; }
-.mcard-act { min-width:44px; min-height:44px; border:1px solid #e2e8f0; border-radius:6px; background:#f8fafc; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px 6px; transition:all 0.2s ease; touch-action:manipulation; }
+.mcard-actions { display:flex; gap:6px; margin-top:8px; flex-wrap:nowrap; }
+.mcard-act { min-width:46px; min-height:46px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px 6px; transition:all 0.2s ease; touch-action:manipulation; }
 .mcard-act:hover { background:#e0f2fe; border-color:#7dd3fc; box-shadow:0 1px 4px rgba(0,0,0,0.12); transform:translateY(-1px); }
 .mcard-act:active { background:#e2e8f0; transform:translateY(0); box-shadow:none; }
-.mcard-act-icon { font-size:16px; line-height:1; }
+.mcard-act-icon { font-size:18px; line-height:1; }
 .mcard-act-label { font-size:9px; color:#64748b; font-weight:600; line-height:1; margin-top:1px; letter-spacing:0.2px; }
 
 /* Category group — collapsible */
-.cat-group { margin-bottom:10px; }
+.cat-group { margin-bottom:14px; }
 .cat-group-title {
-  font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px;
-  color:#64748b; padding:6px 4px 5px; border-bottom:1px solid #e2e8f0; margin-bottom:5px;
+  font-size:13px; font-weight:700; letter-spacing:0.2px;
+  color:#0f172a; padding:10px 12px; border-radius:8px; background:#f1f5f9; margin-bottom:6px;
   display:flex; align-items:center; justify-content:space-between; cursor:pointer;
-  user-select:none; -webkit-user-select:none;
+  user-select:none; -webkit-user-select:none; border:1px solid #e2e8f0;
 }
-.cat-toggle { font-size:9px; color:#cbd5e1; transition:transform 0.2s; display:inline-block; }
+.cat-toggle { font-size:11px; color:#94a3b8; transition:transform 0.2s; display:inline-block; }
 .cat-group.collapsed .cat-toggle { transform:rotate(-90deg); }
 .cat-machines { overflow:hidden; }
 .cat-group.collapsed .cat-machines { display:none; }
 
 /* Analytics */
 /* Analytics — compact */
-.an-wrap { padding:8px 10px 16px; }
-.an-hero { background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%); border-radius:8px; padding:10px 12px; margin-bottom:7px; color:white; display:flex; align-items:center; gap:10px; }
-.an-hero-num { font-size:28px; font-weight:900; line-height:1; color:white; }
-.an-hero-sub { font-size:10px; color:rgba(255,255,255,0.6); margin-top:2px; }
-.an-hero-label { font-size:11px; font-weight:600; color:rgba(255,255,255,0.9); }
-.an-kpi-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:7px; }
-.an-kpi { background:white; border-radius:7px; padding:7px 6px; border:1px solid #e2e8f0; text-align:center; }
-.an-kpi-num { font-size:20px; font-weight:800; line-height:1; }
-.an-kpi-lbl { font-size:11px; color:#64748b; margin-top:3px; font-weight:500; }
+.an-wrap { padding:10px 12px 20px; }
+.an-hero { background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%); border-radius:12px; padding:16px 16px; margin-bottom:10px; color:white; display:flex; align-items:center; gap:14px; }
+.an-hero-num { font-size:42px; font-weight:900; line-height:1; color:white; }
+.an-hero-sub { font-size:11px; color:rgba(255,255,255,0.55); margin-top:3px; }
+.an-hero-label { font-size:13px; font-weight:700; color:rgba(255,255,255,0.95); margin-bottom:2px; }
+.an-kpi-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:10px; }
+.an-kpi { background:white; border-radius:10px; padding:12px 8px; border:1px solid #e2e8f0; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
+.an-kpi-num { font-size:26px; font-weight:900; line-height:1; }
+.an-kpi-lbl { font-size:11px; color:#64748b; margin-top:5px; font-weight:600; }
 .an-kpi-num.green { color:#16a34a; } .an-kpi-num.orange { color:#ea580c; } .an-kpi-num.red { color:#dc2626; } .an-kpi-num.blue { color:#0284c7; }
-.an-card { background:white; border-radius:8px; padding:10px 12px; border:1px solid #e2e8f0; margin-bottom:7px; }
-.an-card-title { font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
+.an-card { background:white; border-radius:10px; padding:12px 14px; border:1px solid #e2e8f0; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
+.an-card-title { font-size:11px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
 /* Analytics toggle */
 .an-toggle-bar { display:flex; align-items:center; justify-content:space-between; padding:6px 12px; background:#f8fafc; border-bottom:1px solid #e2e8f0; cursor:pointer; user-select:none; }
 .an-toggle-bar span { font-size:13px; font-weight:600; color:#475569; }
@@ -1203,10 +1203,10 @@ function renderBoard(data) {
     var hdr = document.createElement('div');
     hdr.className = 'cat-group-title';
     hdr.innerHTML =
-      '<span style="display:flex;align-items:center;gap:6px">' +
-        '<span style="width:8px;height:8px;border-radius:50%;background:' + color + ';flex-shrink:0"></span>' +
+      '<span style="display:flex;align-items:center;gap:8px">' +
+        '<span style="width:10px;height:10px;border-radius:50%;background:' + color + ';flex-shrink:0"></span>' +
         esc(cat) +
-        '<span style="opacity:0.5;font-weight:400">(' + filtered.length + ')</span>' +
+        '<span style="background:' + color + '22;color:' + color + ';font-size:11px;font-weight:700;padding:1px 8px;border-radius:10px;margin-left:2px">' + filtered.length + '</span>' +
       '</span>' +
       '<span class="cat-toggle">&#9660;</span>';
     hdr.addEventListener('click', function() {
@@ -1362,21 +1362,26 @@ function renderAnalytics(data) {
 
     // Hero KPI
     '<div class="an-hero">' +
-      '<div>' +
-        '<div class="an-hero-num">' + total + '</div>' +
-        '<div class="an-hero-label">Active Machines</div>' +
-        '<div class="an-hero-sub">Pack Masters MMS · Today</div>' +
-      '</div>' +
-      '<div style="margin-left:auto;text-align:right">' +
-        '<div style="font-size:32px;font-weight:900;color:' + (bdTotal>0?'#f87171':'#4ade80') + '">' + bdTotal + '</div>' +
-        '<div style="font-size:11px;color:rgba(255,255,255,0.6)">Open Breakdowns</div>' +
+      '<div style="flex:1">' +
+        '<div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Pack Masters MMS · Today</div>' +
+        '<div style="display:flex;align-items:baseline;gap:14px">' +
+          '<div>' +
+            '<div class="an-hero-num">' + total + '</div>' +
+            '<div class="an-hero-label">Active Machines</div>' +
+          '</div>' +
+          '<div style="width:1px;height:50px;background:rgba(255,255,255,0.15)"></div>' +
+          '<div>' +
+            '<div style="font-size:42px;font-weight:900;line-height:1;color:' + (bdTotal>0?'#f87171':'#4ade80') + '">' + bdTotal + '</div>' +
+            '<div style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.85);margin-top:2px">Open BDs</div>' +
+          '</div>' +
+        '</div>' +
       '</div>' +
     '</div>' +
 
-    // 3 KPI tiles
+    '<div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin:4px 0 8px">Today\'s Checklist</div>' +
     '<div class="an-kpi-row">' +
-      '<div class="an-kpi"><div class="an-kpi-num green">' + clDone + '</div><div class="an-kpi-lbl">CL Done</div></div>' +
-      '<div class="an-kpi"><div class="an-kpi-num orange">' + clPartial + '</div><div class="an-kpi-lbl">In Progress</div></div>' +
+      '<div class="an-kpi"><div class="an-kpi-num green">' + clDone + '</div><div class="an-kpi-lbl">Done</div></div>' +
+      '<div class="an-kpi"><div class="an-kpi-num orange">' + clPartial + '</div><div class="an-kpi-lbl">Partial</div></div>' +
       '<div class="an-kpi"><div class="an-kpi-num" style="color:#94a3b8">' + clPending + '</div><div class="an-kpi-lbl">Pending</div></div>' +
     '</div>' +
 
@@ -1494,51 +1499,67 @@ function renderDashboard(kanban, metrics) {
 
     // Hero
     '<div class="an-hero">' +
-      '<div>' +
-        '<div class="an-hero-num">'+total+'</div>' +
-        '<div class="an-hero-label">Active Machines</div>' +
-        '<div class="an-hero-sub">Pack Masters MMS &middot; Today</div>' +
-      '</div>' +
-      '<div style="margin-left:auto;text-align:right">' +
-        '<div style="font-size:32px;font-weight:900;color:'+(bdOpen>0?'#f87171':'#4ade80')+'">'+bdOpen+'</div>' +
-        '<div style="font-size:11px;color:rgba(255,255,255,0.6)">Open Breakdowns</div>' +
+      '<div style="flex:1">' +
+        '<div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Pack Masters MMS · Today</div>' +
+        '<div style="display:flex;align-items:baseline;gap:14px">' +
+          '<div>' +
+            '<div class="an-hero-num">'+total+'</div>' +
+            '<div class="an-hero-label">Active Machines</div>' +
+          '</div>' +
+          '<div style="width:1px;height:50px;background:rgba(255,255,255,0.15)"></div>' +
+          '<div>' +
+            '<div style="font-size:42px;font-weight:900;line-height:1;color:'+(bdOpen>0?'#f87171':'#4ade80')+'">'+bdOpen+'</div>' +
+            '<div style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.85);margin-top:2px">Open BDs</div>' +
+          '</div>' +
+        '</div>' +
       '</div>' +
     '</div>' +
 
-    // KPI row 1 — checklist
+    // Today checklist section label
+    '<div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin:4px 0 8px">Today\'s Checklist</div>' +
     '<div class="an-kpi-row">' +
-      '<div class="an-kpi"><div class="an-kpi-num green">'+clDone+'</div><div class="an-kpi-lbl">CL Done</div></div>' +
-      '<div class="an-kpi"><div class="an-kpi-num orange">'+clPartial+'</div><div class="an-kpi-lbl">CL Partial</div></div>' +
-      '<div class="an-kpi"><div class="an-kpi-num" style="color:#94a3b8">'+clPending+'</div><div class="an-kpi-lbl">CL Pending</div></div>' +
+      '<div class="an-kpi"><div class="an-kpi-num green">'+clDone+'</div><div class="an-kpi-lbl">Done</div></div>' +
+      '<div class="an-kpi"><div class="an-kpi-num orange">'+clPartial+'</div><div class="an-kpi-lbl">Partial</div></div>' +
+      '<div class="an-kpi"><div class="an-kpi-num" style="color:#94a3b8">'+clPending+'</div><div class="an-kpi-lbl">Pending</div></div>' +
     '</div>' +
 
-    // MTBF / MTTR / 30-day activity
-    '<div class="an-kpi-row">' +
+    // Reliability metrics section label
+    '<div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin:4px 0 8px">Reliability</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
       '<div class="an-kpi" style="background:#fff7ed;border:1px solid #fed7aa">' +
-        '<div class="an-kpi-num" style="color:#ea580c">'+(mtbf>0?mtbf+' h':'—')+'</div>' +
+        '<div class="an-kpi-num" style="color:#ea580c;font-size:22px">'+(mtbf>0?mtbf+' h':'—')+'</div>' +
         '<div class="an-kpi-lbl">MTBF</div>' +
       '</div>' +
       '<div class="an-kpi" style="background:#fef2f2;border:1px solid #fecaca">' +
-        '<div class="an-kpi-num" style="color:#dc2626">'+(mttr>0?mttr+' h':'—')+'</div>' +
+        '<div class="an-kpi-num" style="color:#dc2626;font-size:22px">'+(mttr>0?mttr+' h':'—')+'</div>' +
         '<div class="an-kpi-lbl">MTTR</div>' +
       '</div>' +
+    '</div>' +
+
+    // 30-day activity section label
+    '<div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin:4px 0 8px">Activity (30 days)</div>' +
+    '<div class="an-kpi-row">' +
       '<div class="an-kpi" style="background:#eff6ff;border:1px solid #bfdbfe">' +
         '<div class="an-kpi-num" style="color:#1d4ed8">'+bdCount30+'</div>' +
-        '<div class="an-kpi-lbl">BD (30d)</div>' +
+        '<div class="an-kpi-lbl">Breakdowns</div>' +
       '</div>' +
-    '</div>' +
-    '<div class="an-kpi-row">' +
       '<div class="an-kpi" style="background:#f0fdf4;border:1px solid #bbf7d0">' +
         '<div class="an-kpi-num" style="color:#16a34a">'+pmCount30+'</div>' +
-        '<div class="an-kpi-lbl">PM (30d)</div>' +
+        '<div class="an-kpi-lbl">PM Done</div>' +
       '</div>' +
       '<div class="an-kpi" style="background:#f0f9ff;border:1px solid #bae6fd">' +
         '<div class="an-kpi-num" style="color:#0284c7">'+clitCount30+'</div>' +
-        '<div class="an-kpi-lbl">CLIT (30d)</div>' +
+        '<div class="an-kpi-lbl">CLIT Done</div>' +
       '</div>' +
-      '<div class="an-kpi" style="background:#fafafa;border:1px solid #e2e8f0">' +
-        '<div class="an-kpi-num" style="color:#475569">'+clRate+'%</div>' +
-        '<div class="an-kpi-lbl">CL Rate</div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
+      '<div class="an-kpi" style="background:#ecfdf5;border:1px solid #a7f3d0">' +
+        '<div class="an-kpi-num" style="color:#059669">'+clRate+'%</div>' +
+        '<div class="an-kpi-lbl">CL Rate Today</div>' +
+      '</div>' +
+      '<div class="an-kpi" style="background:#faf5ff;border:1px solid #e9d5ff">' +
+        '<div class="an-kpi-num" style="color:#7c3aed">' + (total > 0 ? (bdCount30 / total).toFixed(1) : '0.0') + '</div>' +
+        '<div class="an-kpi-lbl">BD/Machine</div>' +
       '</div>' +
     '</div>' +
 
@@ -1562,30 +1583,6 @@ function renderDashboard(kanban, metrics) {
     // BD by category
     '<div class="an-card"><div class="an-card-title">Open Breakdowns by Category</div>'+bdBarRows+'</div>' +
 
-    // ── Additional KPIs ──
-
-    // Availability & Activity ratios
-    (function() {
-      var avail = total > 0 ? Math.round(((total - bdOpen) / total) * 100) : 100;
-      // BD-to-machine ratio: how many BDs per machine in 30 days
-      var bdPerMachine = total > 0 ? (bdCount30 / total).toFixed(1) : '0.0';
-      // PM-to-BD ratio: preventive vs reactive maintenance
-      var pmBdRatio = bdCount30 > 0 ? (pmCount30 / bdCount30).toFixed(1) : (pmCount30 > 0 ? '∞' : '—');
-      return '<div class="an-kpi-row">' +
-        '<div class="an-kpi" style="background:#ecfdf5;border:1px solid #a7f3d0">' +
-          '<div class="an-kpi-num" style="color:#059669">' + avail + '%</div>' +
-          '<div class="an-kpi-lbl">Availability</div>' +
-        '</div>' +
-        '<div class="an-kpi" style="background:#faf5ff;border:1px solid #e9d5ff">' +
-          '<div class="an-kpi-num" style="color:#7c3aed">' + bdPerMachine + '</div>' +
-          '<div class="an-kpi-lbl">BD/Machine (30d)</div>' +
-        '</div>' +
-        '<div class="an-kpi" style="background:#fff7ed;border:1px solid #fed7aa">' +
-          '<div class="an-kpi-num" style="color:#ea580c">' + pmBdRatio + '</div>' +
-          '<div class="an-kpi-lbl">PM:BD Ratio (30d)</div>' +
-        '</div>' +
-      '</div>';
-    })() +
 
     // Floor-wise machine distribution
     (function() {
