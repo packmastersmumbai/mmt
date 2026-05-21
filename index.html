@@ -602,6 +602,37 @@ body {
 .sf-kpitable td, .sf-kpitable th { padding:5px 6px; border-bottom:1px solid #f1f5f9; text-align:left; }
 .sf-kpitable .bar { height:9px; border-radius:4px; background:#0f766e; }
 .sf-dom { font-size:11px; font-weight:800; margin:10px 0 4px; padding:3px 8px; border-radius:6px; }
+/* hazard edit form */
+.sf-form { display:flex; flex-direction:column; gap:4px; font-size:12px; }
+.sf-form label { font-weight:700; color:#475569; margin-top:6px; font-size:11px; }
+.sf-form input, .sf-form select, .sf-form textarea { font-size:12px; padding:7px 8px;
+  border:1px solid #cbd5e1; border-radius:7px; width:100%; font-family:inherit; }
+.sf-form .hf-2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.sf-form .hf-3 { display:grid; grid-template-columns:1fr 1fr auto; gap:8px; align-items:end; }
+.hf-risk { font-size:18px; font-weight:800; color:#fff; background:#16a34a;
+  border-radius:7px; padding:6px 14px; text-align:center; min-width:48px; }
+.hf-classline { font-size:11px; color:#475569; margin-top:4px; }
+.sf-btn-primary { background:#0f766e; color:#fff; border:none; padding:10px;
+  border-radius:8px; font-weight:700; margin-top:12px; font-size:13px; cursor:pointer; }
+/* kanban */
+.sf-kanban { display:grid; grid-template-columns:repeat(4,minmax(180px,1fr));
+  gap:8px; overflow-x:auto; }
+@media (max-width:720px){ .sf-kanban { grid-auto-flow:column;
+  grid-template-columns:none; grid-auto-columns:78vw; } }
+.sf-kcol { background:#f1f5f9; border-radius:10px; min-height:120px; display:flex;
+  flex-direction:column; }
+.sf-khead { color:#fff; font-size:12px; font-weight:800; padding:8px 10px;
+  border-radius:10px 10px 0 0; }
+.sf-kcount { background:rgba(255,255,255,.3); border-radius:9px; padding:1px 7px;
+  font-size:11px; margin-left:4px; }
+.sf-klist { padding:7px; display:flex; flex-direction:column; gap:7px; min-height:60px; }
+.sf-kcard { background:#fff; border-radius:8px; padding:9px; border-left:4px solid #94a3b8;
+  box-shadow:0 1px 3px rgba(0,0,0,.08); cursor:pointer; }
+.sf-kcard.ovd { background:#fef2f2; }
+.sf-kc-top { font-size:11px; font-weight:800; color:#0f172a; display:flex;
+  justify-content:space-between; align-items:center; }
+.sf-kc-act { font-size:11px; color:#334155; margin:4px 0; line-height:1.3; }
+.sf-kc-meta { font-size:10px; color:#64748b; }
 </style>
 <script>
 // ─── taskHtml (client-side, replaces GAS server-side template) ───
@@ -4347,7 +4378,10 @@ function loadSafety(){
       SF.charts = c && c.success ? c.charts : {};
       google.script.run.withSuccessHandler(function(h){
         SF.heatmap = h && h.success ? h : {cells:[],total:0};
-        sfRender();
+        google.script.run.withSuccessHandler(function(ls){
+          SF.lists = ls && ls.success ? ls.lists : {};
+          sfRender();
+        }).getSafetyLists();
       }).getHeatmap();
     }).getOhsChartData();
   }).withFailureHandler(function(err){
@@ -4567,7 +4601,8 @@ function sfRenderHira(){
         '<option>Ongoing</option><option>Not Applicable</option></select>'+
     '</div>'+
     '<div id="sf-hira-list"><div class="loading-spinner" style="padding:30px">'+
-      '<div class="spinner-ring"></div>Loading&hellip;</div></div></div>';
+      '<div class="spinner-ring"></div>Loading&hellip;</div></div></div>'+
+    '<button class="sf-fab" onclick="sfHazardDetail(null)">+</button>';
   if(!SF.hira){
     google.script.run.withSuccessHandler(function(r){
       SF.hira = r && r.success ? r.rows : [];
@@ -4606,61 +4641,135 @@ function sfHiraFilter(opt){
         (r.overdue?'<span class="sf-badge-ovd">OVERDUE</span>':'')+'</div></div>';
   }).join('') || '<div class="sf-card">No matching hazards.</div>';
 }
-function sfHazardDetail(sr){
-  var r=(SF.hira||[]).filter(function(x){return x.sr===sr;})[0]; if(!r) return;
-  var body='<div style="font-size:12px;line-height:1.7">'+
-    '<b>Activity:</b> '+sfEsc(r.activity)+'<br>'+
-    '<b>Section:</b> '+sfEsc(r.section)+'<br>'+
-    '<b>Hazard:</b> '+sfEsc(r.hazard)+'<br>'+
-    '<b>L &times; C:</b> '+r.L+' &times; '+r.C+' = <b>'+r.risk+'</b> ('+r.classification+')<br>'+
-    '<b>Controls:</b> '+sfEsc(r.controls)+'<br>'+
-    '<b>Responsible:</b> '+sfEsc(r.responsible)+'<br>'+
-    '<b>Target:</b> '+sfEsc(r.target)+(r.overdue?' <span class="sf-badge-ovd">OVERDUE</span>':'')+'<br>'+
-    '<b>Status:</b> <select id="sf-det-status">'+
-      ['Completed','In Progress','Pending','Ongoing','Not Applicable'].map(function(s){
-        return '<option'+(s===r.status?' selected':'')+'>'+s+'</option>';}).join('')+'</select> '+
-      '<button onclick="sfSaveStatus('+sr+')" style="background:#0f766e;color:#fff;border:none;'+
-        'padding:5px 12px;border-radius:6px;font-weight:700">Save</button><br>'+
-    '<b>Evidence:</b> '+sfEsc(r.remarks)+'</div>';
-  sfModal('Hazard #'+sr, body);
+/* ---------- FULL HAZARD EDIT FORM ---------- */
+function sfPersonOptions(sel){
+  var p=(SF.lists&&SF.lists.PERSONS)||[];
+  if(sel && p.indexOf(sel)===-1) p=[sel].concat(p);
+  return '<option value="">— select —</option>'+p.map(function(x){
+    return '<option'+(x===sel?' selected':'')+'>'+sfEsc(x)+'</option>';}).join('');
 }
-function sfSaveStatus(sr){
-  var st=document.getElementById('sf-det-status').value;
+function sfHazardDetail(sr){
+  var r=(SF.hira||[]).filter(function(x){return x.sr===sr;})[0];
+  var isNew = !r;
+  if(isNew) r={sr:'',section:'',activity:'',di:'D',rnr:'R',hazard:'',L:1,C:1,
+    risk:1,classification:'Negligible',controls:'',responsible:'',target:'',
+    status:'Pending',remarks:'',verifiedBy:'',verifiedDate:''};
+  function opt(arr,v){ return arr.map(function(x){
+    return '<option'+(x===v?' selected':'')+'>'+x+'</option>';}).join(''); }
+  var lcOpt=['1','2','3','4','5'];
+  var body='<div class="sf-form">'+
+    '<label>Section</label><input id="hf-section" value="'+sfEsc(r.section)+'">'+
+    '<label>Activity / Job Step</label><input id="hf-activity" value="'+sfEsc(r.activity)+'">'+
+    '<div class="hf-2"><div><label>D/I</label><select id="hf-di">'+opt(['D','I'],r.di)+'</select></div>'+
+      '<div><label>R/NR</label><select id="hf-rnr">'+opt(['R','NR','E'],r.rnr)+'</select></div></div>'+
+    '<label>Hazard Description</label><textarea id="hf-hazard" rows="2">'+sfEsc(r.hazard)+'</textarea>'+
+    '<div class="hf-3"><div><label>Likelihood</label><select id="hf-l" onchange="sfRecalcRisk()">'+
+      opt(lcOpt,String(r.L))+'</select></div>'+
+      '<div><label>Consequence</label><select id="hf-c" onchange="sfRecalcRisk()">'+
+      opt(lcOpt,String(r.C))+'</select></div>'+
+      '<div><label>Risk</label><div id="hf-risk" class="hf-risk">'+r.risk+'</div></div></div>'+
+    '<div id="hf-class" class="hf-classline">Classification: <b>'+r.classification+'</b></div>'+
+    '<label>Control Measures</label><textarea id="hf-controls" rows="3">'+sfEsc(r.controls)+'</textarea>'+
+    '<label>Responsible Person</label><select id="hf-resp">'+sfPersonOptions(r.responsible)+'</select>'+
+    '<label>Target Date</label><input id="hf-target" type="date" value="'+sfToDateInput(r.target)+'">'+
+    '<label>Action Status</label><select id="hf-status">'+
+      opt(['Open','Pending','In Progress','Ongoing','Completed','Verified','Not Applicable'],r.status)+'</select>'+
+    '<label>Remarks / Evidence</label><textarea id="hf-remarks" rows="2">'+sfEsc(r.remarks)+'</textarea>'+
+    (r.verifiedBy?'<div class="sf-banner">Verified by '+sfEsc(r.verifiedBy)+
+       (r.verifiedDate?' on '+sfEsc(r.verifiedDate):'')+'</div>':'')+
+    '<button class="sf-btn-primary" onclick="sfSaveHazard('+(isNew?'null':sr)+')">'+
+      (isNew?'Add Hazard':'Save Changes')+'</button>'+
+    '</div>';
+  sfModal(isNew?'New Hazard':'Edit Hazard #'+sr, body);
+}
+function sfToDateInput(s){
+  if(!s) return '';
+  var d=new Date(s); if(isNaN(d.getTime())) return '';
+  return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+}
+function sfRecalcRisk(){
+  var L=+document.getElementById('hf-l').value, C=+document.getElementById('hf-c').value;
+  var risk=L*C, cls=(risk>=25?'Intolerable':risk>=16?'Substantial':risk>=9?'Tolerable':'Negligible');
+  var rEl=document.getElementById('hf-risk');
+  rEl.textContent=risk; rEl.style.background=sfRiskColor(risk);
+  document.getElementById('hf-class').innerHTML='Classification: <b>'+cls+'</b>';
+}
+function sfSaveHazard(sr){
+  function v(id){var e=document.getElementById(id);return e?e.value:'';}
+  var d={ sr:sr||undefined, section:v('hf-section'), activity:v('hf-activity'),
+    di:v('hf-di'), rnr:v('hf-rnr'), hazard:v('hf-hazard'),
+    L:+v('hf-l'), C:+v('hf-c'), controls:v('hf-controls'),
+    responsible:v('hf-resp'), target:v('hf-target'), status:v('hf-status'),
+    remarks:v('hf-remarks') };
+  if(!d.activity){ showStatus('Activity is required','error',3000); return; }
   google.script.run.withSuccessHandler(function(res){
     if(res&&res.success){
-      (SF.hira||[]).forEach(function(x){if(x.sr===sr)x.status=st;});
-      SF.dash=null; sfCloseModal(); showStatus('Status updated','success',2000);
-      SF.hira=null; loadSafety();
-    } else showStatus('Update failed','error',3000);
-  }).updateActionStatus(sr, st);
+      sfCloseModal();
+      showStatus('Hazard '+(res.action||'saved')+' — risk '+res.risk+' ('+res.classification+')','success',2800);
+      SF.dash=null; SF.charts=null; SF.hira=null; SF.heatmap=null; loadSafety();
+    } else showStatus('Save failed: '+(res&&res.message||''),'error',4000);
+  }).addHazard(d);
 }
 
-/* ---------- ACTIONS TAB ---------- */
+/* ---------- ACTIONS — KANBAN BOARD ---------- */
 function sfRenderActions(){
   var box=document.getElementById('safety-content');
-  if(!SF.hira){
-    google.script.run.withSuccessHandler(function(r){
-      SF.hira=r&&r.success?r.rows:[]; sfRenderActions();
-    }).getHiraRegister(null);
-    box.innerHTML='<div class="loading-spinner" style="padding:40px">'+
-      '<div class="spinner-ring"></div>Loading&hellip;</div>';
-    return;
-  }
-  var open=(SF.hira||[]).filter(function(r){
-    return ['Pending','In Progress','Ongoing'].indexOf(r.status)>-1;});
-  open.sort(function(a,b){ return (b.overdue-a.overdue)||(b.risk-a.risk); });
-  box.innerHTML='<div class="sf-wrap">'+
-    '<div class="sf-banner">'+open.length+' open actions &middot; overdue & high-risk first</div>'+
-    open.map(function(r){
-      return '<div class="sf-row" style="border-left-color:'+sfRiskColor(r.risk)+'" '+
-        'onclick="sfHazardDetail('+r.sr+')">'+
-        '<div class="top"><span class="act">#'+r.sr+' &middot; '+sfEsc(r.activity)+'</span>'+
-          '<span class="sf-pill risk" style="background:'+sfRiskColor(r.risk)+'">'+r.risk+'</span></div>'+
-        '<div class="haz">'+sfEsc(r.hazard)+'</div>'+
-        '<div class="meta"><span>'+sfEsc(r.status)+'</span><span>'+sfEsc(r.responsible)+'</span>'+
-          '<span>Target: '+sfEsc(r.target)+'</span>'+
-          (r.overdue?'<span class="sf-badge-ovd">OVERDUE</span>':'')+'</div></div>';
-    }).join('')+'</div>';
+  google.script.run.withSuccessHandler(function(k){
+    if(!k||!k.success){ box.innerHTML='<div class="sf-wrap"><div class="sf-card">'+
+      'Failed to load board.</div></div>'; return; }
+    SF.kanban=k;
+    var cols=['Open','In Progress','Completed','Verified'];
+    var colColor={'Open':'#f59e0b','In Progress':'#0ea5e9','Completed':'#16a34a','Verified':'#7c3aed'};
+    box.innerHTML='<div class="sf-wrap">'+
+      '<div class="sf-banner">Drag a card between columns, or tap to edit. Overdue cards flagged red.</div>'+
+      '<div class="sf-kanban">'+
+      cols.map(function(c){
+        var items=k.columns[c]||[];
+        return '<div class="sf-kcol" data-kcol="'+c+'" ondragover="sfKDragOver(event)" '+
+          'ondrop="sfKDrop(event,\''+c+'\')">'+
+          '<div class="sf-khead" style="background:'+colColor[c]+'">'+c+
+            ' <span class="sf-kcount">'+items.length+'</span></div>'+
+          '<div class="sf-klist">'+items.map(sfKCard).join('')+'</div></div>';
+      }).join('')+'</div></div>'+
+      '<button class="sf-fab" onclick="sfHazardDetail(null)">+</button>';
+  }).getActionsKanban();
+}
+function sfKCard(r){
+  return '<div class="sf-kcard'+(r.overdue?' ovd':'')+'" draggable="true" '+
+    'data-sr="'+r.sr+'" ondragstart="sfKDragStart(event,'+r.sr+')" '+
+    'onclick="sfHazardDetail('+r.sr+')" style="border-left-color:'+sfRiskColor(r.risk)+'">'+
+    '<div class="sf-kc-top">#'+r.sr+' <span class="sf-pill risk" style="background:'+
+      sfRiskColor(r.risk)+'">'+r.risk+'</span></div>'+
+    '<div class="sf-kc-act">'+sfEsc(r.activity)+'</div>'+
+    '<div class="sf-kc-meta">'+sfEsc(r.responsible||'—')+
+      (r.target?' &middot; '+sfEsc(r.target):'')+
+      (r.overdue?' <span class="sf-badge-ovd">OVERDUE</span>':'')+'</div></div>';
+}
+var _sfDragSr=null;
+function sfKDragStart(e,sr){ _sfDragSr=sr; e.dataTransfer.effectAllowed='move'; }
+function sfKDragOver(e){ e.preventDefault(); e.dataTransfer.dropEffect='move'; }
+function sfKDrop(e,col){
+  e.preventDefault();
+  if(_sfDragSr==null) return;
+  var sr=_sfDragSr; _sfDragSr=null;
+  // map Kanban column -> Action Status
+  var statusMap={'Open':'Pending','In Progress':'In Progress',
+    'Completed':'Completed','Verified':'Verified'};
+  var newStatus=statusMap[col];
+  if(col==='Verified'){
+    var who=prompt('Verified by? (name)','');
+    if(who===null) return;
+    sfMoveCard(sr,newStatus,{verifiedBy:who});
+  } else sfMoveCard(sr,newStatus,null);
+}
+function sfMoveCard(sr,status,opt){
+  google.script.run.withSuccessHandler(function(res){
+    if(res&&res.success){
+      showStatus('Moved #'+sr+' → '+status,'success',2000);
+      SF.dash=null; SF.charts=null; SF.hira=null;
+      sfRenderActions();
+    } else showStatus('Move failed','error',3000);
+  }).updateActionStatus(sr,status,opt||undefined);
 }
 
 /* ---------- INCIDENTS TAB ---------- */
