@@ -615,6 +615,20 @@ body {
 .hf-classline { font-size:11px; color:#475569; margin-top:4px; }
 .sf-btn-primary { background:#0f766e; color:#fff; border:none; padding:10px;
   border-radius:8px; font-weight:700; margin-top:12px; font-size:13px; cursor:pointer; }
+/* segmented click controls */
+.hf-seg { display:flex; flex-wrap:wrap; gap:6px; }
+.hf-seg.grade { gap:5px; }
+.hf-seg-btn { flex:1 1 auto; min-width:44px; text-align:center; padding:9px 6px;
+  border:1.5px solid #cbd5e1; border-radius:8px; background:#fff; color:#475569;
+  font-size:12px; font-weight:700; cursor:pointer; user-select:none;
+  transition:background .12s,border-color .12s,color .12s; }
+.hf-seg-btn:active { transform:scale(.97); }
+.hf-seg-btn.on { background:#0f766e; border-color:#0f766e; color:#fff; }
+.hf-seg.grade .hf-seg-btn { min-width:38px; flex:1 1 0; padding:10px 4px; font-size:13px; }
+.hf-seg.grade .hf-seg-btn.on { background:#1e293b; border-color:#1e293b; }
+.hf-signoff { background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px;
+  padding:8px 10px; margin-top:6px; }
+.hf-signoff label { margin-top:4px; }
 /* kanban */
 .sf-kanban { display:grid; grid-template-columns:repeat(4,minmax(180px,1fr));
   gap:8px; overflow-x:auto; }
@@ -4346,8 +4360,8 @@ var SF = { tab:'dashboard', dash:null, hira:null, charts:null, lists:null,
 
 var SF_RISK_COLORS = { Negligible:'#16a34a', Tolerable:'#eab308',
   Substantial:'#f97316', Intolerable:'#dc2626', Critical:'#7f1d1d' };
-var SF_STATUS_COLORS = { Completed:'#16a34a', 'In Progress':'#0ea5e9',
-  Pending:'#f59e0b', Ongoing:'#8b5cf6', 'Not Applicable':'#94a3b8' };
+var SF_STATUS_COLORS = { Open:'#f59e0b', 'In Progress':'#0ea5e9',
+  Completed:'#16a34a', Verified:'#7c3aed' };
 
 function sfRiskColor(score){
   if(score>=25) return '#dc2626'; if(score>=16) return '#f97316';
@@ -4598,8 +4612,8 @@ function sfRenderHira(){
         '<option>Negligible</option><option>Tolerable</option><option>Substantial</option>'+
         '<option>Intolerable</option><option>Critical</option></select>'+
       '<select id="sf-hira-status" onchange="sfHiraFilter()"><option value="">All status</option>'+
-        '<option>Completed</option><option>In Progress</option><option>Pending</option>'+
-        '<option>Ongoing</option><option>Not Applicable</option></select>'+
+        '<option>Open</option><option>In Progress</option>'+
+        '<option>Completed</option><option>Verified</option></select>'+
     '</div>'+
     '<div id="sf-hira-list"><div class="loading-spinner" style="padding:30px">'+
       '<div class="spinner-ring"></div>Loading&hellip;</div></div></div>'+
@@ -4661,39 +4675,86 @@ function sfFindHazard(sr){
   }
   return null;
 }
+/* Allowed Action Status values — Kanban-aligned, no Pending/Ongoing/N.A. */
+var SF_STATUSES=['Open','In Progress','Completed','Verified'];
+
+/* Build a segmented click-control. Stores value in a hidden input #<id>. */
+function sfSeg(id,opts,sel,extraClass,onpick){
+  var cls='hf-seg'+(extraClass?' '+extraClass:'');
+  var btns=opts.map(function(o){
+    var val=(typeof o==='object')?o.v:o, lab=(typeof o==='object')?o.l:o;
+    return '<div class="hf-seg-btn'+(String(val)===String(sel)?' on':'')+'" '+
+      'data-val="'+sfEsc(val)+'" '+
+      'onclick="sfSegPick(\''+id+'\',this'+(onpick?',\''+onpick+'\'':'')+')">'+
+      sfEsc(lab)+'</div>';
+  }).join('');
+  return '<div class="hf-seg-wrap"><input type="hidden" id="'+id+'" value="'+sfEsc(sel)+'">'+
+    '<div class="'+cls+'" id="'+id+'-seg">'+btns+'</div></div>';
+}
+function sfSegPick(id,el,cb){
+  var wrap=el.parentNode;
+  var btns=wrap.querySelectorAll('.hf-seg-btn');
+  for(var i=0;i<btns.length;i++) btns[i].classList.remove('on');
+  el.classList.add('on');
+  document.getElementById(id).value=el.getAttribute('data-val');
+  if(cb && window[cb]) window[cb]();
+}
+
 function sfHazardDetail(sr){
   var r = (sr!=null) ? sfFindHazard(sr) : null;
   var isNew = !r;
   if(isNew) r={sr:'',section:'',activity:'',di:'D',rnr:'R',hazard:'',L:1,C:1,
     risk:1,classification:'Negligible',controls:'',responsible:'',target:'',
-    status:'Pending',remarks:'',verifiedBy:'',verifiedDate:''};
-  function opt(arr,v){ return arr.map(function(x){
-    return '<option'+(x===v?' selected':'')+'>'+x+'</option>';}).join(''); }
+    status:'Open',remarks:'',verifiedBy:'',verifiedDate:''};
+  // Map any legacy status into the 4-value vocabulary
+  var st=r.status;
+  if(st==='Pending'||st==='Not Applicable'||!st) st='Open';
+  else if(st==='Ongoing') st='In Progress';
+  if(SF_STATUSES.indexOf(st)===-1) st='Open';
   var lcOpt=['1','2','3','4','5'];
   var body='<div class="sf-form">'+
     '<label>Section</label><input id="hf-section" value="'+sfEsc(r.section)+'">'+
     '<label>Activity / Job Step</label><input id="hf-activity" value="'+sfEsc(r.activity)+'">'+
-    '<div class="hf-2"><div><label>D/I</label><select id="hf-di">'+opt(['D','I'],r.di)+'</select></div>'+
-      '<div><label>R/NR</label><select id="hf-rnr">'+opt(['R','NR','E'],r.rnr)+'</select></div></div>'+
+    '<div class="hf-2"><div><label>D/I</label>'+sfSeg('hf-di',['D','I'],r.di)+'</div>'+
+      '<div><label>R/NR</label>'+sfSeg('hf-rnr',['R','NR','E'],r.rnr)+'</div></div>'+
     '<label>Hazard Description</label><textarea id="hf-hazard" rows="2">'+sfEsc(r.hazard)+'</textarea>'+
-    '<div class="hf-3"><div><label>Likelihood</label><select id="hf-l" onchange="sfRecalcRisk()">'+
-      opt(lcOpt,String(r.L))+'</select></div>'+
-      '<div><label>Consequence</label><select id="hf-c" onchange="sfRecalcRisk()">'+
-      opt(lcOpt,String(r.C))+'</select></div>'+
+    '<div class="hf-3" style="grid-template-columns:1fr auto;align-items:start">'+
+      '<div><label>Likelihood</label>'+sfSeg('hf-l',lcOpt,String(r.L),'grade','sfRecalcRisk')+
+      '<label>Consequence</label>'+sfSeg('hf-c',lcOpt,String(r.C),'grade','sfRecalcRisk')+'</div>'+
       '<div><label>Risk</label><div id="hf-risk" class="hf-risk">'+r.risk+'</div></div></div>'+
     '<div id="hf-class" class="hf-classline">Classification: <b>'+r.classification+'</b></div>'+
     '<label>Control Measures</label><textarea id="hf-controls" rows="3">'+sfEsc(r.controls)+'</textarea>'+
     '<label>Responsible Person</label><select id="hf-resp">'+sfPersonOptions(r.responsible)+'</select>'+
     '<label>Target Date</label><input id="hf-target" type="date" value="'+sfToDateInput(r.target)+'">'+
-    '<label>Action Status</label><select id="hf-status">'+
-      opt(['Open','Pending','In Progress','Ongoing','Completed','Verified','Not Applicable'],r.status)+'</select>'+
+    '<label>Action Status</label>'+sfSeg('hf-status',SF_STATUSES,st,'','sfStatusChange')+
+    '<div id="hf-signoff-box"></div>'+
     '<label>Remarks / Evidence</label><textarea id="hf-remarks" rows="2">'+sfEsc(r.remarks)+'</textarea>'+
-    (r.verifiedBy?'<div class="sf-banner">Verified by '+sfEsc(r.verifiedBy)+
-       (r.verifiedDate?' on '+sfEsc(r.verifiedDate):'')+'</div>':'')+
     '<button class="sf-btn-primary" onclick="sfSaveHazard('+(isNew?'null':sr)+')">'+
       (isNew?'Add Hazard':'Save Changes')+'</button>'+
     '</div>';
   sfModal(isNew?'New Hazard':'Edit Hazard #'+sr, body);
+  // Pre-fill sign-off panel from existing record
+  sfStatusChange(r.verifiedBy,r.verifiedDate);
+}
+
+/* Show/hide the sign-off (name + date) panel for Completed / Verified. */
+function sfStatusChange(preName,preDate){
+  var st=document.getElementById('hf-status').value;
+  var box=document.getElementById('hf-signoff-box');
+  if(st!=='Completed' && st!=='Verified'){ box.innerHTML=''; return; }
+  var lbl=(st==='Verified')?'Verified':'Completed';
+  // Keep already-entered values when toggling between Completed/Verified
+  var cur=document.getElementById('hf-signby');
+  var name=(typeof preName==='string')?preName:(cur?cur.value:'');
+  var dEl=document.getElementById('hf-signdate');
+  var date=(typeof preDate==='string'&&preDate)?sfToDateInput(preDate)
+            :(dEl&&dEl.value?dEl.value:sfToDateInput(new Date()));
+  box.innerHTML='<div class="hf-signoff">'+
+    '<label>'+lbl+' By</label>'+
+    '<select id="hf-signby">'+sfPersonOptions(name)+'</select>'+
+    '<label>'+lbl+' Date</label>'+
+    '<input id="hf-signdate" type="date" value="'+sfEsc(date)+'">'+
+    '</div>';
 }
 function sfToDateInput(s){
   if(!s) return '';
@@ -4715,6 +4776,12 @@ function sfSaveHazard(sr){
     responsible:v('hf-resp'), target:v('hf-target'), status:v('hf-status'),
     remarks:v('hf-remarks') };
   if(!d.activity){ showStatus('Activity is required','error',3000); return; }
+  // Sign-off: Completed/Verified records the person + date in cols 16-17
+  if(d.status==='Completed'||d.status==='Verified'){
+    var by=v('hf-signby'), dt=v('hf-signdate');
+    if(!by){ showStatus(d.status+' By name is required','error',3000); return; }
+    d.verifiedBy=by; d.verifiedDate=dt||'';
+  } else { d.verifiedBy=''; d.verifiedDate=''; }
   showStatus('Saving hazard…','info',0);
   google.script.run.withSuccessHandler(function(res){
     if(res&&res.success){
@@ -4780,12 +4847,10 @@ function sfKDrop(e,col){
   e.preventDefault();
   if(_sfDragSr==null) return;
   var sr=_sfDragSr; _sfDragSr=null;
-  // map Kanban column -> Action Status
-  var statusMap={'Open':'Pending','In Progress':'In Progress',
-    'Completed':'Completed','Verified':'Verified'};
-  var newStatus=statusMap[col];
-  if(col==='Verified'){
-    var who=prompt('Verified by? (name)','');
+  // Kanban column IS the Action Status (1:1 with the 4-value vocabulary)
+  var newStatus=col;
+  if(col==='Completed'||col==='Verified'){
+    var who=prompt(col+' by? (name)','');
     if(who===null) return;
     sfMoveCard(sr,newStatus,{verifiedBy:who});
   } else sfMoveCard(sr,newStatus,null);
