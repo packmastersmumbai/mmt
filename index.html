@@ -629,6 +629,56 @@ body {
 .hf-signoff { background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px;
   padding:8px 10px; margin-top:6px; }
 .hf-signoff label { margin-top:4px; }
+/* ── interactive 5×5 risk matrix ── */
+.hf-matrix-wrap { margin-top:4px; }
+.hf-matrix { display:grid; grid-template-columns:auto repeat(5,1fr);
+  gap:3px; align-items:stretch; }
+.hf-mx-corner { font-size:8px; color:#94a3b8; line-height:1.1;
+  display:flex; align-items:flex-end; justify-content:flex-end; padding:2px;
+  font-weight:700; }
+.hf-mx-chead, .hf-mx-rhead { font-size:9px; font-weight:800; color:#64748b;
+  display:flex; align-items:center; justify-content:center; text-align:center;
+  padding:2px; line-height:1.05; }
+.hf-mx-rhead { writing-mode:initial; }
+.hf-mx-cell { aspect-ratio:1.45/1; min-height:30px; border-radius:6px; border:2px solid transparent;
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  font-size:13px; font-weight:800; color:#fff; user-select:none;
+  transition:transform .1s, box-shadow .1s, outline .1s; }
+.hf-mx-cell:hover { transform:scale(1.06); z-index:2; }
+.hf-mx-cell:active { transform:scale(.96); }
+.hf-mx-cell.sel { outline:3px solid #0f172a; outline-offset:1px;
+  box-shadow:0 4px 12px rgba(0,0,0,.35); transform:scale(1.08); z-index:3; }
+.hf-mx-axis { font-size:9px; font-weight:700; color:#94a3b8;
+  display:flex; justify-content:space-between; padding:3px 2px 0; }
+.hf-mx-axis.vert { flex-direction:column; }
+.hf-riskbar { display:flex; align-items:center; gap:10px; margin-top:8px;
+  padding:9px 11px; border-radius:9px; }
+.hf-riskbar .rb-score { font-size:22px; font-weight:900; color:#fff;
+  min-width:46px; text-align:center; border-radius:7px; padding:5px 6px; }
+.hf-riskbar .rb-text { flex:1; line-height:1.3; }
+.hf-riskbar .rb-class { font-size:13px; font-weight:800; }
+.hf-riskbar .rb-guide { font-size:10.5px; color:#475569; margin-top:1px; }
+/* ── hierarchy-of-controls list ── */
+.hf-controls-box { margin-top:4px; }
+.hf-coc-row { border:1.5px solid #e2e8f0; border-radius:9px; padding:8px;
+  margin-bottom:8px; background:#fff; }
+.hf-coc-levels { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:6px; }
+.hf-coc-lvl { flex:1 1 0; min-width:62px; text-align:center; cursor:pointer;
+  font-size:10px; font-weight:800; padding:6px 3px; border-radius:7px;
+  border:1.5px solid #cbd5e1; background:#fff; color:#64748b; line-height:1.15;
+  user-select:none; transition:all .12s; }
+.hf-coc-lvl small { display:block; font-size:8px; font-weight:600; opacity:.8; }
+.hf-coc-lvl.on { color:#fff; border-color:transparent; }
+.hf-coc-inrow { display:flex; gap:6px; align-items:flex-start; }
+.hf-coc-inrow textarea { flex:1; }
+.hf-coc-del { flex:0 0 auto; width:34px; align-self:stretch; border:1.5px solid #fecaca;
+  background:#fef2f2; color:#dc2626; border-radius:7px; font-size:16px;
+  font-weight:800; cursor:pointer; }
+.hf-coc-add { width:100%; padding:9px; border:1.5px dashed #94a3b8;
+  background:#f8fafc; color:#475569; border-radius:9px; font-size:12px;
+  font-weight:700; cursor:pointer; }
+.hf-coc-add:hover { background:#f1f5f9; }
+.hf-coc-hint { font-size:10px; color:#94a3b8; margin:2px 0 6px; }
 /* kanban */
 .sf-kanban { display:grid; grid-template-columns:repeat(4,minmax(180px,1fr));
   gap:8px; overflow-x:auto; }
@@ -4713,19 +4763,20 @@ function sfHazardDetail(sr){
   if(st==='Pending'||st==='Not Applicable'||!st) st='Open';
   else if(st==='Ongoing') st='In Progress';
   if(SF_STATUSES.indexOf(st)===-1) st='Open';
-  var lcOpt=['1','2','3','4','5'];
   var body='<div class="sf-form">'+
     '<label>Section</label><input id="hf-section" value="'+sfEsc(r.section)+'">'+
     '<label>Activity / Job Step</label><input id="hf-activity" value="'+sfEsc(r.activity)+'">'+
     '<div class="hf-2"><div><label>D/I</label>'+sfSeg('hf-di',['D','I'],r.di)+'</div>'+
       '<div><label>R/NR</label>'+sfSeg('hf-rnr',['R','NR','E'],r.rnr)+'</div></div>'+
     '<label>Hazard Description</label><textarea id="hf-hazard" rows="2">'+sfEsc(r.hazard)+'</textarea>'+
-    '<div class="hf-3" style="grid-template-columns:1fr auto;align-items:start">'+
-      '<div><label>Likelihood</label>'+sfSeg('hf-l',lcOpt,String(r.L),'grade','sfRecalcRisk')+
-      '<label>Consequence</label>'+sfSeg('hf-c',lcOpt,String(r.C),'grade','sfRecalcRisk')+'</div>'+
-      '<div><label>Risk</label><div id="hf-risk" class="hf-risk">'+r.risk+'</div></div></div>'+
-    '<div id="hf-class" class="hf-classline">Classification: <b>'+r.classification+'</b></div>'+
-    '<label>Control Measures</label><textarea id="hf-controls" rows="3">'+sfEsc(r.controls)+'</textarea>'+
+    '<label>Risk Assessment &mdash; tap a cell</label>'+
+    '<input type="hidden" id="hf-l" value="'+(r.L||1)+'">'+
+    '<input type="hidden" id="hf-c" value="'+(r.C||1)+'">'+
+    '<div id="hf-matrix-wrap" class="hf-matrix-wrap"></div>'+
+    '<label>Hierarchy of Controls</label>'+
+    '<div class="hf-coc-hint">Pick the control type (most&rarr;least effective), then type the actual measure. Add a row for each control.</div>'+
+    '<div id="hf-controls-box" class="hf-controls-box"></div>'+
+    '<button type="button" class="hf-coc-add" onclick="sfAddControl()">+ Add control measure</button>'+
     '<label>Responsible Person</label><select id="hf-resp">'+sfPersonOptions(r.responsible)+'</select>'+
     '<label>Target Date</label><input id="hf-target" type="date" value="'+sfToDateInput(r.target)+'">'+
     '<label>Action Status</label>'+sfSeg('hf-status',SF_STATUSES,st,'','sfStatusChange')+
@@ -4735,8 +4786,143 @@ function sfHazardDetail(sr){
       (isNew?'Add Hazard':'Save Changes')+'</button>'+
     '</div>';
   sfModal(isNew?'New Hazard':'Edit Hazard #'+sr, body);
+  sfBuildMatrix(r.L||1, r.C||1);
+  sfBuildControls(r.controls);
   // Pre-fill sign-off panel from existing record
   sfStatusChange(r.verifiedBy,r.verifiedDate);
+}
+
+/* ── Hierarchy of Controls (ISO 45001 8.1.2) ── */
+var SF_COC_LEVELS=[
+  {k:'Elimination',   d:'Remove the hazard',        c:'#15803d'},
+  {k:'Substitution',  d:'Replace with safer',       c:'#65a30d'},
+  {k:'Engineering',   d:'Isolate / guard',          c:'#ca8a04'},
+  {k:'Administrative',d:'Procedure / training',     c:'#ea580c'},
+  {k:'PPE',           d:'Protective equipment',     c:'#dc2626'}
+];
+function sfCocColor(k){
+  for(var i=0;i<SF_COC_LEVELS.length;i++) if(SF_COC_LEVELS[i].k===k) return SF_COC_LEVELS[i].c;
+  return '#64748b';
+}
+/* Parse stored controls text into [{level,text}]. Lines like "[Engineering] do X". */
+function sfParseControls(raw){
+  var out=[];
+  String(raw||'').split(/\r?\n/).forEach(function(ln){
+    ln=ln.trim(); if(!ln) return;
+    var m=ln.match(/^\[([^\]]+)\]\s*(.*)$/);
+    if(m){
+      var lvl=m[1].trim();
+      var ok=SF_COC_LEVELS.some(function(L){return L.k===lvl;});
+      out.push({level:ok?lvl:'Administrative', text:m[2].trim()});
+    } else {
+      out.push({level:'Administrative', text:ln}); // legacy free text
+    }
+  });
+  return out;
+}
+function sfBuildControls(raw){
+  var box=document.getElementById('hf-controls-box');
+  box.innerHTML='';
+  var rows=sfParseControls(raw);
+  if(!rows.length) rows=[{level:'Engineering',text:''}];
+  rows.forEach(function(r){ box.appendChild(sfCocRow(r.level,r.text)); });
+}
+function sfCocRow(level,text){
+  var wrap=document.createElement('div');
+  wrap.className='hf-coc-row';
+  var lvls=SF_COC_LEVELS.map(function(L){
+    var on=(L.k===level);
+    return '<div class="hf-coc-lvl'+(on?' on':'')+'" data-lvl="'+L.k+'" '+
+      (on?'style="background:'+L.c+'"':'')+' onclick="sfCocPick(this)">'+
+      L.k+'<small>'+L.d+'</small></div>';
+  }).join('');
+  wrap.innerHTML='<div class="hf-coc-levels">'+lvls+'</div>'+
+    '<div class="hf-coc-inrow">'+
+    '<textarea class="hf-coc-text" rows="2" placeholder="Type the actual control measure…">'+
+      sfEsc(text||'')+'</textarea>'+
+    '<button type="button" class="hf-coc-del" title="Remove" '+
+      'onclick="sfCocDel(this)">&times;</button></div>';
+  return wrap;
+}
+function sfCocPick(el){
+  var row=el.parentNode.querySelectorAll('.hf-coc-lvl');
+  for(var i=0;i<row.length;i++){
+    row[i].classList.remove('on'); row[i].style.background='';
+  }
+  el.classList.add('on');
+  el.style.background=sfCocColor(el.getAttribute('data-lvl'));
+}
+function sfAddControl(){
+  document.getElementById('hf-controls-box').appendChild(sfCocRow('Administrative',''));
+}
+function sfCocDel(btn){
+  var box=document.getElementById('hf-controls-box');
+  if(box.children.length<=1){
+    // keep at least one row — just clear it
+    var ta=box.querySelector('.hf-coc-text'); if(ta) ta.value='';
+    return;
+  }
+  btn.closest('.hf-coc-row').remove();
+}
+/* Serialize control rows back to "[Level] text" lines. */
+function sfCollectControls(){
+  var rows=document.querySelectorAll('#hf-controls-box .hf-coc-row');
+  var out=[];
+  rows.forEach(function(row){
+    var on=row.querySelector('.hf-coc-lvl.on');
+    var lvl=on?on.getAttribute('data-lvl'):'Administrative';
+    var txt=(row.querySelector('.hf-coc-text').value||'').trim();
+    if(txt) out.push('['+lvl+'] '+txt);
+  });
+  return out.join('\n');
+}
+
+/* ── Interactive 5×5 Risk Matrix ── */
+var SF_RISK_GUIDE={
+  Negligible:'Acceptable. Maintain existing controls; no further action required.',
+  Tolerable:'Monitor. Manage with routine controls; review periodically.',
+  Substantial:'Reduce risk within a defined timeframe. Additional controls required.',
+  Intolerable:'STOP. Do not proceed until risk is reduced. Immediate controls mandatory.'
+};
+function sfRiskClass(risk){
+  return risk>=25?'Intolerable':risk>=16?'Substantial':risk>=9?'Tolerable':'Negligible';
+}
+function sfBuildMatrix(selL,selC){
+  var wrap=document.getElementById('hf-matrix-wrap');
+  var html='<div class="hf-matrix">'+
+    '<div class="hf-mx-corner">L&darr;<br>C&rarr;</div>';
+  for(var c=1;c<=5;c++) html+='<div class="hf-mx-chead">C'+c+'</div>';
+  for(var l=5;l>=1;l--){
+    html+='<div class="hf-mx-rhead">L'+l+'</div>';
+    for(var c2=1;c2<=5;c2++){
+      var risk=l*c2;
+      html+='<div class="hf-mx-cell" data-l="'+l+'" data-c="'+c2+'" '+
+        'style="background:'+sfRiskColor(risk)+'" '+
+        'onclick="sfMatrixPick('+l+','+c2+')">'+risk+'</div>';
+    }
+  }
+  html+='</div>'+
+    '<div class="hf-mx-axis"><span>Likelihood: 1 Rare &middot; 5 Almost certain</span></div>'+
+    '<div class="hf-mx-axis"><span>Consequence: 1 Minor &middot; 5 Catastrophic</span></div>'+
+    '<div id="hf-riskbar" class="hf-riskbar"></div>';
+  wrap.innerHTML=html;
+  sfMatrixPick(selL,selC);
+}
+function sfMatrixPick(l,c){
+  document.getElementById('hf-l').value=l;
+  document.getElementById('hf-c').value=c;
+  var cells=document.querySelectorAll('.hf-mx-cell');
+  for(var i=0;i<cells.length;i++){
+    var sel=(+cells[i].getAttribute('data-l')===l && +cells[i].getAttribute('data-c')===c);
+    cells[i].classList.toggle('sel',sel);
+  }
+  var risk=l*c, cls=sfRiskClass(risk), col=sfRiskColor(risk);
+  var bar=document.getElementById('hf-riskbar');
+  bar.style.background=col+'1a'; bar.style.border='1.5px solid '+col;
+  bar.innerHTML='<div class="rb-score" style="background:'+col+'">'+risk+'</div>'+
+    '<div class="rb-text"><div class="rb-class" style="color:'+col+'">'+cls+
+      '  &middot;  L'+l+' &times; C'+c+'</div>'+
+    '<div class="rb-guide">'+SF_RISK_GUIDE[cls]+'</div></div>';
 }
 
 /* Show/hide the sign-off (name + date) panel for Completed / Verified. */
@@ -4763,18 +4949,11 @@ function sfToDateInput(s){
   var d=new Date(s); if(isNaN(d.getTime())) return '';
   return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
 }
-function sfRecalcRisk(){
-  var L=+document.getElementById('hf-l').value, C=+document.getElementById('hf-c').value;
-  var risk=L*C, cls=(risk>=25?'Intolerable':risk>=16?'Substantial':risk>=9?'Tolerable':'Negligible');
-  var rEl=document.getElementById('hf-risk');
-  rEl.textContent=risk; rEl.style.background=sfRiskColor(risk);
-  document.getElementById('hf-class').innerHTML='Classification: <b>'+cls+'</b>';
-}
 function sfSaveHazard(sr){
   function v(id){var e=document.getElementById(id);return e?e.value:'';}
   var d={ sr:sr||undefined, section:v('hf-section'), activity:v('hf-activity'),
     di:v('hf-di'), rnr:v('hf-rnr'), hazard:v('hf-hazard'),
-    L:+v('hf-l'), C:+v('hf-c'), controls:v('hf-controls'),
+    L:+v('hf-l'), C:+v('hf-c'), controls:sfCollectControls(),
     responsible:v('hf-resp'), target:v('hf-target'), status:v('hf-status'),
     remarks:v('hf-remarks') };
   if(!d.activity){ showStatus('Activity is required','error',3000); return; }
