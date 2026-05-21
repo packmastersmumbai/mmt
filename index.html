@@ -286,6 +286,126 @@ body {
 .mcard-act-icon { font-size:18px; line-height:1; }
 .mcard-act-label { font-size:11px; color:#64748b; font-weight:600; line-height:1; margin-top:1px; letter-spacing:0.2px; }
 
+/* ════════ REDESIGNED DASHBOARD ════════ */
+.dash-wrap { padding:12px 12px 90px; }
+.dash-hd { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:10px; }
+.dash-hd h2 { font-size:18px; font-weight:800; color:#0f172a; }
+.dash-hd .dash-date { font-size:12px; color:#94a3b8; font-weight:600; }
+.dash-sect { font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase;
+  letter-spacing:1px; margin:14px 2px 8px; }
+.dash-tiles { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.dash-tile { border-radius:14px; padding:13px 14px; cursor:pointer; position:relative;
+  border:1.5px solid transparent; transition:transform .1s, box-shadow .15s;
+  display:flex; flex-direction:column; gap:2px; overflow:hidden; }
+.dash-tile:active { transform:scale(.97); }
+.dash-tile .dt-ico { font-size:16px; }
+.dash-tile .dt-num { font-size:30px; font-weight:900; line-height:1.05; }
+.dash-tile .dt-lbl { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; }
+.dash-tile .dt-sub { font-size:11px; font-weight:600; opacity:.85; margin-top:1px; }
+.dash-tile .dt-arrow { position:absolute; right:11px; top:11px; font-size:14px; opacity:.5; }
+.dash-tile.alert { animation:dtPulse 2.4s ease-in-out infinite; }
+@keyframes dtPulse { 0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,0)} 50%{box-shadow:0 0 0 4px rgba(220,38,38,.12)} }
+.dt-red    { background:#fef2f2; border-color:#fecaca; color:#b91c1c; }
+.dt-orange { background:#fff7ed; border-color:#fed7aa; color:#c2410c; }
+.dt-blue   { background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8; }
+.dt-amber  { background:#fefce8; border-color:#fde68a; color:#a16207; }
+.dt-green  { background:#f0fdf4; border-color:#bbf7d0; color:#15803d; }
+.dt-slate  { background:#f8fafc; border-color:#e2e8f0; color:#334155; }
+.dash-card { background:#fff; border:1px solid #e2e8f0; border-radius:14px;
+  padding:13px 14px; margin-top:10px; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+.dash-card-hd { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.dash-card-hd .dc-title { font-size:12px; font-weight:800; color:#475569;
+  text-transform:uppercase; letter-spacing:.6px; }
+.dc-range { display:flex; gap:4px; }
+.dc-range button { font-size:11px; font-weight:700; padding:3px 9px; border-radius:7px;
+  border:1px solid #cbd5e1; background:#fff; color:#64748b; cursor:pointer; }
+.dc-range button.on { background:#0f172a; border-color:#0f172a; color:#fff; }
+.rel-row { display:flex; gap:14px; align-items:center; }
+.rel-stat { flex:0 0 auto; }
+.rel-stat .rs-num { font-size:24px; font-weight:900; line-height:1; }
+.rel-stat .rs-lbl { font-size:10px; font-weight:800; color:#94a3b8; text-transform:uppercase;
+  letter-spacing:.5px; margin-top:2px; }
+.rel-spark { flex:1; height:46px; }
+.dash-donut-row { display:flex; align-items:center; gap:16px; }
+.dash-donut-leg { flex:1; display:flex; flex-direction:column; gap:5px; }
+.ddl-row { display:flex; align-items:center; gap:7px; font-size:12px; color:#475569; }
+.ddl-dot { width:9px; height:9px; border-radius:3px; flex-shrink:0; }
+.ddl-val { margin-left:auto; font-weight:800; color:#0f172a; }
+.fleet-tile { display:flex; align-items:center; gap:10px; cursor:pointer; }
+.fleet-bars { display:flex; gap:3px; flex-wrap:wrap; margin-top:8px; }
+.fleet-bar { display:flex; flex-direction:column; align-items:center; gap:2px; }
+.fleet-bar .fb-stack { width:26px; background:#e2e8f0; border-radius:3px 3px 0 0;
+  display:flex; align-items:flex-end; }
+.fleet-bar .fb-fill { width:100%; border-radius:3px 3px 0 0; }
+.fleet-bar .fb-lbl { font-size:8px; color:#94a3b8; font-weight:700; }
+.fleet-bar .fb-n { font-size:9px; color:#475569; font-weight:800; }
+
+/* ════════ REDESIGNED MACHINE BOARD ════════ */
+.mb-toolbar { display:flex; gap:8px; padding:9px 10px; background:#fff;
+  border-bottom:1px solid #f1f5f9; align-items:center; }
+.mb-search { flex:1; display:flex; align-items:center; gap:6px; background:#f1f5f9;
+  border:1px solid #e2e8f0; border-radius:9px; padding:7px 10px; }
+.mb-search input { flex:1; border:none; background:transparent; font-size:13px;
+  outline:none; font-family:inherit; }
+.mb-search .mbs-clear { font-size:14px; color:#94a3b8; cursor:pointer; display:none; }
+.mb-allrec { flex-shrink:0; font-size:12px; font-weight:700; padding:8px 11px;
+  border:1px solid #cbd5e1; border-radius:9px; background:#fff; color:#475569; cursor:pointer; }
+.mb-allrec:active { background:#f1f5f9; }
+.mb-chips { display:flex; gap:6px; padding:8px 10px; background:#f8fafc;
+  border-bottom:1px solid #f1f5f9; overflow-x:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width:none; }
+.mb-chips::-webkit-scrollbar { display:none; }
+.mb-chip { flex-shrink:0; font-size:12px; font-weight:700; padding:6px 12px;
+  border-radius:20px; border:1.5px solid #e2e8f0; background:#fff; color:#64748b;
+  cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:5px; }
+.mb-chip.on { background:#0f172a; border-color:#0f172a; color:#fff; }
+.mb-chip .mbc-n { font-size:11px; opacity:.75; }
+.mb-chip .mbc-bd { width:7px; height:7px; border-radius:50%; background:#dc2626; }
+.mb-typehd { font-size:11px; font-weight:800; color:#475569; text-transform:uppercase;
+  letter-spacing:.7px; padding:12px 4px 6px; display:flex; align-items:center; gap:8px; }
+.mb-typehd .mth-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.mb-typehd .mth-n { background:#f1f5f9; color:#64748b; font-size:10px; font-weight:800;
+  padding:1px 8px; border-radius:10px; margin-left:auto; }
+.mb-list { background:#fff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; }
+.mb-row { display:flex; align-items:center; gap:10px; padding:11px 12px; cursor:pointer;
+  border-bottom:1px solid #f1f5f9; transition:background .1s; }
+.mb-row:last-child { border-bottom:none; }
+.mb-row:active { background:#f8fafc; }
+.mb-row .mbr-stripe { width:3px; align-self:stretch; border-radius:2px; flex-shrink:0; }
+.mb-row .mbr-body { flex:1; min-width:0; }
+.mb-row .mbr-id { font-family:'Courier New',monospace; font-size:10.5px; font-weight:700;
+  color:#64748b; }
+.mb-row .mbr-name { font-size:13px; font-weight:700; color:#0f172a; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis; }
+.mb-dots { display:flex; gap:5px; flex-shrink:0; }
+.mb-dot { display:flex; flex-direction:column; align-items:center; gap:1px; }
+.mb-dot .mbd-c { width:9px; height:9px; border-radius:50%; }
+.mb-dot .mbd-l { font-size:7px; font-weight:800; color:#cbd5e1; letter-spacing:.2px; }
+.mb-row .mbr-caret { font-size:14px; color:#cbd5e1; flex-shrink:0; transition:transform .15s; }
+.mb-row.open .mbr-caret { transform:rotate(90deg); }
+/* action panel */
+.mb-panel { background:#f8fafc; border-bottom:1px solid #f1f5f9; padding:10px 12px; }
+.mb-panel-hd { font-size:12px; color:#64748b; font-weight:600; margin-bottom:8px; }
+.mb-act-row { display:flex; align-items:center; gap:8px; background:#fff;
+  border:1px solid #e2e8f0; border-radius:10px; padding:9px 10px; margin-bottom:7px; }
+.mb-act-ico { font-size:16px; flex-shrink:0; width:22px; text-align:center; }
+.mb-act-info { flex:1; min-width:0; }
+.mb-act-name { font-size:13px; font-weight:800; color:#0f172a; }
+.mb-act-sub { font-size:11px; color:#64748b; margin-top:1px; }
+.mb-act-view { font-size:11.5px; font-weight:700; padding:7px 11px; border-radius:8px;
+  border:1px solid #cbd5e1; background:#fff; color:#475569; cursor:pointer; flex-shrink:0; }
+.mb-act-view:disabled { opacity:.4; cursor:default; }
+.mb-act-plus { width:36px; height:34px; border-radius:8px; border:none; flex-shrink:0;
+  background:#0f766e; color:#fff; font-size:19px; font-weight:700; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; }
+.mb-act-plus:active { background:#0d5d56; }
+.mb-ref-row { display:flex; gap:6px; margin-top:4px; }
+.mb-ref-btn { flex:1; padding:8px 4px; border:1px solid #e2e8f0; border-radius:9px;
+  background:#fff; cursor:pointer; display:flex; flex-direction:column; align-items:center;
+  gap:2px; font-size:10px; font-weight:700; color:#64748b; }
+.mb-ref-btn:active { background:#f1f5f9; }
+.mb-ref-btn .mrb-ico { font-size:15px; }
+
 /* Category group — collapsible */
 .cat-group { margin-bottom:14px; }
 .cat-group-title {
@@ -757,78 +877,49 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 <!-- ══════ CONTENT AREA ══════ -->
 <div class="app-content" id="app-content">
 
-  <!-- Board view -->
+  <!-- Dashboard view (home) -->
+  <div class="view active" id="view-dashboard" style="padding:0">
+    <div id="dash-body">
+      <div class="dash-wrap"><div class="loading-spinner" style="padding:40px">
+        <div class="spinner-ring"></div>Loading dashboard&hellip;</div></div>
+    </div>
+  </div>
+
+  <!-- Machine Board view -->
   <div class="view" id="view-board" style="padding:0">
-
-    <!-- Analytics (collapsible dashboard strip) -->
-    <div id="board-analytics-wrap">
-      <div class="an-toggle-bar" id="an-toggle" onclick="toggleAnalytics()">
-        <span>&#x1F4CA; Dashboard &amp; Analytics</span>
-        <span id="an-toggle-icon" style="color:#94a3b8;font-size:14px">&#x25BE;</span>
+    <div class="mb-toolbar">
+      <div class="mb-search">
+        <span style="font-size:13px;color:#94a3b8">&#x1F50D;</span>
+        <input id="mb-search-input" placeholder="Search machine — ID or name…" oninput="mbOnSearch()">
+        <span class="mbs-clear" id="mb-search-clear" onclick="mbClearSearch()">&times;</span>
       </div>
-      <div id="board-analytics-body">
-        <div id="board-analytics"><div style="padding:16px;text-align:center;color:#94a3b8;font-size:12px"><div class="spinner-ring"></div></div></div>
-      </div>
+      <button class="mb-allrec" onclick="openAllRecords()">&#x1F4CB; All Records</button>
     </div>
+    <div class="mb-chips" id="mb-chips"></div>
+    <div id="board-grid" style="padding:4px 12px 90px"></div>
+  </div>
 
-    <!-- Board tab bar: Machines | Kanban -->
-    <div class="board-tabs" id="board-tabs">
-      <div class="board-tab active" data-btab="machines">&#x1F4F1; Machines</div>
-      <div class="board-tab" data-btab="kanban">&#x1F4CB; Kanban</div>
-    </div>
-
-    <!-- Machines sub-view -->
-    <div id="board-machines-panel" style="padding:0">
-      <div style="padding:6px 10px;display:flex;align-items:center;gap:6px;background:white;border-bottom:1px solid #f1f5f9">
-        <div style="display:flex;gap:5px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex:1">
-          <button class="filter-chip active" data-floor="all" onclick="filterBoard(this)">All</button>
-          <button class="filter-chip" data-floor="Ground Floor" onclick="filterBoard(this)">Ground</button>
-          <button class="filter-chip" data-floor="First Floor" onclick="filterBoard(this)">1st</button>
-          <button class="filter-chip" data-floor="Second Floor" onclick="filterBoard(this)">2nd</button>
+  <!-- Records view (per-machine OR global) -->
+  <div class="view" id="view-records" style="padding:0">
+    <div class="tab-view-header" id="rec-header" style="padding:12px 14px 8px">
+      <div style="display:flex;align-items:center;gap:10px;min-width:0">
+        <button onclick="navigate('board')" style="flex-shrink:0;background:#f1f5f9;border:none;border-radius:8px;width:32px;height:32px;font-size:16px;cursor:pointer;color:#475569">&#8592;</button>
+        <div style="min-width:0">
+          <div class="tab-view-title" id="rec-title">Records</div>
+          <div id="rec-subtitle" style="font-size:12px;color:#64748b;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
         </div>
-        <div style="font-size:10px;color:#94a3b8;flex-shrink:0" id="board-summary"></div>
-        <button onclick="showAddMachineForm()" style="flex-shrink:0;background:#f97316;color:white;border:none;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer">+ Add</button>
       </div>
-      <div id="board-grid" style="padding:4px 10px 80px"></div>
+      <button class="tab-action-btn" id="rec-add-btn" style="display:none">+ New</button>
     </div>
-
-    <!-- Kanban sub-view: BD / PM / CLIT / Checklist record tabs -->
-    <div id="board-kanban-panel" style="display:none;padding:0">
-      <div class="board-sub-tabs" id="board-kanban-subtabs">
-        <div class="board-sub-tab active" data-kstab="bd">&#x1F6A8; BD</div>
-        <div class="board-sub-tab" data-kstab="pm">&#x1F527; PM</div>
-        <div class="board-sub-tab" data-kstab="clit">&#x1F9F9; CLIT</div>
-        <div class="board-sub-tab" data-kstab="checklist">&#x2611; Checklist</div>
-      </div>
-      <!-- BD records -->
-      <div id="board-bd-panel" style="padding:8px 12px 80px">
-        <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
-          <button class="filter-chip active" data-bdst="all" onclick="filterBoardBD(this)">All</button>
-          <button class="filter-chip" data-bdst="Open" onclick="filterBoardBD(this)">Open</button>
-          <button class="filter-chip" data-bdst="Closed" onclick="filterBoardBD(this)">Closed</button>
-        </div>
-        <div id="board-bd-list"><div class="loading-spinner"><div class="spinner-ring"></div>Loading&hellip;</div></div>
-      </div>
-      <!-- PM records -->
-      <div id="board-pm-panel" style="display:none;padding:8px 12px 80px">
-        <div id="board-pm-list"><div class="loading-spinner"><div class="spinner-ring"></div>Loading&hellip;</div></div>
-      </div>
-      <!-- CLIT records -->
-      <div id="board-clit-panel" style="display:none;padding:8px 12px 80px">
-        <div id="board-clit-list"><div class="loading-spinner"><div class="spinner-ring"></div>Loading&hellip;</div></div>
-      </div>
-      <!-- Checklist records -->
-      <div id="board-cl-panel" style="display:none;padding:8px 12px 80px">
-        <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
-          <button class="filter-chip active" data-clst="all" onclick="filterBoardCL(this)">All</button>
-          <button class="filter-chip" data-clst="done" onclick="filterBoardCL(this)">Done</button>
-          <button class="filter-chip" data-clst="partial" onclick="filterBoardCL(this)">Partial</button>
-          <button class="filter-chip" data-clst="pending" onclick="filterBoardCL(this)">Pending</button>
-        </div>
-        <div id="board-cl-list"><div class="loading-spinner"><div class="spinner-ring"></div>Loading&hellip;</div></div>
-      </div>
+    <div class="board-sub-tabs" id="rec-subtabs" style="display:none">
+      <div class="board-sub-tab active" data-rstab="bd">&#x1F6A8; BD</div>
+      <div class="board-sub-tab" data-rstab="pm">&#x1F527; PM</div>
+      <div class="board-sub-tab" data-rstab="clit">&#x1F9F9; CLIT</div>
+      <div class="board-sub-tab" data-rstab="checklist">&#x2611; Checklist</div>
     </div>
-
+    <div id="rec-list" style="padding:8px 12px 90px">
+      <div class="loading-spinner"><div class="spinner-ring"></div>Loading&hellip;</div>
+    </div>
   </div>
 
   <!-- Checklist view -->
@@ -1118,8 +1209,11 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 
 <!-- ══════ GLOBAL NAV (always) ══════ -->
 <nav class="nav-global" id="nav-global">
-  <button class="gnav-btn active" data-hash="board" data-btab="">
+  <button class="gnav-btn active" data-hash="dashboard" data-btab="">
     <span class="gn-icon">&#x1F4CA;</span>Dashboard
+  </button>
+  <button class="gnav-btn" data-hash="board" data-btab="">
+    <span class="gn-icon">&#x1F3ED;</span>Machines
   </button>
   <button class="gnav-btn" data-hash="labels" data-btab="">
     <span class="gn-icon">&#x1F3F7;</span>QR Labels
@@ -1234,24 +1328,6 @@ var _boardData    = null;
 var _highlightId  = null;
 var _collapsedCats = {};
 
-function loadAnalyticsView() {
-  if (_boardData) { renderAnalytics(_boardData); return; }
-  document.getElementById('analytics-content').innerHTML =
-    '<div class="loading-spinner" style="padding:40px"><div class="spinner-ring"></div>Loading&hellip;</div>';
-  google.script.run
-    .withSuccessHandler(function(data) {
-      _boardData = data;
-      renderAnalytics(data);
-    })
-    .withFailureHandler(function(e) {
-      var msg = (e&&e.message)||'server error';
-      document.getElementById('analytics-content').innerHTML =
-        '<div style="padding:20px;color:#dc2626">Failed to load analytics: ' + esc(msg) + '</div>';
-      showStatus('⚠ Analytics load failed: ' + msg, 'error', 6000);
-    })
-    .getKanbanData();
-}
-
 var _refType = 'mhc';
 function loadRefCombined() {
   loadRefView(_refType);
@@ -1289,614 +1365,523 @@ function renderRefCombined(type) {
   }).join('');
 }
 
-function loadBoard(highlightMachineId) {
-  if (highlightMachineId) _highlightId = highlightMachineId;
-  // Reset to machines panel when board loads
-  _boardTab = 'machines';
-  document.querySelectorAll('#board-tabs .board-tab').forEach(function(t){
-    t.classList.toggle('active', t.dataset.btab === 'machines');
-  });
-  ['bd','pm','clit','cl'].forEach(function(p){
-    var el = document.getElementById('board-' + p + '-panel');
-    if (el) el.style.display = 'none';
-  });
-  var mp = document.getElementById('board-machines-panel');
-  if (mp) mp.style.display = 'block';
+/* ════════ MACHINE BOARD ENGINE ════════ */
+var CAT_COLORS = {
+  'Compressor':'#0284c7','Inkjet Printer':'#7c3aed','Form Fill Seal':'#1e40af',
+  'Labelling Machine':'#0d9488','Capping Machine':'#16a34a','Induction Sealing':'#d97706',
+  'Shrink Sleeve Tunnel':'#be185d','Load Cell Filling Machine':'#c2410c',
+  'Spout Pouch Filler':'#0891b2','Winder/Rewinder':'#65a30d','Taping Machine':'#9333ea',
+  'LID Press Machine':'#dc2626','Pallet Truck':'#6b7280','Pump Motor':'#854d0e'
+};
+var CAT_ORDER = ['Form Fill Seal','Compressor','Inkjet Printer','Labelling Machine',
+  'Capping Machine','Induction Sealing','Load Cell Filling Machine','Spout Pouch Filler',
+  'Shrink Sleeve Tunnel','Taping Machine','Winder/Rewinder','LID Press Machine',
+  'Pallet Truck','Pump Motor'];
+var _mbTypeFilter = 'all';     // active type chip
+var _mbSearch = '';            // search query (lowercase)
+var _mbOpenMachine = null;     // currently expanded machine id
+var _recordsByMachine = {};    // {machineId: {bd:[],pm:[],clit:[],checklist:[]}}
 
-  if (_boardData) { renderBoard(_boardData); return; }
-  document.getElementById('board-grid').innerHTML = '<div class="loading-spinner" style="padding:40px"><div class="spinner-ring"></div>Loading machines&hellip;</div>';
-  // Fetch kanban data and metrics in parallel
-  var _kanbanDone = false, _metricsDone = false;
-  var _kanbanResult = null, _metricsResult = null;
-  function _tryRenderDashboard() {
-    if (_kanbanDone && _metricsDone) renderDashboard(_kanbanResult, _metricsResult);
-  }
+function loadBoard(highlightMachineId) {
+  if (highlightMachineId) { _highlightId = highlightMachineId; _mbOpenMachine = highlightMachineId; }
+  if (_boardData && _boardData.success) { renderBoard(_boardData); return; }
+  document.getElementById('board-grid').innerHTML =
+    '<div class="loading-spinner" style="padding:40px"><div class="spinner-ring"></div>Loading machines&hellip;</div>';
   google.script.run
-    .withSuccessHandler(function(data) {
-      _boardData = data; _kanbanResult = data; _kanbanDone = true;
-      renderBoard(data);
-      _tryRenderDashboard();
-    })
+    .withSuccessHandler(function(data) { _boardData = data; renderBoard(data); _prefetchRecords(); })
     .withFailureHandler(function(e) {
-      document.getElementById('board-grid').innerHTML = '<div style="padding:20px;color:#dc2626;font-size:13px">Error: ' + esc((e && e.message) || 'unknown') + '</div>';
+      document.getElementById('board-grid').innerHTML =
+        '<div style="padding:20px;color:#dc2626;font-size:13px">Error: ' + esc((e && e.message) || 'unknown') + '</div>';
     })
     .getKanbanData();
-  google.script.run
-    .withSuccessHandler(function(m) { _metricsResult = m; _metricsDone = true; _tryRenderDashboard(); })
-    .withFailureHandler(function()  { _metricsResult = null; _metricsDone = true; _tryRenderDashboard(); })
-    .getDashboardMetrics();
 }
+
+/* Pull all record types once, index per machine — powers View N counts. */
+function _prefetchRecords() {
+  ['bd','pm','clit','checklist'].forEach(function(type) {
+    google.script.run.withSuccessHandler(function(d) {
+      if (!d || !d.success || !d.items) return;
+      _boardRecordsCache[type] = d;
+      d.items.forEach(function(it) {
+        var mid = String(it.machineId || '');
+        if (!_recordsByMachine[mid]) _recordsByMachine[mid] = {bd:[],pm:[],clit:[],checklist:[]};
+        _recordsByMachine[mid][type].push(it);
+      });
+      // refresh an open panel so counts fill in
+      if (_mbOpenMachine && _recordsByMachine[_mbOpenMachine]) {
+        var pe = document.getElementById('mb-panel-' + _cssId(_mbOpenMachine));
+        if (pe) _fillActionPanel(pe, _mbOpenMachine);
+      }
+    }).getAllBoardRecords(type);
+  });
+}
+function _cssId(s){ return String(s).replace(/[^a-zA-Z0-9]/g,'_'); }
 
 function renderBoard(data) {
+  var grid = document.getElementById('board-grid');
   if (!data || !data.success) {
-    document.getElementById('board-grid').innerHTML = '<div style="padding:20px;color:#dc2626;font-size:13px">Failed to load board data.' + (data && data.error ? ' ' + data.error : '') + '</div>';
+    grid.innerHTML = '<div style="padding:20px;color:#dc2626;font-size:13px">Failed to load board data.' +
+      (data && data.error ? ' ' + esc(data.error) : '') + '</div>';
     return;
   }
-  document.getElementById('board-summary').textContent = data.total + ' machines';
+  _renderTypeChips(data);
+  _renderMachineList(data);
+}
 
-  // Category stripe colours
-  var CAT_COLORS = {
-    'Compressor':'#0284c7','Inkjet Printer':'#7c3aed','Form Fill Seal':'#1e40af',
-    'Labelling Machine':'#0d9488','Capping Machine':'#16a34a','Induction Sealing':'#d97706',
-    'Shrink Sleeve Tunnel':'#be185d','Load Cell Filling Machine':'#c2410c',
-    'Spout Pouch Filler':'#0891b2','Winder/Rewinder':'#65a30d',
-    'Taping Machine':'#9333ea','LID Press Machine':'#dc2626',
-    'Pallet Truck':'#6b7280','Pump Motor':'#854d0e'
-  };
-  var floorFilter = document.querySelector('.filter-chip.active');
-  var activeFloor = floorFilter ? floorFilter.dataset.floor : 'all';
+function _renderTypeChips(data) {
+  var chips = document.getElementById('mb-chips');
+  var cats = Object.keys(data.groups);
+  var ordered = CAT_ORDER.filter(function(c){ return cats.indexOf(c) > -1; });
+  cats.forEach(function(c){ if (ordered.indexOf(c) === -1) ordered.push(c); });
+  var html = '<button class="mb-chip' + (_mbTypeFilter==='all'?' on':'') +
+    '" onclick="mbPickType(&quot;all&quot;)">All <span class="mbc-n">' + data.total + '</span></button>';
+  ordered.forEach(function(cat){
+    var ms = data.groups[cat] || [];
+    var bd = ms.reduce(function(s,m){ return s + (m.openBD||0); }, 0);
+    html += '<button class="mb-chip' + (_mbTypeFilter===cat?' on':'') +
+      '" onclick="mbPickType(' + JSON.stringify(cat).replace(/"/g,'&quot;') + ')">' +
+      esc(cat) + ' <span class="mbc-n">' + ms.length + '</span>' +
+      (bd>0 ? '<span class="mbc-bd"></span>' : '') + '</button>';
+  });
+  chips.innerHTML = html;
+}
 
-  var gridEl = document.getElementById('board-grid');
-  gridEl.innerHTML = '';
+function _renderMachineList(data) {
+  var grid = document.getElementById('board-grid');
+  var searching = _mbSearch.length > 0;
+  var cats = Object.keys(data.groups);
+  var ordered = CAT_ORDER.filter(function(c){ return cats.indexOf(c) > -1; });
+  cats.forEach(function(c){ if (ordered.indexOf(c) === -1) ordered.push(c); });
 
-  var catOrder = [
-    'Form Fill Seal','Compressor','Inkjet Printer','Labelling Machine',
-    'Capping Machine','Induction Sealing','Load Cell Filling Machine','Spout Pouch Filler',
-    'Shrink Sleeve Tunnel','Taping Machine','Winder/Rewinder','LID Press Machine','Pallet Truck','Pump Motor'
+  var html = '';
+  if (searching) {
+    var hits = [];
+    ordered.forEach(function(cat){
+      (data.groups[cat]||[]).forEach(function(m){
+        var hay = (m.id + ' ' + m.name).toLowerCase();
+        if (hay.indexOf(_mbSearch) > -1) hits.push(m);
+      });
+    });
+    if (!hits.length) {
+      grid.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;font-size:13px">No machines found.</div>';
+      return;
+    }
+    html += '<div class="mb-typehd">' + hits.length + ' match' + (hits.length===1?'':'es') + '</div>';
+    html += '<div class="mb-list">' + hits.map(_machineRowHtml).join('') + '</div>';
+  } else {
+    var show = (_mbTypeFilter==='all') ? ordered : ordered.filter(function(c){ return c===_mbTypeFilter; });
+    show.forEach(function(cat){
+      var ms = data.groups[cat] || [];
+      if (!ms.length) return;
+      ms = ms.slice().sort(function(a,b){ return (b.openBD||0)-(a.openBD||0); });
+      var color = CAT_COLORS[cat] || '#64748b';
+      var bd = ms.reduce(function(s,m){ return s + (m.openBD||0); }, 0);
+      html += '<div class="mb-typehd"><span class="mth-dot" style="background:' + color + '"></span>' +
+        esc(cat) + (bd>0?' &middot; <span style="color:#dc2626">'+bd+' BD</span>':'') +
+        '<span class="mth-n">' + ms.length + '</span></div>';
+      html += '<div class="mb-list">' + ms.map(_machineRowHtml).join('') + '</div>';
+    });
+    if (!html) html = '<div style="padding:30px;text-align:center;color:#94a3b8;font-size:13px">No machines.</div>';
+  }
+  grid.innerHTML = html;
+  if (_mbOpenMachine) {
+    var row = grid.querySelector('.mb-row[data-mid="' + _cssId(_mbOpenMachine) + '"]');
+    if (row) _toggleMachine(_mbOpenMachine, true);
+  }
+}
+
+function _machineRowHtml(m) {
+  var color = CAT_COLORS[m.category] || '#64748b';
+  var mid = esc(m.id);
+  var rec = _recordsByMachine[m.id];
+  var pmDot = (rec && rec.pm.length) ? '#0ea5e9' : '#e2e8f0';
+  var clitDot = (rec && rec.clit.length) ? '#0ea5e9' : '#e2e8f0';
+  var dots = [
+    {l:'BD', c: m.openBD>0 ? '#dc2626' : '#e2e8f0'},
+    {l:'PM', c: pmDot},
+    {l:'CLIT', c: clitDot},
+    {l:'CL', c: m.checklist==='done' ? '#16a34a' : m.checklist==='partial' ? '#eab308' : '#e2e8f0'}
   ];
-
-  // Render any category not in catOrder at the end
-  var allCats = Object.keys(data.groups);
-  allCats.forEach(function(cat) {
-    if (catOrder.indexOf(cat) === -1) catOrder.push(cat);
-  });
-
-  catOrder.forEach(function(cat) {
-    var machines = data.groups[cat];
-    if (!machines) return;
-    var filtered = activeFloor === 'all' ? machines : machines.filter(function(m) { return m.floor === activeFloor; });
-    if (!filtered.length) return;
-    // Float machines with open BDs to the top
-    filtered = filtered.slice().sort(function(a, b) { return (b.openBD || 0) - (a.openBD || 0); });
-
-    var color = CAT_COLORS[cat] || '#64748b';
-    var catOpenBD = filtered.reduce(function(sum, m) { return sum + (m.openBD || 0); }, 0);
-    // Auto-expand if open BDs; otherwise use saved state (default collapsed)
-    var isCollapsed = catOpenBD > 0 ? false : (_collapsedCats[cat] !== false);
-
-    var grp = document.createElement('div');
-    grp.className = 'cat-group' + (isCollapsed ? ' collapsed' : '');
-    grp.dataset.cat = cat;
-
-    var hdr = document.createElement('div');
-    hdr.className = 'cat-group-title';
-    hdr.innerHTML =
-      '<span style="display:flex;align-items:center;gap:8px">' +
-        '<span style="width:10px;height:10px;border-radius:50%;background:' + color + ';flex-shrink:0"></span>' +
-        esc(cat) +
-        '<span style="background:' + color + '22;color:' + color + ';font-size:11px;font-weight:700;padding:1px 8px;border-radius:10px;margin-left:2px">' + filtered.length + '</span>' +
-        (catOpenBD > 0 ? '<span style="background:#fee2e2;color:#dc2626;font-size:11px;font-weight:700;padding:1px 8px;border-radius:10px">' + catOpenBD + ' BD open</span>' : '') +
-      '</span>' +
-      '<span class="cat-toggle">&#9660;</span>';
-    hdr.addEventListener('click', function() {
-      grp.classList.toggle('collapsed');
-      // false = expanded, true = collapsed
-      _collapsedCats[cat] = grp.classList.contains('collapsed');
-    });
-    grp.appendChild(hdr);
-
-    var machinesWrap = document.createElement('div');
-    machinesWrap.className = 'cat-machines';
-
-    filtered.forEach(function(m) {
-      var mColor = CAT_COLORS[m.category] || '#64748b';
-      var clBadge = m.checklist === 'done'
-        ? '<span class="mbadge badge-cl-done">CL&#10003;</span>'
-        : m.checklist === 'partial'
-        ? '<span class="mbadge badge-cl-partial">CL Part</span>'
-        : '<span class="mbadge badge-cl-pending">CL Pend</span>';
-      var bdBadge = m.openBD > 0
-        ? '<span class="mbadge badge-bd-open">BD ' + m.openBD + '</span>'
-        : '';
-      var isHighlight = _highlightId && m.id === _highlightId;
-
-      // Category abbreviation for icon tile
-      var catWords = m.category.split(/[\s\/\-]+/);
-      var catAbbr = catWords.length >= 2
-        ? catWords.filter(function(w){return w.length>1;}).map(function(w){return w[0].toUpperCase();}).join('').substring(0,4)
-        : m.category.substring(0,3).toUpperCase();
-
-      var mid = esc(m.id), mname = esc(m.name), mcat = esc(m.category), mfloor = esc(m.floor);
-      var card = document.createElement('div');
-      card.className = 'mcard' + (isHighlight ? ' highlight' : '');
-      card.style.cssText = 'flex-wrap:wrap;';
-      card.innerHTML =
-        '<div class="mcard-stripe" style="background:' + mColor + '"></div>' +
-        '<div class="mcard-icon" style="background:' + mColor + '">' + catAbbr + '</div>' +
-        '<div class="mcard-body">' +
-          '<div class="mcard-top">' +
-            '<span class="mcard-id">' + mid + '</span>' +
-            '<span style="display:flex;gap:4px;margin-left:auto">' + clBadge + bdBadge + '</span>' +
-          '</div>' +
-          '<div class="mcard-name" style="font-size:12px;font-weight:600;color:#0f172a;margin-top:1px">' + mname + '</div>' +
-          '<div class="mcard-sub">' + mfloor + '</div>' +
-        '</div>' +
-        '<div class="mcard-actions" style="width:100%;margin-left:45px">' +
-          '<button class="mcard-act" onclick="event.stopPropagation();App.machineId=\'' + mid + '\';App.machineName=\'' + mname + '\';showBDForm(\'' + mid + '\')" title="Log Breakdown" aria-label="Breakdown"><span class="mcard-act-icon" style="color:#dc2626">&#x25CF;</span><span class="mcard-act-label">BD</span></button>' +
-          '<button class="mcard-act" onclick="event.stopPropagation();App.machineId=\'' + mid + '\';App.machineName=\'' + mname + '\';showPMForm(\'' + mid + '\')" title="Log PM" aria-label="PM"><span class="mcard-act-icon" style="color:#16a34a">&#x25CF;</span><span class="mcard-act-label">PM</span></button>' +
-          '<button class="mcard-act" onclick="event.stopPropagation();App.machineId=\'' + mid + '\';App.machineName=\'' + mname + '\';showCLITForm(\'' + mid + '\')" title="Log CLIT" aria-label="CLIT"><span class="mcard-act-icon">&#x2699;</span><span class="mcard-act-label">CLIT</span></button>' +
-          '<button class="mcard-act" onclick="event.stopPropagation();App.machineId=\'' + mid + '\';App.machineName=\'' + mname + '\';navigate(\'sop\',\'' + mid + '\')" title="Open SOP" aria-label="SOP"><span class="mcard-act-icon">&#x2630;</span><span class="mcard-act-label">SOP</span></button>' +
-          '<button class="mcard-act" onclick="event.stopPropagation();App.machineId=\'' + mid + '\';App.machineName=\'' + mname + '\';navigate(\'mhc\',\'' + mid + '\')" title="Open MHC" aria-label="MHC"><span class="mcard-act-icon">&#x2261;</span><span class="mcard-act-label">MHC</span></button>' +
-          '<button class="mcard-act" onclick="event.stopPropagation();App.machineId=\'' + mid + '\';App.machineName=\'' + mname + '\';navigate(\'image\',\'' + mid + '\')" title="Open Images" aria-label="Media"><span class="mcard-act-icon">&#x25A3;</span><span class="mcard-act-label">Media</span></button>' +
-          '<button class="mcard-act" onclick="event.stopPropagation();App.machineId=\'' + mid + '\';App.machineName=\'' + mname + '\';navigate(\'checklist\',\'' + mid + '\')" title="Open Checklist" aria-label="Checklist"><span class="mcard-act-icon">&#x2611;</span><span class="mcard-act-label">CL</span></button>' +
-          '<button class="mcard-action-btn" style="color:#0284c7;margin-left:auto" onclick="event.stopPropagation();showEditMachineForm(\'' + mid + '\',\'' + mname + '\',\'' + mcat + '\',\'' + mfloor + '\')" title="Edit">&#x270F;</button>' +
-          '<button class="mcard-action-btn" style="color:#dc2626" onclick="event.stopPropagation();confirmDeleteMachine(\'' + mid + '\',\'' + mname + '\')" title="Delete">&#x1F5D1;</button>' +
-        '</div>';
-
-      card.addEventListener('click', function() {
-        App.machineId = m.id;
-        App.machineName = m.name;
-        navigate('mhc', m.id);
-      });
-      if (isHighlight) {
-        setTimeout(function() { card.scrollIntoView({behavior:'smooth', block:'center'}); }, 300);
-      }
-      machinesWrap.appendChild(card);
-    });
-
-    grp.appendChild(machinesWrap);
-    gridEl.appendChild(grp);
-  });
-}
-
-function renderAnalytics(data) {
-  var el = document.getElementById('analytics-content');
-  if (!el || !data || !data.success) return;
-
-  var total = data.total || 0;
-  var clDone = 0, clPartial = 0, clPending = 0, bdTotal = 0;
-  var catCounts = {}, catBD = {};
-
-  var CAT_COLORS2 = {
-    'Compressor':'#0284c7','Inkjet Printer':'#7c3aed','Form Fill Seal':'#1e40af',
-    'Labelling Machine':'#0d9488','Capping Machine':'#16a34a','Induction Sealing':'#d97706',
-    'Shrink Sleeve Tunnel':'#be185d','Load Cell Filling Machine':'#c2410c',
-    'Spout Pouch Filler':'#0891b2','Winder/Rewinder':'#65a30d','Taping Machine':'#9333ea',
-    'LID Press Machine':'#dc2626','Pallet Truck':'#6b7280','Pump Motor':'#854d0e'
-  };
-
-  Object.keys(data.groups).forEach(function(cat) {
-    var machines = data.groups[cat];
-    catCounts[cat] = machines.length;
-    catBD[cat] = 0;
-    machines.forEach(function(m) {
-      if (m.checklist === 'done')         clDone++;
-      else if (m.checklist === 'partial') clPartial++;
-      else                                clPending++;
-      bdTotal    += (m.openBD || 0);
-      catBD[cat] += (m.openBD || 0);
-    });
-  });
-
-  var clRate   = total > 0 ? Math.round((clDone / total) * 100) : 0;
-  var maxCat   = Math.max.apply(null, Object.keys(catCounts).map(function(k){return catCounts[k];})) || 1;
-
-  // ── SVG Donut chart (checklist status) ──
-  function donutArc(cx, cy, r, startPct, endPct, color) {
-    if (endPct - startPct <= 0) return '';
-    var s = (startPct / 100) * 2 * Math.PI - Math.PI / 2;
-    var e = (endPct   / 100) * 2 * Math.PI - Math.PI / 2;
-    var x1 = cx + r * Math.cos(s), y1 = cy + r * Math.sin(s);
-    var x2 = cx + r * Math.cos(e), y2 = cy + r * Math.sin(e);
-    var lg = (endPct - startPct) > 50 ? 1 : 0;
-    return '<path d="M' + x1 + ' ' + y1 + ' A' + r + ' ' + r + ' 0 ' + lg + ' 1 ' + x2 + ' ' + y2 + '" fill="none" stroke="' + color + '" stroke-width="20" stroke-linecap="butt"/>';
-  }
-  var doneP    = total > 0 ? (clDone    / total) * 100 : 0;
-  var partialP = total > 0 ? (clPartial / total) * 100 : 0;
-  var pendingP = 100 - doneP - partialP;
-  var donutSvg =
-    '<svg class="donut-svg" width="90" height="90" viewBox="0 0 90 90">' +
-      '<circle cx="45" cy="45" r="35" fill="none" stroke="#f1f5f9" stroke-width="20"/>' +
-      donutArc(45,45,35, 0,            doneP,                          '#16a34a') +
-      donutArc(45,45,35, doneP,        doneP + partialP,               '#eab308') +
-      donutArc(45,45,35, doneP+partialP, 100,                          '#e2e8f0') +
-      '<text x="45" y="49" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a">' + clRate + '%</text>' +
-    '</svg>';
-
-  // ── Bar chart (machines by category) ──
-  var sortedCats = Object.keys(catCounts).sort(function(a,b){ return catCounts[b]-catCounts[a]; });
-  var barRows = sortedCats.slice(0,10).map(function(cat) {
-    var w = Math.round((catCounts[cat] / maxCat) * 100);
-    return '<div class="bar-row">' +
-      '<div class="bar-label" title="' + esc(cat) + '">' + esc(cat) + '</div>' +
-      '<div class="bar-track"><div class="bar-fill" style="width:' + w + '%;background:' + (CAT_COLORS2[cat]||'#64748b') + '"></div></div>' +
-      '<div class="bar-val">' + catCounts[cat] + '</div>' +
-    '</div>';
+  var dotsHtml = dots.map(function(d){
+    return '<div class="mb-dot"><div class="mbd-c" style="background:'+d.c+'"></div>' +
+      '<div class="mbd-l">'+d.l+'</div></div>';
   }).join('');
-
-  // ── BD by category (horizontal bars) ──
-  var catBDKeys = Object.keys(catBD).filter(function(k){return catBD[k]>0;}).sort(function(a,b){return catBD[b]-catBD[a];});
-  var maxBD = catBDKeys.length ? catBD[catBDKeys[0]] : 1;
-  var bdBarRows = catBDKeys.slice(0,8).map(function(cat) {
-    var w = Math.round((catBD[cat] / maxBD) * 100);
-    return '<div class="bar-row">' +
-      '<div class="bar-label" title="' + esc(cat) + '">' + esc(cat) + '</div>' +
-      '<div class="bar-track"><div class="bar-fill" style="width:' + w + '%;background:#dc2626"></div></div>' +
-      '<div class="bar-val">' + catBD[cat] + '</div>' +
-    '</div>';
-  }).join('') || '<div style="font-size:12px;color:#64748b;padding:4px 0">No open breakdowns</div>';
-
-  el.innerHTML =
-    '<div class="an-wrap">' +
-
-    // Hero status strip — flat, no gradient
-    '<div class="an-hero">' +
-      '<div class="an-hero-stat">' +
-        '<div class="an-hero-num">' + total + '</div>' +
-        '<div class="an-hero-label">Machines</div>' +
-        '<div class="an-hero-sub">Active</div>' +
-      '</div>' +
-      '<div class="an-hero-stat">' +
-        '<div class="an-hero-num" style="color:' + (bdTotal>0?'#f87171':'#4ade80') + '">' + bdTotal + '</div>' +
-        '<div class="an-hero-label">Open BDs</div>' +
-        '<div class="an-hero-sub">' + (bdTotal>0?'Needs attention':'All clear') + '</div>' +
-      '</div>' +
-      '<div class="an-hero-stat">' +
-        '<div class="an-hero-num" style="color:' + (clRate>=80?'#4ade80':clRate>=50?'#fbbf24':'#f87171') + '">' + clRate + '%</div>' +
-        '<div class="an-hero-label">CL Today</div>' +
-        '<div class="an-hero-sub">' + clDone + ' done · ' + clPending + ' pending</div>' +
-      '</div>' +
-    '</div>' +
-
-    '<div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin:4px 0 8px">Today\'s Checklist</div>' +
-    '<div class="an-kpi-row">' +
-      '<div class="an-kpi"><div class="an-kpi-num green">' + clDone + '</div><div class="an-kpi-lbl">Done</div></div>' +
-      '<div class="an-kpi"><div class="an-kpi-num orange">' + clPartial + '</div><div class="an-kpi-lbl">Partial</div></div>' +
-      '<div class="an-kpi"><div class="an-kpi-num" style="color:#64748b">' + clPending + '</div><div class="an-kpi-lbl">Pending</div></div>' +
-    '</div>' +
-
-    // Donut chart — checklist status
-    '<div class="an-card">' +
-      '<div class="an-card-title">Checklist Status Today</div>' +
-      '<div class="donut-wrap">' +
-        donutSvg +
-        '<div class="donut-legend">' +
-          '<div class="donut-leg-row"><div class="donut-leg-dot" style="background:#16a34a"></div><div class="donut-leg-label">Done</div><div class="donut-leg-val">' + clDone + '</div></div>' +
-          '<div class="donut-leg-row"><div class="donut-leg-dot" style="background:#eab308"></div><div class="donut-leg-label">Partial</div><div class="donut-leg-val">' + clPartial + '</div></div>' +
-          '<div class="donut-leg-row"><div class="donut-leg-dot" style="background:#e2e8f0"></div><div class="donut-leg-label">Pending</div><div class="donut-leg-val">' + clPending + '</div></div>' +
-        '</div>' +
-      '</div>' +
-    '</div>' +
-
-    // Machines by category bar chart
-    '<div class="an-card">' +
-      '<div class="an-card-title">Machines by Category</div>' +
-      barRows +
-    '</div>' +
-
-    // BD by category
-    '<div class="an-card">' +
-      '<div class="an-card-title">Open Breakdowns by Category</div>' +
-      bdBarRows +
-    '</div>' +
-
-    '</div>';
+  return '<div class="mb-row" data-mid="' + _cssId(m.id) + '" ' +
+    'onclick="_toggleMachine(' + JSON.stringify(String(m.id)).replace(/"/g,'&quot;') + ')">' +
+    '<div class="mbr-stripe" style="background:' + color + '"></div>' +
+    '<div class="mbr-body"><div class="mbr-id">' + mid + '</div>' +
+    '<div class="mbr-name">' + esc(m.name) + '</div></div>' +
+    '<div class="mb-dots">' + dotsHtml + '</div>' +
+    '<span class="mbr-caret">&#8250;</span></div>';
 }
 
-// ═══════════════════════════════════════════════════════
-// renderDashboard — main page: KPIs + MTBF/MTTR + charts
-// kanban (data) + metrics (getDashboardMetrics result)
-// ═══════════════════════════════════════════════════════
-function renderDashboard(kanban, metrics) {
-  var el = document.getElementById('board-analytics');
-  if (!el) return;
-  var CAT_COLORS2 = {
-    'Compressor':'#0284c7','Inkjet Printer':'#7c3aed','Form Fill Seal':'#1e40af',
-    'Labelling Machine':'#0d9488','Capping Machine':'#16a34a','Induction Sealing':'#d97706',
-    'Shrink Sleeve Tunnel':'#be185d','Load Cell Filling Machine':'#c2410c',
-    'Spout Pouch Filler':'#0891b2','Winder/Rewinder':'#65a30d','Taping Machine':'#9333ea',
-    'LID Press Machine':'#dc2626','Pallet Truck':'#6b7280','Pump Motor':'#854d0e'
-  };
-
-  // Stats from kanban data
-  var total = 0, clDone = 0, clPartial = 0, clPending = 0, bdOpen = 0;
-  var catCounts = {}, catBD = {};
-  if (kanban && kanban.success) {
-    total = kanban.total || 0;
-    Object.keys(kanban.groups).forEach(function(cat) {
-      var machines = kanban.groups[cat];
-      catCounts[cat] = machines.length;
-      catBD[cat] = 0;
-      machines.forEach(function(m) {
-        if (m.checklist === 'done')         clDone++;
-        else if (m.checklist === 'partial') clPartial++;
-        else                                clPending++;
-        bdOpen    += (m.openBD || 0);
-        catBD[cat]+= (m.openBD || 0);
-      });
-    });
-  }
-  var clRate   = total > 0 ? Math.round((clDone / total) * 100) : 0;
-  var doneP    = total > 0 ? (clDone    / total) * 100 : 0;
-  var partialP = total > 0 ? (clPartial / total) * 100 : 0;
-
-  // Metrics
-  var mttr       = (metrics && metrics.mttr)      || 0;
-  var mtbf       = (metrics && metrics.mtbf)      || 0;
-  var bdCount30  = (metrics && metrics.bdCount30)  || 0;
-  var pmCount30  = (metrics && metrics.pmCount30)  || 0;
-  var clitCount30= (metrics && metrics.clitCount30)|| 0;
-
-  // Donut chart (checklist status)
-  function donutArc2(cx, cy, r, startPct, endPct, color) {
-    if (endPct - startPct <= 0) return '';
-    var s = (startPct / 100) * 2 * Math.PI - Math.PI / 2;
-    var e = (endPct   / 100) * 2 * Math.PI - Math.PI / 2;
-    var x1 = cx + r * Math.cos(s), y1 = cy + r * Math.sin(s);
-    var x2 = cx + r * Math.cos(e), y2 = cy + r * Math.sin(e);
-    var lg = (endPct - startPct) > 50 ? 1 : 0;
-    return '<path d="M'+x1+' '+y1+' A'+r+' '+r+' 0 '+lg+' 1 '+x2+' '+y2+'" fill="none" stroke="'+color+'" stroke-width="20" stroke-linecap="butt"/>';
-  }
-  var donutSvg =
-    '<svg class="donut-svg" width="90" height="90" viewBox="0 0 90 90">' +
-      '<circle cx="45" cy="45" r="35" fill="none" stroke="#f1f5f9" stroke-width="20"/>' +
-      donutArc2(45,45,35, 0,            doneP,             '#16a34a') +
-      donutArc2(45,45,35, doneP,        doneP+partialP,    '#eab308') +
-      donutArc2(45,45,35, doneP+partialP, 100,             '#e2e8f0') +
-      '<text x="45" y="49" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a">'+clRate+'%</text>' +
-    '</svg>';
-
-  // Bar chart — machines by category
-  var sortedCats = Object.keys(catCounts).sort(function(a,b){return catCounts[b]-catCounts[a];});
-  var maxCat = Math.max.apply(null, sortedCats.map(function(k){return catCounts[k];})) || 1;
-  var barRows = sortedCats.slice(0,10).map(function(cat) {
-    var w = Math.round((catCounts[cat] / maxCat) * 100);
-    return '<div class="bar-row"><div class="bar-label" title="'+esc(cat)+'">'+esc(cat)+'</div><div class="bar-track"><div class="bar-fill" style="width:'+w+'%;background:'+(CAT_COLORS2[cat]||'#64748b')+'"></div></div><div class="bar-val">'+catCounts[cat]+'</div></div>';
-  }).join('');
-
-  // BD by category
-  var catBDKeys = Object.keys(catBD).filter(function(k){return catBD[k]>0;}).sort(function(a,b){return catBD[b]-catBD[a];});
-  var maxBD = catBDKeys.length ? catBD[catBDKeys[0]] : 1;
-  var bdBarRows = catBDKeys.slice(0,8).map(function(cat) {
-    var w = Math.round((catBD[cat] / maxBD) * 100);
-    return '<div class="bar-row"><div class="bar-label" title="'+esc(cat)+'">'+esc(cat)+'</div><div class="bar-track"><div class="bar-fill" style="width:'+w+'%;background:#dc2626"></div></div><div class="bar-val">'+catBD[cat]+'</div></div>';
-  }).join('') || '<div style="font-size:12px;color:#64748b;padding:4px 0">No open breakdowns</div>';
-
-  el.innerHTML =
-    '<div class="an-wrap">' +
-
-    // Hero status strip
-    '<div class="an-hero">' +
-      '<div class="an-hero-stat">' +
-        '<div class="an-hero-num">'+total+'</div>' +
-        '<div class="an-hero-label">Machines</div>' +
-        '<div class="an-hero-sub">Active</div>' +
-      '</div>' +
-      '<div class="an-hero-stat">' +
-        '<div class="an-hero-num" style="color:'+(bdOpen>0?'#f87171':'#4ade80')+'">'+bdOpen+'</div>' +
-        '<div class="an-hero-label">Open BDs</div>' +
-        '<div class="an-hero-sub">'+(bdOpen>0?'Needs attention':'All clear')+'</div>' +
-      '</div>' +
-      '<div class="an-hero-stat">' +
-        '<div class="an-hero-num" style="color:'+(clRate>=80?'#4ade80':clRate>=50?'#fbbf24':'#f87171')+'">'+clRate+'%</div>' +
-        '<div class="an-hero-label">CL Today</div>' +
-        '<div class="an-hero-sub">'+clDone+' done · '+clPending+' pending</div>' +
-      '</div>' +
-    '</div>' +
-
-    '<div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin:4px 0 8px">Today\'s Checklist</div>' +
-    '<div class="an-kpi-row">' +
-      '<div class="an-kpi"><div class="an-kpi-num green">'+clDone+'</div><div class="an-kpi-lbl">Done</div></div>' +
-      '<div class="an-kpi"><div class="an-kpi-num orange">'+clPartial+'</div><div class="an-kpi-lbl">Partial</div></div>' +
-      '<div class="an-kpi"><div class="an-kpi-num" style="color:#64748b">'+clPending+'</div><div class="an-kpi-lbl">Pending</div></div>' +
-    '</div>' +
-
-    // Reliability metrics section label
-    '<div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin:4px 0 8px">Reliability</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
-      '<div class="an-kpi">' +
-        '<div class="an-kpi-num" style="color:#ea580c;font-size:22px">'+(mtbf>0?mtbf+' h':'—')+'</div>' +
-        '<div class="an-kpi-lbl">MTBF</div>' +
-      '</div>' +
-      '<div class="an-kpi">' +
-        '<div class="an-kpi-num" style="color:#dc2626;font-size:22px">'+(mttr>0?mttr+' h':'—')+'</div>' +
-        '<div class="an-kpi-lbl">MTTR</div>' +
-      '</div>' +
-    '</div>' +
-
-    // 30-day activity section label
-    '<div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin:4px 0 8px">Activity (30 days)</div>' +
-    '<div class="an-kpi-row">' +
-      '<div class="an-kpi">' +
-        '<div class="an-kpi-num" style="color:#1d4ed8">'+bdCount30+'</div>' +
-        '<div class="an-kpi-lbl">Breakdowns</div>' +
-      '</div>' +
-      '<div class="an-kpi">' +
-        '<div class="an-kpi-num" style="color:#16a34a">'+pmCount30+'</div>' +
-        '<div class="an-kpi-lbl">PM Done</div>' +
-      '</div>' +
-      '<div class="an-kpi">' +
-        '<div class="an-kpi-num" style="color:#0284c7">'+clitCount30+'</div>' +
-        '<div class="an-kpi-lbl">CLIT Done</div>' +
-      '</div>' +
-    '</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
-      '<div class="an-kpi">' +
-        '<div class="an-kpi-num" style="color:'+(clRate>=80?'#16a34a':clRate>=50?'#eab308':'#dc2626')+'">'+clRate+'%</div>' +
-        '<div class="an-kpi-lbl">CL Rate Today</div>' +
-      '</div>' +
-      '<div class="an-kpi">' +
-        '<div class="an-kpi-num" style="color:#475569">' + (total > 0 ? (bdCount30 / total).toFixed(1) : '0.0') + '</div>' +
-        '<div class="an-kpi-lbl">BD/Machine</div>' +
-      '</div>' +
-    '</div>' +
-
-    // Donut — checklist
-    '<div class="an-card">' +
-      '<div class="an-card-title">Checklist Status Today</div>' +
-      '<div class="donut-wrap">'+donutSvg+
-        '<div class="donut-legend">' +
-          '<div class="donut-leg-row"><div class="donut-leg-dot" style="background:#16a34a"></div><div class="donut-leg-label">Done</div><div class="donut-leg-val">'+clDone+'</div></div>' +
-          '<div class="donut-leg-row"><div class="donut-leg-dot" style="background:#eab308"></div><div class="donut-leg-label">Partial</div><div class="donut-leg-val">'+clPartial+'</div></div>' +
-          '<div class="donut-leg-row"><div class="donut-leg-dot" style="background:#e2e8f0"></div><div class="donut-leg-label">Pending</div><div class="donut-leg-val">'+clPending+'</div></div>' +
-        '</div>' +
-      '</div>' +
-    '</div>' +
-
-    // Machines by category
-    '<div class="an-card"><div class="an-card-title">Machines by Category</div>'+barRows+'</div>' +
-
-    // BD by category
-    '<div class="an-card"><div class="an-card-title">Open Breakdowns by Category</div>'+bdBarRows+'</div>' +
-
-
-    // Floor-wise machine distribution
-    (function() {
-      var floors = {};
-      var floorBD = {};
-      if (kanban && kanban.success) {
-        Object.keys(kanban.groups).forEach(function(cat) {
-          kanban.groups[cat].forEach(function(m) {
-            var f = m.floor || 'Unknown';
-            floors[f] = (floors[f] || 0) + 1;
-            floorBD[f] = (floorBD[f] || 0) + (m.openBD || 0);
-          });
-        });
-      }
-      var fKeys = Object.keys(floors).sort(function(a,b) { return floors[b] - floors[a]; });
-      var maxF = Math.max.apply(null, fKeys.map(function(k){return floors[k];})) || 1;
-      var floorColors = {'Ground Floor':'#0284c7','First Floor':'#7c3aed','Second Floor':'#16a34a'};
-      var fRows = fKeys.map(function(f) {
-        var w = Math.round((floors[f] / maxF) * 100);
-        var bdNote = floorBD[f] > 0 ? ' <span style="color:#dc2626;font-size:10px">(' + floorBD[f] + ' BD)</span>' : '';
-        return '<div class="bar-row"><div class="bar-label" title="'+esc(f)+'">'+esc(f)+bdNote+'</div><div class="bar-track"><div class="bar-fill" style="width:'+w+'%;background:'+(floorColors[f]||'#64748b')+'"></div></div><div class="bar-val">'+floors[f]+'</div></div>';
-      }).join('');
-      return '<div class="an-card"><div class="an-card-title">Machines by Floor</div>' + fRows + '</div>';
-    })() +
-
-    // Checklist completion gauge
-    (function() {
-      var gaugeW = Math.min(clRate, 100);
-      var gaugeColor = clRate >= 80 ? '#16a34a' : clRate >= 50 ? '#eab308' : '#dc2626';
-      return '<div class="an-card">' +
-        '<div class="an-card-title">Today\'s Checklist Completion</div>' +
-        '<div style="display:flex;align-items:center;gap:12px">' +
-          '<div style="flex:1">' +
-            '<div style="height:18px;background:#f1f5f9;border-radius:9px;overflow:hidden;position:relative">' +
-              '<div style="height:100%;width:'+gaugeW+'%;background:'+gaugeColor+';border-radius:9px;transform-origin:left;transition:transform 0.8s ease"></div>' +
-            '</div>' +
-            '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:10px;color:#94a3b8"><span>0%</span><span>Target: 80%</span><span>100%</span></div>' +
-          '</div>' +
-          '<div style="text-align:center;min-width:60px">' +
-            '<div style="font-size:28px;font-weight:900;color:'+gaugeColor+'">'+clRate+'%</div>' +
-            '<div style="font-size:9px;color:#64748b">Complete</div>' +
-          '</div>' +
-        '</div>' +
-      '</div>';
-    })() +
-
-    '</div>';
-}
-
-function filterBoard(chipEl) {
-  chipEl.closest('#board-machines-panel').querySelectorAll('.filter-chip').forEach(function(c) { c.classList.remove('active'); });
-  chipEl.classList.add('active');
+function mbPickType(cat) {
+  _mbTypeFilter = cat;
+  _mbOpenMachine = null;
   if (_boardData) renderBoard(_boardData);
 }
+function mbOnSearch() {
+  var inp = document.getElementById('mb-search-input');
+  _mbSearch = (inp.value || '').trim().toLowerCase();
+  document.getElementById('mb-search-clear').style.display = _mbSearch ? 'block' : 'none';
+  _mbOpenMachine = null;
+  if (_boardData) _renderMachineList(_boardData);
+}
+function mbClearSearch() {
+  document.getElementById('mb-search-input').value = '';
+  mbOnSearch();
+}
 
-// ═══════════════════════════════════════════════════════
-// BOARD TABS — Machines / BD / CLIT / Checklist
-// ═══════════════════════════════════════════════════════
-
-var _boardTab = 'machines';
-var _kanbanTab = 'bd';
-var _boardRecordsCache = {}; // type -> data
-
-document.getElementById('board-tabs').addEventListener('click', function(e) {
-  var tab = e.target.closest('[data-btab]');
-  if (!tab) return;
-  var bt = tab.dataset.btab;
-  _boardTab = bt;
-  document.querySelectorAll('#board-tabs .board-tab').forEach(function(t) {
-    t.classList.toggle('active', t.dataset.btab === bt);
-  });
-  document.getElementById('board-machines-panel').style.display = bt === 'machines' ? 'block' : 'none';
-  document.getElementById('board-kanban-panel').style.display   = bt === 'kanban'   ? 'block' : 'none';
-  if (bt === 'kanban') {
-    // Show the current active kanban sub-tab
-    showKanbanSubTab(_kanbanTab);
+function _toggleMachine(mid, forceOpen) {
+  var grid = document.getElementById('board-grid');
+  var row = grid.querySelector('.mb-row[data-mid="' + _cssId(mid) + '"]');
+  if (!row) return;
+  var existing = document.getElementById('mb-panel-' + _cssId(mid));
+  if (existing && !forceOpen) {
+    existing.remove(); row.classList.remove('open'); _mbOpenMachine = null; return;
   }
-});
-
-// Kanban sub-tabs (BD / PM / CLIT / Checklist)
-document.getElementById('board-kanban-subtabs').addEventListener('click', function(e) {
-  var tab = e.target.closest('[data-kstab]');
-  if (!tab) return;
-  showKanbanSubTab(tab.dataset.kstab);
-});
-
-function showKanbanSubTab(kt) {
-  _kanbanTab = kt;
-  document.querySelectorAll('#board-kanban-subtabs .board-sub-tab').forEach(function(t) {
-    t.classList.toggle('active', t.dataset.kstab === kt);
-  });
-  var subPanels = ['bd','pm','clit','cl'];
-  subPanels.forEach(function(p) {
-    var el = document.getElementById('board-' + p + '-panel');
-    if (el) el.style.display = 'none';
-  });
-  var pid = _boardPanelId(kt);
-  var showEl = document.getElementById('board-' + pid + '-panel');
-  if (showEl) showEl.style.display = 'block';
-  loadBoardRecords(kt);
+  if (existing && forceOpen) return;
+  var openP = grid.querySelector('.mb-panel');
+  if (openP) openP.remove();
+  grid.querySelectorAll('.mb-row.open').forEach(function(r){ r.classList.remove('open'); });
+  row.classList.add('open');
+  _mbOpenMachine = mid;
+  var panel = document.createElement('div');
+  panel.className = 'mb-panel';
+  panel.id = 'mb-panel-' + _cssId(mid);
+  row.parentNode.insertBefore(panel, row.nextSibling);
+  _fillActionPanel(panel, mid);
+  if (!forceOpen) setTimeout(function(){ row.scrollIntoView({behavior:'smooth',block:'nearest'}); }, 80);
 }
 
-function _boardPanelId(type) {
-  return type === 'checklist' ? 'cl' : type; // 'bd','pm','clit','cl'
+function _fillActionPanel(panel, mid) {
+  var m = _findBoardMachine(mid);
+  if (!m) { panel.innerHTML = ''; return; }
+  var rec = _recordsByMachine[mid] || {bd:[],pm:[],clit:[],checklist:[]};
+  var loaded = !!_recordsByMachine[mid];
+  var nm = JSON.stringify(String(m.name));
+  var idj = JSON.stringify(String(m.id));
+
+  function actionRow(key, ico, name, list, sub, formCall) {
+    var n = list.length;
+    return '<div class="mb-act-row">' +
+      '<div class="mb-act-ico">' + ico + '</div>' +
+      '<div class="mb-act-info"><div class="mb-act-name">' + name + '</div>' +
+      '<div class="mb-act-sub">' + (loaded ? sub : 'loading&hellip;') + '</div></div>' +
+      '<button class="mb-act-view" ' + (n>0?'':'disabled') +
+        ' onclick="openMachineRecords(' + idj.replace(/"/g,'&quot;') + ',&quot;' + key + '&quot;)">View ' +
+        (loaded ? n : '') + '</button>' +
+      '<button class="mb-act-plus" onclick="' + formCall + '">+</button>' +
+      '</div>';
+  }
+  function ctx() {
+    return 'App.machineId=' + idj.replace(/"/g,'&quot;') +
+           ';App.machineName=' + nm.replace(/"/g,'&quot;') + ';';
+  }
+
+  var bdOpen = rec.bd.filter(function(r){ return r.status !== 'Closed'; }).length;
+  var bdSub  = bdOpen>0 ? bdOpen + ' open' : (rec.bd.length ? 'all closed' : 'none');
+  var pmSub  = rec.pm.length ? 'last ' + (rec.pm[0].date||'—') : 'none yet';
+  var clitSub= rec.clit.length ? 'last ' + (rec.clit[0].date||'—') : 'none yet';
+  var clSub  = m.checklist==='done' ? '✓ done today' :
+               m.checklist==='partial' ? 'partial today' : 'pending today';
+
+  panel.innerHTML =
+    '<div class="mb-panel-hd"><b>' + esc(m.id) + '</b> &middot; ' + esc(m.name) +
+      (m.floor?' &middot; ' + esc(m.floor):'') + '</div>' +
+    actionRow('bd','&#x1F534;','Breakdown',rec.bd,bdSub,
+      ctx() + 'showBDForm(' + idj.replace(/"/g,'&quot;') + ')') +
+    actionRow('pm','&#x1F7E2;','Preventive Maint.',rec.pm,pmSub,
+      ctx() + 'showPMForm(' + idj.replace(/"/g,'&quot;') + ')') +
+    actionRow('clit','&#x2699;','CLIT',rec.clit,clitSub,
+      ctx() + 'showCLITForm(' + idj.replace(/"/g,'&quot;') + ')') +
+    actionRow('checklist','&#x2611;','Daily Checklist',rec.checklist,clSub,
+      ctx() + 'navigate(&quot;checklist&quot;,' + idj.replace(/"/g,'&quot;') + ')') +
+    '<div class="mb-ref-row">' +
+      '<button class="mb-ref-btn" onclick="' + ctx() + 'navigate(&quot;sop&quot;,' + idj.replace(/"/g,'&quot;') + ')"><span class="mrb-ico">&#x1F4D6;</span>SOP</button>' +
+      '<button class="mb-ref-btn" onclick="' + ctx() + 'navigate(&quot;mhc&quot;,' + idj.replace(/"/g,'&quot;') + ')"><span class="mrb-ico">&#x25A6;</span>MHC</button>' +
+      '<button class="mb-ref-btn" onclick="' + ctx() + 'navigate(&quot;image&quot;,' + idj.replace(/"/g,'&quot;') + ')"><span class="mrb-ico">&#x1F5BC;</span>Media</button>' +
+      '<button class="mb-ref-btn" onclick="showEditMachineForm(' + idj.replace(/"/g,'&quot;') + ',' + nm.replace(/"/g,'&quot;') + ',' + JSON.stringify(String(m.category)).replace(/"/g,'&quot;') + ',' + JSON.stringify(String(m.floor||'')).replace(/"/g,'&quot;') + ')"><span class="mrb-ico">&#x270E;</span>Edit</button>' +
+      '<button class="mb-ref-btn" onclick="confirmDeleteMachine(' + idj.replace(/"/g,'&quot;') + ',' + nm.replace(/"/g,'&quot;') + ')"><span class="mrb-ico" style="color:#dc2626">&#x1F5D1;</span>Delete</button>' +
+    '</div>';
 }
-function loadBoardRecords(type) {
+
+function _findBoardMachine(mid) {
+  if (!_boardData || !_boardData.groups) return null;
+  var found = null;
+  Object.keys(_boardData.groups).forEach(function(cat){
+    _boardData.groups[cat].forEach(function(m){ if (String(m.id)===String(mid)) found = m; });
+  });
+  return found;
+}
+
+
+/* ════════ RECORDS VIEW (per-machine + global) ════════ */
+var _boardTab = 'machines';
+var _boardRecordsCache = {};   // type -> {success,items}
+var _bdStatusFilter = 'all';
+var _clStatusFilter = 'all';
+var _recMode = 'all';          // 'all' | 'machine'
+var _recMachineId = '';
+var _recMachineName = '';
+var _recType = 'bd';
+
+/* Global "All Records" — full-screen, 4 sub-tabs. */
+function openAllRecords() {
+  _recMode = 'all';
+  _recType = 'bd';
+  navigate('records');
+  document.getElementById('rec-title').textContent = 'All Records';
+  document.getElementById('rec-subtitle').textContent = 'across all machines';
+  document.getElementById('rec-subtabs').style.display = 'flex';
+  document.getElementById('rec-add-btn').style.display = 'none';
+  _wireRecSubtabs();
+  _showRecSubtab('bd');
+}
+
+/* Per-machine records for one action type. */
+function openMachineRecords(machineId, type) {
+  var m = _findBoardMachine(machineId);
+  _recMode = 'machine';
+  _recMachineId = machineId;
+  _recMachineName = m ? m.name : machineId;
+  _recType = type;
+  navigate('records');
+  var labels = {bd:'Breakdown',pm:'PM',clit:'CLIT',checklist:'Checklist'};
+  document.getElementById('rec-title').textContent = (labels[type]||'') + ' Records';
+  document.getElementById('rec-subtitle').textContent = machineId + ' · ' + _recMachineName;
+  document.getElementById('rec-subtabs').style.display = 'none';
+  var addBtn = document.getElementById('rec-add-btn');
+  addBtn.style.display = 'block';
+  addBtn.textContent = '+ New ' + (labels[type]||'');
+  addBtn.onclick = function() {
+    App.machineId = machineId; App.machineName = _recMachineName;
+    if (type==='bd') showBDForm(machineId);
+    else if (type==='pm') showPMForm(machineId);
+    else if (type==='clit') showCLITForm(machineId);
+    else navigate('checklist', machineId);
+  };
+  _loadRecList(type);
+}
+
+function _wireRecSubtabs() {
+  var bar = document.getElementById('rec-subtabs');
+  if (bar._wired) return;
+  bar._wired = true;
+  bar.addEventListener('click', function(e) {
+    var t = e.target.closest('[data-rstab]');
+    if (t) _showRecSubtab(t.dataset.rstab);
+  });
+}
+function _showRecSubtab(type) {
+  _recType = type;
+  document.querySelectorAll('#rec-subtabs .board-sub-tab').forEach(function(t){
+    t.classList.toggle('active', t.dataset.rstab === type);
+  });
+  _loadRecList(type);
+}
+
+/* Fetch (or reuse cache) and render the record list. */
+function _loadRecList(type) {
+  var el = document.getElementById('rec-list');
   if (_boardRecordsCache[type]) { renderBoardRecords(type, _boardRecordsCache[type]); return; }
-  var listEl = document.getElementById('board-' + _boardPanelId(type) + '-list');
-  if (listEl) listEl.innerHTML = '<div class="loading-spinner"><div class="spinner-ring"></div>Loading&hellip;</div>';
+  el.innerHTML = '<div class="loading-spinner"><div class="spinner-ring"></div>Loading&hellip;</div>';
   google.script.run
-    .withSuccessHandler(function(d) {
-      _boardRecordsCache[type] = d;
-      renderBoardRecords(type, d);
-    })
-    .withFailureHandler(function(e) {
-      var msg = (e&&e.message)||'server error';
-      var el = document.getElementById('board-' + _boardPanelId(type) + '-list');
-      if (el) el.innerHTML = '<div style="padding:20px;color:#dc2626;font-size:13px">Failed to load records: ' + esc(msg) + '</div>';
-      showStatus('⚠ Board load failed: ' + msg, 'error', 6000);
+    .withSuccessHandler(function(d){ _boardRecordsCache[type] = d; renderBoardRecords(type, d); })
+    .withFailureHandler(function(e){
+      el.innerHTML = '<div style="padding:20px;color:#dc2626;font-size:13px">Failed to load records: ' +
+        esc((e&&e.message)||'server error') + '</div>';
     })
     .getAllBoardRecords(type);
 }
 
-var _bdStatusFilter = 'all';
-var _clStatusFilter = 'all';
+/* ════════ REDESIGNED DASHBOARD ════════ */
+var _dashKanban = null, _dashMetrics = null, _dashRange = 7;
 
-function filterBoardBD(chipEl) {
-  document.querySelectorAll('#board-bd-panel .filter-chip').forEach(function(c){c.classList.remove('active');});
-  chipEl.classList.add('active');
-  _bdStatusFilter = chipEl.dataset.bdst;
-  if (_boardRecordsCache['bd']) renderBoardRecords('bd', _boardRecordsCache['bd']);
+function loadDashboard() {
+  if (_dashKanban && _dashMetrics) { renderDashboard(_dashKanban, _dashMetrics); return; }
+  document.getElementById('dash-body').innerHTML =
+    '<div class="dash-wrap"><div class="loading-spinner" style="padding:40px">' +
+    '<div class="spinner-ring"></div>Loading dashboard&hellip;</div></div>';
+  var kDone=false, mDone=false;
+  function tryRender(){ if(kDone&&mDone) renderDashboard(_dashKanban,_dashMetrics); }
+  google.script.run
+    .withSuccessHandler(function(d){ _dashKanban=d; _boardData=d; kDone=true; tryRender(); })
+    .withFailureHandler(function(){ _dashKanban={success:false}; kDone=true; tryRender(); })
+    .getKanbanData();
+  google.script.run
+    .withSuccessHandler(function(m){ _dashMetrics=m||{}; mDone=true; tryRender(); })
+    .withFailureHandler(function(){ _dashMetrics={}; mDone=true; tryRender(); })
+    .getDashboardMetrics();
 }
 
-function filterBoardCL(chipEl) {
-  document.querySelectorAll('#board-cl-panel .filter-chip').forEach(function(c){c.classList.remove('active');});
-  chipEl.classList.add('active');
-  _clStatusFilter = chipEl.dataset.clst;
-  if (_boardRecordsCache['checklist']) renderBoardRecords('checklist', _boardRecordsCache['checklist']);
+function renderDashboard(kanban, metrics) {
+  var el = document.getElementById('dash-body');
+  if (!el) return;
+  metrics = metrics || {};
+  var total=0, clDone=0, clPartial=0, clPending=0, bdOpen=0, oldestBD=0;
+  var catCounts={};
+  if (kanban && kanban.success) {
+    total = kanban.total || 0;
+    Object.keys(kanban.groups).forEach(function(cat){
+      var ms = kanban.groups[cat];
+      catCounts[cat] = ms.length;
+      ms.forEach(function(m){
+        if (m.checklist==='done') clDone++;
+        else if (m.checklist==='partial') clPartial++;
+        else clPending++;
+        bdOpen += (m.openBD||0);
+        if (m.oldestBDDays && m.oldestBDDays>oldestBD) oldestBD=m.oldestBDDays;
+      });
+    });
+  }
+  var clPend = clPartial + clPending;
+  var clRate = total>0 ? Math.round((clDone/total)*100) : 0;
+  var mtbf = metrics.mtbf||0, mttr = metrics.mttr||0;
+  var safetyCrit = (window.SF && SF.dash && SF.dash.critical) || 0;
+
+  function tile(cls, ico, num, lbl, sub, onclick, pulse) {
+    return '<div class="dash-tile ' + cls + (pulse?' alert':'') + '" onclick="' + onclick + '">' +
+      '<span class="dt-arrow">&#8250;</span>' +
+      '<span class="dt-ico">' + ico + '</span>' +
+      '<span class="dt-num" data-count="' + num + '">' + num + '</span>' +
+      '<span class="dt-lbl">' + lbl + '</span>' +
+      '<span class="dt-sub">' + sub + '</span></div>';
+  }
+
+  var now = new Date();
+  var dateStr = now.toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'});
+
+  // Reliability sparkline from metrics.bdTrend (array) if present, else flat
+  var trend = (metrics.bdTrend && metrics.bdTrend.length) ? metrics.bdTrend : [];
+
+  // category bars
+  var catKeys = Object.keys(catCounts).sort(function(a,b){return catCounts[b]-catCounts[a];}).slice(0,8);
+  var maxCat = Math.max.apply(null, catKeys.map(function(k){return catCounts[k];})) || 1;
+  var fleetBars = catKeys.map(function(cat){
+    var h = Math.round((catCounts[cat]/maxCat)*40)+6;
+    var ab = cat.split(/[\s\/]+/).filter(function(w){return w.length>1;})
+              .map(function(w){return w[0];}).join('').substring(0,3).toUpperCase();
+    return '<div class="fleet-bar"><div class="fb-n">'+catCounts[cat]+'</div>' +
+      '<div class="fb-stack" style="height:46px"><div class="fb-fill" style="height:'+h+'px;background:'+(CAT_COLORS[cat]||'#64748b')+'"></div></div>' +
+      '<div class="fb-lbl">'+ab+'</div></div>';
+  }).join('');
+
+  // donut for checklist
+  var doneP = total>0 ? (clDone/total)*100 : 0;
+  var partP = total>0 ? (clPartial/total)*100 : 0;
+  function arc(cx,cy,r,s,e,col){
+    if (e-s<=0) return '';
+    var sa=(s/100)*2*Math.PI-Math.PI/2, ea=(e/100)*2*Math.PI-Math.PI/2;
+    var x1=cx+r*Math.cos(sa),y1=cy+r*Math.sin(sa),x2=cx+r*Math.cos(ea),y2=cy+r*Math.sin(ea);
+    var lg=(e-s)>50?1:0;
+    return '<path d="M'+x1+' '+y1+' A'+r+' '+r+' 0 '+lg+' 1 '+x2+' '+y2+'" fill="none" stroke="'+col+'" stroke-width="14"/>';
+  }
+  var donut = '<svg width="78" height="78" viewBox="0 0 78 78">' +
+    '<circle cx="39" cy="39" r="30" fill="none" stroke="#f1f5f9" stroke-width="14"/>' +
+    arc(39,39,30,0,doneP,'#16a34a') +
+    arc(39,39,30,doneP,doneP+partP,'#eab308') +
+    arc(39,39,30,doneP+partP,100,'#e2e8f0') +
+    '<text x="39" y="44" text-anchor="middle" font-size="16" font-weight="800" fill="#0f172a">'+clRate+'%</text></svg>';
+
+  el.innerHTML =
+    '<div class="dash-wrap">' +
+    '<div class="dash-hd"><h2>Dashboard</h2><span class="dash-date">' + dateStr + '</span></div>' +
+
+    '<div class="dash-sect">Needs Attention</div>' +
+    '<div class="dash-tiles">' +
+      tile('dt-red','&#x1F534;',bdOpen,'Open BD',
+        bdOpen>0?(oldestBD>0?'oldest '+oldestBD+'d':'unresolved'):'all clear',
+        "openAllRecords()", bdOpen>0) +
+      tile('dt-orange','&#x1F527;',(metrics.pmDue||0),'PM Due',
+        (metrics.pmDue||0)>0?'this week':'none due',
+        "openAllRecords()", false) +
+      tile('dt-amber','&#x1F4CB;',clPend,'CL Pending','of '+total+' machines',
+        "navigate('board')", false) +
+      tile('dt-red','&#x26A0;',safetyCrit,'Safety','critical risks',
+        "navigate('safety')", safetyCrit>0) +
+    '</div>' +
+
+    '<div class="dash-card">' +
+      '<div class="dash-card-hd"><span class="dc-title">Reliability</span>' +
+      '<div class="dc-range">' +
+        '<button class="' + (_dashRange===7?'on':'') + '" onclick="dashSetRange(7)">7d</button>' +
+        '<button class="' + (_dashRange===30?'on':'') + '" onclick="dashSetRange(30)">30d</button>' +
+      '</div></div>' +
+      '<div class="rel-row">' +
+        '<div class="rel-stat"><div class="rs-num" style="color:#ea580c">' +
+          (mtbf>0?mtbf+'h':'—') + '</div><div class="rs-lbl">MTBF</div></div>' +
+        '<div class="rel-stat"><div class="rs-num" style="color:#dc2626">' +
+          (mttr>0?mttr+'h':'—') + '</div><div class="rs-lbl">MTTR</div></div>' +
+        '<div class="rel-spark" id="dash-spark"></div>' +
+      '</div></div>' +
+
+    '<div class="dash-card">' +
+      '<div class="dash-card-hd"><span class="dc-title">Checklist Completion</span></div>' +
+      '<div class="dash-donut-row">' + donut +
+        '<div class="dash-donut-leg">' +
+          '<div class="ddl-row"><span class="ddl-dot" style="background:#16a34a"></span>Done<span class="ddl-val">'+clDone+'</span></div>' +
+          '<div class="ddl-row"><span class="ddl-dot" style="background:#eab308"></span>Partial<span class="ddl-val">'+clPartial+'</span></div>' +
+          '<div class="ddl-row"><span class="ddl-dot" style="background:#e2e8f0"></span>Pending<span class="ddl-val">'+clPending+'</span></div>' +
+        '</div></div></div>' +
+
+    '<div class="dash-card">' +
+      '<div class="fleet-tile" onclick="navigate(\'board\')">' +
+        '<span style="font-size:22px">&#x1F3ED;</span>' +
+        '<div style="flex:1"><div style="font-size:14px;font-weight:800;color:#0f172a">' +
+          total + ' Machines</div><div style="font-size:11px;color:#64748b">' +
+          Object.keys(catCounts).length + ' categories &middot; tap to open board</div></div>' +
+        '<span style="font-size:16px;color:#cbd5e1">&#8250;</span></div>' +
+      '<div class="fleet-bars">' + fleetBars + '</div>' +
+    '</div>' +
+
+    '</div>';
+
+  _drawSpark(trend);
+  _animateCounts();
+}
+
+function dashSetRange(d) {
+  _dashRange = d;
+  document.querySelectorAll('.dc-range button').forEach(function(b){
+    b.classList.toggle('on', b.textContent === d+'d');
+  });
+  // redraw spark with sliced trend
+  var trend = (_dashMetrics && _dashMetrics.bdTrend) || [];
+  _drawSpark(d===7 ? trend.slice(-7) : trend.slice(-30));
+}
+
+function _drawSpark(data) {
+  var box = document.getElementById('dash-spark');
+  if (!box) return;
+  if (!data || !data.length) {
+    box.innerHTML = '<div style="font-size:10px;color:#cbd5e1;padding-top:16px">no trend data</div>';
+    return;
+  }
+  var w=160, h=46, max=Math.max.apply(null,data)||1;
+  var step = data.length>1 ? w/(data.length-1) : w;
+  var pts = data.map(function(v,i){
+    return (i*step).toFixed(1)+','+(h-2-(v/max)*(h-6)).toFixed(1);
+  }).join(' ');
+  box.innerHTML = '<svg width="100%" height="'+h+'" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none">' +
+    '<polyline points="'+pts+'" fill="none" stroke="#0ea5e9" stroke-width="2.5" stroke-linejoin="round"/>' +
+    '<polyline points="0,'+h+' '+pts+' '+w+','+h+'" fill="rgba(14,165,233,0.12)" stroke="none"/>' +
+    '</svg>';
+}
+
+function _animateCounts() {
+  document.querySelectorAll('.dt-num[data-count]').forEach(function(el){
+    var target = parseInt(el.getAttribute('data-count'),10) || 0;
+    if (target<=0) { el.textContent='0'; return; }
+    var start=null, dur=600;
+    function step(ts){
+      if(!start) start=ts;
+      var p=Math.min((ts-start)/dur,1);
+      el.textContent = Math.round(p*target);
+      if(p<1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  });
 }
 
 // Legacy: navigate to machine form view from kanban (kept for back-compat)
@@ -2172,14 +2157,21 @@ function _renderRecordDetail(r, color) {
 }
 
 function renderBoardRecords(type, d) {
-  var panelId = 'board-' + _boardPanelId(type) + '-list';
-  var el = document.getElementById(panelId);
+  var el = document.getElementById('rec-list');
   if (!el || !d) return;
-  if (!d.success || !d.items || !d.items.length) {
+  if (!d.success || !d.items) {
     el.innerHTML = '<div class="spinner-inline">No records found.</div>';
     return;
   }
   var items = d.items;
+  // In per-machine mode, scope to the selected machine
+  if (_recMode === 'machine' && _recMachineId) {
+    items = items.filter(function(i){ return String(i.machineId) === String(_recMachineId); });
+  }
+  if (!items.length) {
+    el.innerHTML = '<div class="spinner-inline">No ' + esc(type) + ' records found.</div>';
+    return;
+  }
   var arrowIcon = '<span style="color:#cbd5e1;font-size:15px;flex-shrink:0">&#8250;</span>';
 
   if (type === 'bd') {
@@ -2281,10 +2273,10 @@ var ACTION_MAP = {
 
 // All valid hashes (global nav + machine context)
 // 'mhc', 'sop', 'image' are accepted but remapped to 'ref' inside navigate()
-var VALID_HASHES = ['board', 'labels', 'safety', 'checklist', 'bd', 'pm', 'clit', 'ref', 'mhc', 'sop', 'image'];
+var VALID_HASHES = ['dashboard', 'board', 'records', 'labels', 'safety', 'checklist', 'bd', 'pm', 'clit', 'ref', 'mhc', 'sop', 'image'];
 
 // Global nav hashes — shown without machine context
-var GLOBAL_HASHES = ['board', 'labels', 'safety'];
+var GLOBAL_HASHES = ['dashboard', 'board', 'records', 'labels', 'safety'];
 
 // ═══════════════════════════════════════════════════════
 // NAVIGATION CORE
@@ -2300,8 +2292,8 @@ var GLOBAL_HASHES = ['board', 'labels', 'safety'];
  */
 function navigate(hash, machineId, skipPush) {
   // Validate hash
-  hash = hash || 'board';
-  if (VALID_HASHES.indexOf(hash) === -1) hash = 'board';
+  hash = hash || 'dashboard';
+  if (VALID_HASHES.indexOf(hash) === -1) hash = 'dashboard';
 
   // Update machine context if provided
   if (machineId !== undefined && machineId !== null) {
@@ -2310,7 +2302,7 @@ function navigate(hash, machineId, skipPush) {
 
   // Global views don't need a machine context
   if (GLOBAL_HASHES.indexOf(hash) === -1 && !App.machineId) {
-    hash = 'board';
+    hash = 'dashboard';
   }
 
   // MHC / SOP / Images share a single tabbed view — remap to 'ref'
@@ -2355,11 +2347,17 @@ function navigate(hash, machineId, skipPush) {
   }
 
   // ── Side effects per view ──
+  if (hash === 'dashboard') {
+    loadDashboard();
+    App.machineId = '';
+    App.machineName = '';
+  }
   if (hash === 'board') {
     loadBoard(machineId || null);
     App.machineId = '';
     App.machineName = '';
   }
+  if (hash === 'records')   { /* populated by openAllRecords / openMachineRecords */ }
   if (hash === 'labels')    loadLabels();
   if (hash === 'safety')    loadSafety();
   if (hash === 'checklist') {
@@ -2540,14 +2538,7 @@ document.getElementById('nav-global').addEventListener('click', function(e) {
   });
 });
 
-function _activateBoardTab(bt) {
-  document.querySelectorAll('#board-tabs .board-tab').forEach(function(t) {
-    t.classList.toggle('active', t.dataset.btab === bt);
-  });
-  document.getElementById('board-machines-panel').style.display = bt === 'machines' ? 'block' : 'none';
-  document.getElementById('board-kanban-panel').style.display   = bt === 'kanban'   ? 'block' : 'none';
-  if (bt === 'kanban') showKanbanSubTab(_kanbanTab);
-}
+function _activateBoardTab(bt) { /* legacy no-op — board no longer has sub-tabs */ }
 
 // Machine sub-nav — BD/PM/CLIT open form directly; others navigate
 document.getElementById('nav-machine').addEventListener('click', function(e) {
@@ -4377,7 +4368,7 @@ var SF = { tab:'dashboard', dash:null, hira:null, charts:null, lists:null,
   heatmap:null, chartObjs:[], chartTypes:{} };
 
 (function init() {
-  var startHash = 'board';
+  var startHash = 'dashboard';
 
   // 1. Map old ?action= to hash
   if (INIT_ACTION) {
@@ -4393,7 +4384,7 @@ var SF = { tab:'dashboard', dash:null, hira:null, charts:null, lists:null,
 
   // 3. If a machine is in context (QR scan or direct link), open machine MHC view
   //    so the action sub-nav (BD/PM/CLIT/SOP/MHC/Images/Checklist) is visible
-  if (INIT_MACHINE_ID && startHash === 'board') {
+  if (INIT_MACHINE_ID && (startHash === 'dashboard' || startHash === 'board')) {
     App.machineId = INIT_MACHINE_ID;
     startHash = 'mhc';
   }
