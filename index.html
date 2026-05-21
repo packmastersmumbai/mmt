@@ -393,7 +393,7 @@ body {
 /* image hover preview (daily checklist) */
 .cl-hover-zoom { position:fixed; z-index:1200; pointer-events:none;
   border:3px solid #fff; border-radius:10px; box-shadow:0 12px 40px rgba(0,0,0,.45);
-  max-width:78vw; max-height:78vh; display:none; background:#000; }
+  max-width:92vw; max-height:90vh; display:none; background:#000; }
 /* Category group — collapsible */
 .cat-group { margin-bottom:14px; }
 .cat-group-title {
@@ -903,6 +903,8 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
         <span class="ab-ico" style="color:#16a34a">&#x25CF;</span>PM<span class="ab-n" id="ab-n-pm"></span></button>
       <button class="mb-ab-btn" data-act="clit" onclick="mbAction('clit')">
         <span class="ab-ico">&#x2699;</span>CLIT<span class="ab-n" id="ab-n-clit"></span></button>
+      <button class="mb-ab-btn" data-act="checklist" onclick="mbAction('checklist')">
+        <span class="ab-ico">&#x2611;</span>CL<span class="ab-n" id="ab-n-checklist"></span></button>
       <button class="mb-ab-btn" data-act="sop" onclick="mbAction('sop')">
         <span class="ab-ico">&#x1F4D6;</span>SOP</button>
       <button class="mb-ab-btn" data-act="mhc" onclick="mbAction('mhc')">
@@ -1571,7 +1573,7 @@ function _updateActionBar() {
 }
 function _updateActionCounts() {
   var rec = (_mbMachine!=='all' && _recordsByMachine[_mbMachine]) || null;
-  ['bd','pm','clit'].forEach(function(t){
+  ['bd','pm','clit','checklist'].forEach(function(t){
     var el = document.getElementById('ab-n-'+t);
     if (el) el.textContent = rec ? (rec[t].length ? '·'+rec[t].length : '') : '';
   });
@@ -1581,9 +1583,10 @@ function mbAction(act) {
   var m = _findBoardMachine(_mbMachine);
   if (!m) return;
   App.machineId = m.id; App.machineName = m.name;
-  if (act==='bd')        showBDForm(m.id);
-  else if (act==='pm')   showPMForm(m.id);
-  else if (act==='clit') showCLITForm(m.id);
+  if (act==='bd')            showBDForm(m.id);
+  else if (act==='pm')       showPMForm(m.id);
+  else if (act==='clit')     showCLITForm(m.id);
+  else if (act==='checklist') navigate('checklist', m.id);
   else if (act==='sop')  navigate('sop', m.id);
   else if (act==='mhc')  navigate('mhc', m.id);
   else if (act==='edit') showEditMachineForm(m.id, m.name, m.category, m.floor||'');
@@ -3007,21 +3010,15 @@ function clImgHover(e, thumb) {
   var z = document.getElementById('cl-hoverZoom');
   if (!z) return;
   var imgId = thumb.getAttribute('data-imgid');
-  var big = 'https://lh3.googleusercontent.com/d/' + imgId + '=w1200';
+  var big = 'https://lh3.googleusercontent.com/d/' + imgId + '=w1600';
   if (z.getAttribute('data-cur') !== imgId) {
     z.src = big; z.setAttribute('data-cur', imgId);
   }
+  // large preview — centred on screen (too big to follow the cursor)
   z.style.display = 'block';
-  // position near cursor, kept on-screen
-  var vw = window.innerWidth, vh = window.innerHeight;
-  var zw = Math.min(vw * 0.78, 900), zh = vh * 0.78;
-  var x = e.clientX + 24, y = e.clientY - zh / 3;
-  if (x + zw > vw - 8) x = e.clientX - zw - 24;
-  if (x < 8) x = 8;
-  if (y < 8) y = 8;
-  if (y + zh > vh - 8) y = vh - zh - 8;
-  z.style.left = x + 'px';
-  z.style.top  = y + 'px';
+  z.style.left = '50%';
+  z.style.top  = '50%';
+  z.style.transform = 'translate(-50%, -50%)';
 }
 function clImgHoverOut() {
   var z = document.getElementById('cl-hoverZoom');
