@@ -1653,19 +1653,35 @@ function loadDashboard() {
   document.getElementById('dash-body').innerHTML =
     '<div class="dash-wrap"><div class="loading-spinner" style="padding:40px">' +
     '<div class="spinner-ring"></div>Loading dashboard&hellip;</div></div>';
-  // chained fetches — parallel JSONP collides
-  function step1() {
+  // chained fetches — parallel JSONP collides; retry kanban up to 3x
+  function step1(attempt) {
+    attempt = attempt || 1;
     if (_boardData && _boardData.success) { step2(); return; }
     google.script.run
-      .withSuccessHandler(function(d){ _boardData=d; setTimeout(step2,250); })
-      .withFailureHandler(function(){ _boardData={success:false}; setTimeout(step2,250); })
+      .withSuccessHandler(function(d){
+        if (d && d.success) { _boardData=d; setTimeout(step2,250); }
+        else if (attempt < 3) setTimeout(function(){ step1(attempt+1); }, 400);
+        else { _boardData={success:false}; setTimeout(step2,250); }
+      })
+      .withFailureHandler(function(){
+        if (attempt < 3) setTimeout(function(){ step1(attempt+1); }, 400);
+        else { _boardData={success:false}; setTimeout(step2,250); }
+      })
       .getKanbanData();
   }
-  function step2() {
+  function step2(attempt) {
+    attempt = attempt || 1;
     if (_dashMetrics) { step3(); return; }
     google.script.run
-      .withSuccessHandler(function(m){ _dashMetrics=m||{}; setTimeout(step3,250); })
-      .withFailureHandler(function(){ _dashMetrics={}; setTimeout(step3,250); })
+      .withSuccessHandler(function(m){
+        if (m && m.success) { _dashMetrics=m; setTimeout(step3,250); }
+        else if (attempt < 3) setTimeout(function(){ step2(attempt+1); }, 400);
+        else { _dashMetrics=m||{}; setTimeout(step3,250); }
+      })
+      .withFailureHandler(function(){
+        if (attempt < 3) setTimeout(function(){ step2(attempt+1); }, 400);
+        else { _dashMetrics={}; setTimeout(step3,250); }
+      })
       .getDashboardMetrics();
   }
   function step3() {
