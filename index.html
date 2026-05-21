@@ -1716,23 +1716,29 @@ function _loadRecList(type) {
 }
 
 /* ════════ REDESIGNED DASHBOARD ════════ */
-var _dashKanban = null, _dashMetrics = null, _dashRange = 7;
+var _dashMetrics = null, _dashRange = 7;
 
+/* Dashboard uses the shared _boardData cache (kanban) + _dashMetrics.
+ * The two server calls are CHAINED — parallel JSONP calls collide. */
 function loadDashboard() {
-  if (_dashKanban && _dashMetrics) { renderDashboard(_dashKanban, _dashMetrics); return; }
+  if (_boardData && _boardData.success && _dashMetrics) {
+    renderDashboard(_boardData, _dashMetrics); return;
+  }
   document.getElementById('dash-body').innerHTML =
     '<div class="dash-wrap"><div class="loading-spinner" style="padding:40px">' +
     '<div class="spinner-ring"></div>Loading dashboard&hellip;</div></div>';
-  var kDone=false, mDone=false;
-  function tryRender(){ if(kDone&&mDone) renderDashboard(_dashKanban,_dashMetrics); }
+  function fetchMetrics() {
+    if (_dashMetrics) { renderDashboard(_boardData||{success:false}, _dashMetrics); return; }
+    google.script.run
+      .withSuccessHandler(function(m){ _dashMetrics=m||{}; renderDashboard(_boardData||{success:false}, _dashMetrics); })
+      .withFailureHandler(function(){ _dashMetrics={}; renderDashboard(_boardData||{success:false}, _dashMetrics); })
+      .getDashboardMetrics();
+  }
+  if (_boardData && _boardData.success) { fetchMetrics(); return; }
   google.script.run
-    .withSuccessHandler(function(d){ _dashKanban=d; _boardData=d; kDone=true; tryRender(); })
-    .withFailureHandler(function(){ _dashKanban={success:false}; kDone=true; tryRender(); })
+    .withSuccessHandler(function(d){ _boardData=d; setTimeout(fetchMetrics, 250); })
+    .withFailureHandler(function(){ _boardData={success:false}; setTimeout(fetchMetrics, 250); })
     .getKanbanData();
-  google.script.run
-    .withSuccessHandler(function(m){ _dashMetrics=m||{}; mDone=true; tryRender(); })
-    .withFailureHandler(function(){ _dashMetrics={}; mDone=true; tryRender(); })
-    .getDashboardMetrics();
 }
 
 function renderDashboard(kanban, metrics) {
