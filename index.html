@@ -286,60 +286,56 @@ body {
 .mcard-act-icon { font-size:18px; line-height:1; }
 .mcard-act-label { font-size:11px; color:#64748b; font-weight:600; line-height:1; margin-top:1px; letter-spacing:0.2px; }
 
-/* ════════ REDESIGNED DASHBOARD ════════ */
-.dash-wrap { padding:12px 12px 90px; }
-.dash-hd { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:10px; }
-.dash-hd h2 { font-size:18px; font-weight:800; color:#0f172a; }
-.dash-hd .dash-date { font-size:12px; color:#94a3b8; font-weight:600; }
-.dash-sect { font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase;
-  letter-spacing:1px; margin:14px 2px 8px; }
-.dash-tiles { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.dash-tile { border-radius:14px; padding:13px 14px; cursor:pointer; position:relative;
-  border:1.5px solid transparent; transition:transform .1s, box-shadow .15s;
-  display:flex; flex-direction:column; gap:2px; overflow:hidden; }
-.dash-tile:active { transform:scale(.97); }
-.dash-tile .dt-ico { font-size:16px; }
-.dash-tile .dt-num { font-size:30px; font-weight:900; line-height:1.05; }
-.dash-tile .dt-lbl { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; }
-.dash-tile .dt-sub { font-size:11px; font-weight:600; opacity:.85; margin-top:1px; }
-.dash-tile .dt-arrow { position:absolute; right:11px; top:11px; font-size:14px; opacity:.5; }
-.dash-tile.alert { animation:dtPulse 2.4s ease-in-out infinite; }
-@keyframes dtPulse { 0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,0)} 50%{box-shadow:0 0 0 4px rgba(220,38,38,.12)} }
-.dt-red    { background:#fef2f2; border-color:#fecaca; color:#b91c1c; }
-.dt-orange { background:#fff7ed; border-color:#fed7aa; color:#c2410c; }
-.dt-blue   { background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8; }
-.dt-amber  { background:#fefce8; border-color:#fde68a; color:#a16207; }
-.dt-green  { background:#f0fdf4; border-color:#bbf7d0; color:#15803d; }
-.dt-slate  { background:#f8fafc; border-color:#e2e8f0; color:#334155; }
-.dash-card { background:#fff; border:1px solid #e2e8f0; border-radius:14px;
-  padding:13px 14px; margin-top:10px; box-shadow:0 1px 3px rgba(0,0,0,.04); }
-.dash-card-hd { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
-.dash-card-hd .dc-title { font-size:12px; font-weight:800; color:#475569;
-  text-transform:uppercase; letter-spacing:.6px; }
-.dc-range { display:flex; gap:4px; }
-.dc-range button { font-size:11px; font-weight:700; padding:3px 9px; border-radius:7px;
-  border:1px solid #cbd5e1; background:#fff; color:#64748b; cursor:pointer; }
-.dc-range button.on { background:#0f172a; border-color:#0f172a; color:#fff; }
-.rel-row { display:flex; gap:14px; align-items:center; }
-.rel-stat { flex:0 0 auto; }
-.rel-stat .rs-num { font-size:24px; font-weight:900; line-height:1; }
-.rel-stat .rs-lbl { font-size:10px; font-weight:800; color:#94a3b8; text-transform:uppercase;
-  letter-spacing:.5px; margin-top:2px; }
-.rel-spark { flex:1; height:46px; }
-.dash-donut-row { display:flex; align-items:center; gap:16px; }
-.dash-donut-leg { flex:1; display:flex; flex-direction:column; gap:5px; }
-.ddl-row { display:flex; align-items:center; gap:7px; font-size:12px; color:#475569; }
-.ddl-dot { width:9px; height:9px; border-radius:3px; flex-shrink:0; }
-.ddl-val { margin-left:auto; font-weight:800; color:#0f172a; }
-.fleet-tile { display:flex; align-items:center; gap:10px; cursor:pointer; }
-.fleet-bars { display:flex; gap:3px; flex-wrap:wrap; margin-top:8px; }
-.fleet-bar { display:flex; flex-direction:column; align-items:center; gap:2px; }
-.fleet-bar .fb-stack { width:26px; background:#e2e8f0; border-radius:3px 3px 0 0;
-  display:flex; align-items:flex-end; }
-.fleet-bar .fb-fill { width:100%; border-radius:3px 3px 0 0; }
-.fleet-bar .fb-lbl { font-size:8px; color:#94a3b8; font-weight:700; }
-.fleet-bar .fb-n { font-size:9px; color:#475569; font-weight:800; }
-
+/* ════════ DENSE DASHBOARD ════════ */
+.dash-wrap { padding:10px 10px 90px; }
+.dash-hd { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px; }
+.dash-hd h2 { font-size:17px; font-weight:800; color:#0f172a; }
+.dash-hd .dash-date { font-size:11px; color:#94a3b8; font-weight:600; }
+/* KPI grid — 3 per row, 2 rows */
+.dk-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+.dk-cell { background:#fff; border:1px solid #e2e8f0; border-radius:11px;
+  padding:9px 8px; text-align:center; box-shadow:0 1px 2px rgba(0,0,0,.03); }
+.dk-cell:active { background:#f8fafc; }
+.dk-num { font-size:23px; font-weight:900; line-height:1.05; }
+.dk-lbl { font-size:9.5px; font-weight:800; color:#475569; text-transform:uppercase;
+  letter-spacing:.4px; margin-top:2px; }
+.dk-sub { font-size:9.5px; color:#94a3b8; font-weight:600; margin-top:1px; }
+/* cards + 2-col layout */
+.dash-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px;
+  padding:11px 12px; margin-top:8px; box-shadow:0 1px 2px rgba(0,0,0,.03); }
+.dash-2col { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
+.dash-2col .dash-card { margin-top:0; }
+.dc-title { font-size:11px; font-weight:800; color:#475569; text-transform:uppercase;
+  letter-spacing:.5px; margin-bottom:9px; }
+.dc-empty { font-size:11px; color:#cbd5e1; padding:10px 0; text-align:center; }
+/* trend bar chart */
+.dc-bars { display:flex; align-items:flex-end; gap:3px; height:62px; }
+.tb-col { flex:1; display:flex; flex-direction:column; align-items:center;
+  justify-content:flex-end; height:100%; }
+.tb-bar { width:100%; border-radius:2px 2px 0 0; min-height:2px; }
+.tb-x { font-size:7px; color:#cbd5e1; font-weight:700; margin-top:2px; height:9px; }
+/* horizontal bars */
+.dc-hbars { display:flex; flex-direction:column; gap:6px; }
+.hb-row { display:flex; align-items:center; gap:7px; }
+.hb-lbl { flex:0 0 38px; font-size:10px; font-weight:700; color:#475569;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.hb-track { flex:1; height:13px; background:#f1f5f9; border-radius:7px; overflow:hidden; }
+.hb-fill { height:100%; border-radius:7px; min-width:3px; transition:width .5s ease; }
+.hb-val { flex:0 0 auto; font-size:11px; font-weight:800; color:#0f172a; min-width:16px;
+  text-align:right; }
+/* donut + legend */
+.dc-donut-wrap { display:flex; align-items:center; gap:12px; }
+.dc-leg { flex:1; display:flex; flex-direction:column; gap:5px; }
+.dleg-row { display:flex; align-items:center; gap:6px; font-size:11.5px; color:#475569;
+  font-weight:600; }
+.dleg-dot { width:9px; height:9px; border-radius:3px; flex-shrink:0; }
+.dleg-v { margin-left:auto; font-weight:800; color:#0f172a; }
+/* reliability 2x2 */
+.dc-rel { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.dc-rel-stat { background:#f8fafc; border-radius:9px; padding:8px 6px; text-align:center; }
+.drs-n { font-size:18px; font-weight:900; line-height:1; }
+.drs-l { font-size:8.5px; font-weight:800; color:#94a3b8; text-transform:uppercase;
+  letter-spacing:.4px; margin-top:3px; }
 /* ════════ COMPACT MACHINE BOARD ════════ */
 .mb-toolbar { display:flex; gap:8px; padding:8px 10px; background:#fff;
   border-bottom:1px solid #f1f5f9; align-items:center; }
@@ -1421,7 +1417,11 @@ function loadBoard(highlightMachineId) {
 function _prefetchRecords() {
   var types = ['bd','pm','clit','checklist'], i = 0;
   function next() {
-    if (i >= types.length) { _renderRecList(); return; }
+    if (i >= types.length) {
+      if (App.currentHash === 'dashboard') _dashRecordsReady();
+      else _renderRecList();
+      return;
+    }
     var type = types[i++];
     google.script.run
       .withSuccessHandler(function(d){
@@ -1432,8 +1432,10 @@ function _prefetchRecords() {
             if (!_recordsByMachine[mid]) _recordsByMachine[mid] = {bd:[],pm:[],clit:[],checklist:[]};
             _recordsByMachine[mid][type].push(it);
           });
-          if (type === _recType) _renderRecList();
-          _updateActionCounts();
+          if (App.currentHash === 'board') {
+            if (type === _recType) _renderRecList();
+            _updateActionCounts();
+          }
         }
         setTimeout(next, 250);
       })
@@ -1642,49 +1644,60 @@ function dashGotoBoard(tab) {
   setTimeout(function(){ _showRecTab(_recType); }, 60);
 }
 
-/* ════════ REDESIGNED DASHBOARD ════════ */
-var _dashMetrics = null, _dashRange = 7;
+/* ════════ DENSE DASHBOARD — KPIs + charts ════════ */
+var _dashMetrics = null;
 
-/* Dashboard uses the shared _boardData cache (kanban) + _dashMetrics.
- * The two server calls are CHAINED — parallel JSONP calls collide. */
 function loadDashboard() {
-  if (_boardData && _boardData.success && _dashMetrics) {
-    renderDashboard(_boardData, _dashMetrics); return;
-  }
+  var ready = _boardData && _boardData.success && _dashMetrics && _boardRecordsCache.bd;
+  if (ready) { renderDashboard(); return; }
   document.getElementById('dash-body').innerHTML =
     '<div class="dash-wrap"><div class="loading-spinner" style="padding:40px">' +
     '<div class="spinner-ring"></div>Loading dashboard&hellip;</div></div>';
-  function fetchMetrics() {
-    if (_dashMetrics) { renderDashboard(_boardData||{success:false}, _dashMetrics); return; }
+  // chained fetches — parallel JSONP collides
+  function step1() {
+    if (_boardData && _boardData.success) { step2(); return; }
     google.script.run
-      .withSuccessHandler(function(m){ _dashMetrics=m||{}; renderDashboard(_boardData||{success:false}, _dashMetrics); })
-      .withFailureHandler(function(){ _dashMetrics={}; renderDashboard(_boardData||{success:false}, _dashMetrics); })
+      .withSuccessHandler(function(d){ _boardData=d; setTimeout(step2,250); })
+      .withFailureHandler(function(){ _boardData={success:false}; setTimeout(step2,250); })
+      .getKanbanData();
+  }
+  function step2() {
+    if (_dashMetrics) { step3(); return; }
+    google.script.run
+      .withSuccessHandler(function(m){ _dashMetrics=m||{}; setTimeout(step3,250); })
+      .withFailureHandler(function(){ _dashMetrics={}; setTimeout(step3,250); })
       .getDashboardMetrics();
   }
-  if (_boardData && _boardData.success) { fetchMetrics(); return; }
-  google.script.run
-    .withSuccessHandler(function(d){ _boardData=d; setTimeout(fetchMetrics, 250); })
-    .withFailureHandler(function(){ _boardData={success:false}; setTimeout(fetchMetrics, 250); })
-    .getKanbanData();
+  function step3() {
+    renderDashboard();             // render with what we have
+    if (!_boardRecordsCache.bd) _prefetchRecords();  // fills charts when ready
+  }
+  step1();
 }
 
-function renderDashboard(kanban, metrics) {
+/* Re-render dashboard once records finish prefetching (called by _prefetchRecords). */
+function _dashRecordsReady() {
+  if (App.currentHash === 'dashboard') renderDashboard();
+}
+
+function renderDashboard() {
   var el = document.getElementById('dash-body');
   if (!el) return;
-  metrics = metrics || {};
-  var total=0, clDone=0, clPartial=0, clPending=0, bdOpen=0, oldestBD=0;
+  var kanban = _boardData || {success:false};
+  var metrics = _dashMetrics || {};
+
+  /* ---- aggregate from kanban ---- */
+  var total=0, clDone=0, clPartial=0, clPending=0, bdOpen=0;
   var catCounts={};
-  if (kanban && kanban.success) {
+  if (kanban.success) {
     total = kanban.total || 0;
     Object.keys(kanban.groups).forEach(function(cat){
-      var ms = kanban.groups[cat];
-      catCounts[cat] = ms.length;
+      var ms = kanban.groups[cat]; catCounts[cat]=ms.length;
       ms.forEach(function(m){
         if (m.checklist==='done') clDone++;
         else if (m.checklist==='partial') clPartial++;
         else clPending++;
         bdOpen += (m.openBD||0);
-        if (m.oldestBDDays && m.oldestBDDays>oldestBD) oldestBD=m.oldestBDDays;
       });
     });
   }
@@ -1693,144 +1706,210 @@ function renderDashboard(kanban, metrics) {
   var mtbf = metrics.mtbf||0, mttr = metrics.mttr||0;
   var safetyCrit = (window.SF && SF.dash && SF.dash.critical) || 0;
 
-  function tile(cls, ico, num, lbl, sub, onclick, pulse) {
-    return '<div class="dash-tile ' + cls + (pulse?' alert':'') + '" onclick="' + onclick + '">' +
-      '<span class="dt-arrow">&#8250;</span>' +
-      '<span class="dt-ico">' + ico + '</span>' +
-      '<span class="dt-num" data-count="' + num + '">' + num + '</span>' +
-      '<span class="dt-lbl">' + lbl + '</span>' +
-      '<span class="dt-sub">' + sub + '</span></div>';
-  }
+  /* ---- aggregate from prefetched records ---- */
+  var bd = (_boardRecordsCache.bd && _boardRecordsCache.bd.items) || [];
+  var pm = (_boardRecordsCache.pm && _boardRecordsCache.pm.items) || [];
+  var clit = (_boardRecordsCache.clit && _boardRecordsCache.clit.items) || [];
+  var recLoaded = !!_boardRecordsCache.bd;
+  var bdClosed = bd.filter(function(r){ return r.status==='Closed'; }).length;
+  var bdTotal = bd.length;
+
+  // BD per category (from kanban openBD)
+  var catBD = {};
+  if (kanban.success) Object.keys(kanban.groups).forEach(function(cat){
+    catBD[cat] = kanban.groups[cat].reduce(function(s,m){ return s+(m.openBD||0); },0);
+  });
+
+  // top machines by total BD records
+  var machBD = {};
+  bd.forEach(function(r){
+    var k = (r.machineName||r.machineId||'?');
+    machBD[k] = (machBD[k]||0)+1;
+  });
+  var topMach = Object.keys(machBD).sort(function(a,b){return machBD[b]-machBD[a];}).slice(0,5);
+
+  // BD trend — last 14 days by parsing record dates (dd-MMM-yy)
+  var trend = _bdTrend14(bd);
 
   var now = new Date();
-  var dateStr = now.toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'});
+  var dateStr = now.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
 
-  // Reliability sparkline from metrics.bdTrend (array) if present, else flat
-  var trend = (metrics.bdTrend && metrics.bdTrend.length) ? metrics.bdTrend : [];
-
-  // category bars
-  var catKeys = Object.keys(catCounts).sort(function(a,b){return catCounts[b]-catCounts[a];}).slice(0,8);
-  var maxCat = Math.max.apply(null, catKeys.map(function(k){return catCounts[k];})) || 1;
-  var fleetBars = catKeys.map(function(cat){
-    var h = Math.round((catCounts[cat]/maxCat)*40)+6;
-    var ab = cat.split(/[\s\/]+/).filter(function(w){return w.length>1;})
-              .map(function(w){return w[0];}).join('').substring(0,3).toUpperCase();
-    return '<div class="fleet-bar"><div class="fb-n">'+catCounts[cat]+'</div>' +
-      '<div class="fb-stack" style="height:46px"><div class="fb-fill" style="height:'+h+'px;background:'+(CAT_COLORS[cat]||'#64748b')+'"></div></div>' +
-      '<div class="fb-lbl">'+ab+'</div></div>';
-  }).join('');
-
-  // donut for checklist
-  var doneP = total>0 ? (clDone/total)*100 : 0;
-  var partP = total>0 ? (clPartial/total)*100 : 0;
-  function arc(cx,cy,r,s,e,col){
-    if (e-s<=0) return '';
-    var sa=(s/100)*2*Math.PI-Math.PI/2, ea=(e/100)*2*Math.PI-Math.PI/2;
-    var x1=cx+r*Math.cos(sa),y1=cy+r*Math.sin(sa),x2=cx+r*Math.cos(ea),y2=cy+r*Math.sin(ea);
-    var lg=(e-s)>50?1:0;
-    return '<path d="M'+x1+' '+y1+' A'+r+' '+r+' 0 '+lg+' 1 '+x2+' '+y2+'" fill="none" stroke="'+col+'" stroke-width="14"/>';
+  /* ---- small helpers ---- */
+  function kpi(num, lbl, sub, color, onclick) {
+    return '<div class="dk-cell"' + (onclick?' onclick="'+onclick+'" style="cursor:pointer"':'') + '>' +
+      '<div class="dk-num" style="color:'+color+'" data-count="'+num+'">'+num+'</div>' +
+      '<div class="dk-lbl">'+lbl+'</div>' +
+      (sub?'<div class="dk-sub">'+sub+'</div>':'') + '</div>';
   }
-  var donut = '<svg width="78" height="78" viewBox="0 0 78 78">' +
-    '<circle cx="39" cy="39" r="30" fill="none" stroke="#f1f5f9" stroke-width="14"/>' +
-    arc(39,39,30,0,doneP,'#16a34a') +
-    arc(39,39,30,doneP,doneP+partP,'#eab308') +
-    arc(39,39,30,doneP+partP,100,'#e2e8f0') +
-    '<text x="39" y="44" text-anchor="middle" font-size="16" font-weight="800" fill="#0f172a">'+clRate+'%</text></svg>';
+  function hbars(map, keys, color, fmtKey) {
+    var max = Math.max.apply(null, keys.map(function(k){return map[k];})) || 1;
+    if (!keys.length) return '<div class="dc-empty">No data</div>';
+    return keys.map(function(k){
+      var w = Math.round((map[k]/max)*100);
+      return '<div class="hb-row"><div class="hb-lbl" title="'+esc(k)+'">'+
+        esc(fmtKey?fmtKey(k):k)+'</div>' +
+        '<div class="hb-track"><div class="hb-fill" style="width:'+w+'%;background:'+color+'"></div></div>' +
+        '<div class="hb-val">'+map[k]+'</div></div>';
+    }).join('');
+  }
+
+  /* ---- donut: activity mix (BD/PM/CLIT, 30d) ---- */
+  var a30 = [metrics.bdCount30||0, metrics.pmCount30||0, metrics.clitCount30||0];
+  var a30sum = a30[0]+a30[1]+a30[2];
+  var donutMix = _donut([
+    {v:a30[0],c:'#dc2626'},{v:a30[1],c:'#16a34a'},{v:a30[2],c:'#0ea5e9'}
+  ], a30sum, a30sum + (a30sum===1?' event':' events'));
+
+  /* ---- donut: checklist ---- */
+  var donutCL = _donut([
+    {v:clDone,c:'#16a34a'},{v:clPartial,c:'#eab308'},{v:clPending,c:'#e2e8f0'}
+  ], total, clRate+'%');
 
   el.innerHTML =
     '<div class="dash-wrap">' +
-    '<div class="dash-hd"><h2>Dashboard</h2><span class="dash-date">' + dateStr + '</span></div>' +
+    '<div class="dash-hd"><h2>Dashboard</h2><span class="dash-date">'+dateStr+'</span></div>' +
 
-    '<div class="dash-sect">Needs Attention</div>' +
-    '<div class="dash-tiles">' +
-      tile('dt-red','&#x1F534;',bdOpen,'Open BD',
-        bdOpen>0?(oldestBD>0?'oldest '+oldestBD+'d':'unresolved'):'all clear',
-        "dashGotoBoard('bd')", bdOpen>0) +
-      tile('dt-orange','&#x1F527;',(metrics.pmDue||0),'PM Due',
-        (metrics.pmDue||0)>0?'this week':'none due',
-        "dashGotoBoard('pm')", false) +
-      tile('dt-amber','&#x1F4CB;',clPend,'CL Pending','of '+total+' machines',
-        "dashGotoBoard('checklist')", false) +
-      tile('dt-red','&#x26A0;',safetyCrit,'Safety','critical risks',
-        "navigate('safety')", safetyCrit>0) +
+    /* ── ROW 1 — 6 KPI cells ── */
+    '<div class="dk-grid">' +
+      kpi(total,'Machines','in use','#0f172a',"navigate('board')") +
+      kpi(bdOpen,'Open BD',bdOpen>0?'unresolved':'all clear',bdOpen>0?'#dc2626':'#16a34a',"dashGotoBoard('bd')") +
+      kpi(metrics.bdCount30||0,'BD · 30d','breakdowns','#ea580c',"dashGotoBoard('bd')") +
+      kpi(metrics.pmCount30||0,'PM · 30d','done','#16a34a',"dashGotoBoard('pm')") +
+      kpi(clRate+'%','CL Today',clDone+'/'+total+' done',clRate>=80?'#16a34a':clRate>=50?'#eab308':'#dc2626',"dashGotoBoard('checklist')") +
+      kpi(safetyCrit,'Safety',safetyCrit>0?'critical':'ok',safetyCrit>0?'#dc2626':'#16a34a',"navigate('safety')") +
     '</div>' +
 
-    '<div class="dash-card">' +
-      '<div class="dash-card-hd"><span class="dc-title">Reliability</span>' +
-      '<div class="dc-range">' +
-        '<button class="' + (_dashRange===7?'on':'') + '" onclick="dashSetRange(7)">7d</button>' +
-        '<button class="' + (_dashRange===30?'on':'') + '" onclick="dashSetRange(30)">30d</button>' +
-      '</div></div>' +
-      '<div class="rel-row">' +
-        '<div class="rel-stat"><div class="rs-num" style="color:#ea580c">' +
-          (mtbf>0?mtbf+'h':'—') + '</div><div class="rs-lbl">MTBF</div></div>' +
-        '<div class="rel-stat"><div class="rs-num" style="color:#dc2626">' +
-          (mttr>0?mttr+'h':'—') + '</div><div class="rs-lbl">MTTR</div></div>' +
-        '<div class="rel-spark" id="dash-spark"></div>' +
-      '</div></div>' +
-
-    '<div class="dash-card">' +
-      '<div class="dash-card-hd"><span class="dc-title">Checklist Completion</span></div>' +
-      '<div class="dash-donut-row">' + donut +
-        '<div class="dash-donut-leg">' +
-          '<div class="ddl-row"><span class="ddl-dot" style="background:#16a34a"></span>Done<span class="ddl-val">'+clDone+'</span></div>' +
-          '<div class="ddl-row"><span class="ddl-dot" style="background:#eab308"></span>Partial<span class="ddl-val">'+clPartial+'</span></div>' +
-          '<div class="ddl-row"><span class="ddl-dot" style="background:#e2e8f0"></span>Pending<span class="ddl-val">'+clPending+'</span></div>' +
-        '</div></div></div>' +
-
-    '<div class="dash-card">' +
-      '<div class="fleet-tile" onclick="navigate(\'board\')">' +
-        '<span style="font-size:22px">&#x1F3ED;</span>' +
-        '<div style="flex:1"><div style="font-size:14px;font-weight:800;color:#0f172a">' +
-          total + ' Machines</div><div style="font-size:11px;color:#64748b">' +
-          Object.keys(catCounts).length + ' categories &middot; tap to open board</div></div>' +
-        '<span style="font-size:16px;color:#cbd5e1">&#8250;</span></div>' +
-      '<div class="fleet-bars">' + fleetBars + '</div>' +
+    /* ── ROW 2 — BD trend + activity mix ── */
+    '<div class="dash-2col">' +
+      '<div class="dash-card">' +
+        '<div class="dc-title">Breakdown Trend &middot; 14 days</div>' +
+        '<div class="dc-bars" id="dc-trend">'+_trendBars(trend)+'</div>' +
+      '</div>' +
+      '<div class="dash-card">' +
+        '<div class="dc-title">Activity Mix &middot; 30d</div>' +
+        '<div class="dc-donut-wrap">'+donutMix+
+          '<div class="dc-leg">' +
+            _legRow('#dc2626','BD',a30[0]) + _legRow('#16a34a','PM',a30[1]) +
+            _legRow('#0ea5e9','CLIT',a30[2]) +
+          '</div></div>' +
+      '</div>' +
     '</div>' +
+
+    /* ── ROW 3 — BD by category + top machines ── */
+    '<div class="dash-2col">' +
+      '<div class="dash-card">' +
+        '<div class="dc-title">Open BD by Category</div>' +
+        '<div class="dc-hbars">' +
+          hbars(catBD, Object.keys(catBD).filter(function(k){return catBD[k]>0;})
+            .sort(function(a,b){return catBD[b]-catBD[a];}).slice(0,6), '#dc2626', _catAbbr) +
+        '</div></div>' +
+      '<div class="dash-card">' +
+        '<div class="dc-title">Top Machines &middot; Breakdowns</div>' +
+        '<div class="dc-hbars">' +
+          (recLoaded ? hbars(machBD, topMach, '#ea580c') : '<div class="dc-empty">loading…</div>') +
+        '</div></div>' +
+    '</div>' +
+
+    /* ── ROW 4 — checklist donut + reliability ── */
+    '<div class="dash-2col">' +
+      '<div class="dash-card">' +
+        '<div class="dc-title">Checklist Completion</div>' +
+        '<div class="dc-donut-wrap">'+donutCL+
+          '<div class="dc-leg">' +
+            _legRow('#16a34a','Done',clDone) + _legRow('#eab308','Partial',clPartial) +
+            _legRow('#e2e8f0','Pending',clPending) +
+          '</div></div>' +
+      '</div>' +
+      '<div class="dash-card">' +
+        '<div class="dc-title">Reliability</div>' +
+        '<div class="dc-rel">' +
+          '<div class="dc-rel-stat"><div class="drs-n" style="color:#ea580c">'+(mtbf>0?mtbf+'h':'—')+'</div><div class="drs-l">MTBF</div></div>' +
+          '<div class="dc-rel-stat"><div class="drs-n" style="color:#dc2626">'+(mttr>0?mttr+'h':'—')+'</div><div class="drs-l">MTTR</div></div>' +
+          '<div class="dc-rel-stat"><div class="drs-n" style="color:#16a34a">'+bdClosed+'</div><div class="drs-l">BD Closed</div></div>' +
+          '<div class="dc-rel-stat"><div class="drs-n" style="color:#64748b">'+bdTotal+'</div><div class="drs-l">BD Total</div></div>' +
+        '</div></div>' +
+    '</div>' +
+
+    /* ── fleet strip ── */
+    '<div class="dash-card fleet-tile" onclick="navigate(\'board\')" style="display:flex;align-items:center;gap:10px;cursor:pointer">' +
+      '<span style="font-size:20px">&#x1F3ED;</span>' +
+      '<div style="flex:1"><div style="font-size:13px;font-weight:800;color:#0f172a">'+total+' Machines &middot; '+Object.keys(catCounts).length+' categories</div>' +
+      '<div style="font-size:11px;color:#64748b">tap to open the machine board</div></div>' +
+      '<span style="font-size:16px;color:#cbd5e1">&#8250;</span></div>' +
 
     '</div>';
 
-  _drawSpark(trend);
   _animateCounts();
 }
 
-function dashSetRange(d) {
-  _dashRange = d;
-  document.querySelectorAll('.dc-range button').forEach(function(b){
-    b.classList.toggle('on', b.textContent === d+'d');
+/* BD records → array of 14 daily counts (oldest→newest). */
+function _bdTrend14(bd) {
+  var days = [];
+  var today = new Date(); today.setHours(0,0,0,0);
+  for (var i=13;i>=0;i--) days.push({t:today.getTime()-i*86400000, n:0});
+  bd.forEach(function(r){
+    var d = _parseRecDate(r.date);
+    if (!d) return;
+    d.setHours(0,0,0,0);
+    var t = d.getTime();
+    for (var j=0;j<days.length;j++) if (days[j].t===t) { days[j].n++; break; }
   });
-  // redraw spark with sliced trend
-  var trend = (_dashMetrics && _dashMetrics.bdTrend) || [];
-  _drawSpark(d===7 ? trend.slice(-7) : trend.slice(-30));
+  return days.map(function(x){ return x.n; });
 }
-
-function _drawSpark(data) {
-  var box = document.getElementById('dash-spark');
-  if (!box) return;
-  if (!data || !data.length) {
-    box.innerHTML = '<div style="font-size:10px;color:#cbd5e1;padding-top:16px">no trend data</div>';
-    return;
+/* parse 'dd-MMM-yy' */
+function _parseRecDate(s) {
+  if (!s) return null;
+  var m = String(s).match(/(\d{1,2})-([A-Za-z]{3})-(\d{2})/);
+  if (!m) { var d=new Date(s); return isNaN(d.getTime())?null:d; }
+  var mon = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  return new Date(2000+(+m[3]), mon[m[2]]||0, +m[1]);
+}
+function _trendBars(arr) {
+  var max = Math.max.apply(null,arr) || 1;
+  return arr.map(function(n,i){
+    var h = Math.round((n/max)*44)+2;
+    return '<div class="tb-col"><div class="tb-bar" style="height:'+h+'px;background:'+
+      (n>0?'#dc2626':'#e2e8f0')+'" title="'+n+' BD"></div>' +
+      (i%2===0?'<div class="tb-x">'+(13-i)+'d</div>':'<div class="tb-x"></div>')+'</div>';
+  }).join('');
+}
+function _donut(segs, total, centre) {
+  function arc(s,e,col){
+    if (e-s<=0) return '';
+    var sa=(s/100)*2*Math.PI-Math.PI/2, ea=(e/100)*2*Math.PI-Math.PI/2;
+    var x1=45+33*Math.cos(sa),y1=45+33*Math.sin(sa),x2=45+33*Math.cos(ea),y2=45+33*Math.sin(ea);
+    var lg=(e-s)>50?1:0;
+    return '<path d="M'+x1+' '+y1+' A33 33 0 '+lg+' 1 '+x2+' '+y2+'" fill="none" stroke="'+col+'" stroke-width="16"/>';
   }
-  var w=160, h=46, max=Math.max.apply(null,data)||1;
-  var step = data.length>1 ? w/(data.length-1) : w;
-  var pts = data.map(function(v,i){
-    return (i*step).toFixed(1)+','+(h-2-(v/max)*(h-6)).toFixed(1);
-  }).join(' ');
-  box.innerHTML = '<svg width="100%" height="'+h+'" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none">' +
-    '<polyline points="'+pts+'" fill="none" stroke="#0ea5e9" stroke-width="2.5" stroke-linejoin="round"/>' +
-    '<polyline points="0,'+h+' '+pts+' '+w+','+h+'" fill="rgba(14,165,233,0.12)" stroke="none"/>' +
-    '</svg>';
+  var sum = segs.reduce(function(a,b){return a+b.v;},0) || 1;
+  var acc = 0, paths = '';
+  segs.forEach(function(s){
+    var p = (s.v/sum)*100;
+    paths += arc(acc, acc+p, s.c); acc += p;
+  });
+  return '<svg width="90" height="90" viewBox="0 0 90 90">' +
+    '<circle cx="45" cy="45" r="33" fill="none" stroke="#f1f5f9" stroke-width="16"/>' +
+    paths +
+    '<text x="45" y="50" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a">'+
+      esc(centre)+'</text></svg>';
 }
+function _legRow(c,l,v) {
+  return '<div class="dleg-row"><span class="dleg-dot" style="background:'+c+'"></span>'+
+    l+'<span class="dleg-v">'+v+'</span></div>';
+}
+function dashSetRange(){}  /* legacy no-op */
 
 function _animateCounts() {
-  document.querySelectorAll('.dt-num[data-count]').forEach(function(el){
-    var target = parseInt(el.getAttribute('data-count'),10) || 0;
-    if (target<=0) { el.textContent='0'; return; }
-    var start=null, dur=600;
+  document.querySelectorAll('.dk-num[data-count]').forEach(function(el){
+    var raw = el.getAttribute('data-count');
+    var pct = /%$/.test(raw);
+    var target = parseInt(raw,10) || 0;
+    if (target<=0) { el.textContent = pct?'0%':'0'; return; }
+    var start=null, dur=550;
     function step(ts){
       if(!start) start=ts;
       var p=Math.min((ts-start)/dur,1);
-      el.textContent = Math.round(p*target);
+      el.textContent = Math.round(p*target) + (pct?'%':'');
       if(p<1) requestAnimationFrame(step);
     }
     requestAnimationFrame(step);
