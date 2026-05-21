@@ -1396,24 +1396,40 @@ function loadBoard(highlightMachineId) {
     .getKanbanData();
 }
 
-/* Pull all record types once, index per machine — powers View N counts. */
+/* Pull all record types once, index per machine — powers View N counts.
+ * Calls are CHAINED (not parallel): the JSONP polyfill shares one _s/_f
+ * handler pair, so concurrent calls collide. Sequential is reliable. */
 function _prefetchRecords() {
-  ['bd','pm','clit','checklist'].forEach(function(type) {
-    google.script.run.withSuccessHandler(function(d) {
-      if (!d || !d.success || !d.items) return;
-      _boardRecordsCache[type] = d;
-      d.items.forEach(function(it) {
-        var mid = String(it.machineId || '');
-        if (!_recordsByMachine[mid]) _recordsByMachine[mid] = {bd:[],pm:[],clit:[],checklist:[]};
-        _recordsByMachine[mid][type].push(it);
-      });
-      // refresh an open panel so counts fill in
-      if (_mbOpenMachine && _recordsByMachine[_mbOpenMachine]) {
-        var pe = document.getElementById('mb-panel-' + _cssId(_mbOpenMachine));
-        if (pe) _fillActionPanel(pe, _mbOpenMachine);
-      }
-    }).getAllBoardRecords(type);
-  });
+  var types = ['bd','pm','clit','checklist'];
+  var i = 0;
+  function next() {
+    if (i >= types.length) return;
+    var type = types[i++];
+    google.script.run
+      .withSuccessHandler(function(d) {
+        if (d && d.success && d.items) {
+          _boardRecordsCache[type] = d;
+          d.items.forEach(function(it) {
+            var mid = String(it.machineId || '');
+            if (!_recordsByMachine[mid]) _recordsByMachine[mid] = {bd:[],pm:[],clit:[],checklist:[]};
+            _recordsByMachine[mid][type].push(it);
+          });
+          if (_mbOpenMachine && _recordsByMachine[_mbOpenMachine]) {
+            var pe = document.getElementById('mb-panel-' + _cssId(_mbOpenMachine));
+            if (pe) _fillActionPanel(pe, _mbOpenMachine);
+          }
+          // refresh status dots once all types loaded
+          if (i >= types.length && _boardData) {
+            var grid = document.getElementById('board-grid');
+            if (grid && !grid.querySelector('.mb-panel')) _renderMachineList(_boardData);
+          }
+        }
+        next();
+      })
+      .withFailureHandler(function() { next(); })
+      .getAllBoardRecords(type);
+  }
+  next();
 }
 function _cssId(s){ return String(s).replace(/[^a-zA-Z0-9]/g,'_'); }
 
