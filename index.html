@@ -490,8 +490,9 @@ body {
 
 /* ── INLINE FORM MODAL ── */
 .form-modal {
-  display:none; position:fixed; inset:0; z-index:200;
-  background:rgba(15,23,42,0.6); overflow-y:auto; padding:12px;
+  display:none; position:fixed; inset:0; z-index:300;
+  background:rgba(15,23,42,0.6); overflow-y:auto;
+  padding:12px 12px calc(68px + env(safe-area-inset-bottom, 0px));
 }
 .form-modal.open { display:flex; align-items:flex-start; justify-content:center; }
 .form-sheet {
