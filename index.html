@@ -4715,13 +4715,28 @@ function sfSaveHazard(sr){
     responsible:v('hf-resp'), target:v('hf-target'), status:v('hf-status'),
     remarks:v('hf-remarks') };
   if(!d.activity){ showStatus('Activity is required','error',3000); return; }
+  showStatus('Saving hazard…','info',0);
   google.script.run.withSuccessHandler(function(res){
     if(res&&res.success){
       sfCloseModal();
       showStatus('Hazard '+(res.action||'saved')+' — risk '+res.risk+' ('+res.classification+')','success',2800);
-      SF.dash=null; SF.charts=null; SF.hira=null; SF.heatmap=null; loadSafety();
+      sfReloadAfterWrite();
     } else showStatus('Save failed: '+(res&&res.message||''),'error',4000);
+  }).withFailureHandler(function(err){
+    showStatus('Save failed: '+(err&&err.message||err),'error',5000);
   }).addHazard(d);
+}
+
+/** Invalidate caches and refresh ONLY the current tab — run outside the
+ *  JSONP callback so chained calls don't collide (fixes "Unexpected end of input"). */
+function sfReloadAfterWrite(){
+  SF.dash=null; SF.charts=null; SF.hira=null; SF.heatmap=null;
+  SF.kanban=null; SF.lists=SF.lists; // keep lists cache
+  setTimeout(function(){
+    if(SF.tab==='actions') sfRenderActions();
+    else if(SF.tab==='hira'){ SF.hira=null; sfRenderHira(); }
+    else loadSafety();
+  }, 350);
 }
 
 /* ---------- ACTIONS — KANBAN BOARD ---------- */
@@ -4776,12 +4791,14 @@ function sfKDrop(e,col){
   } else sfMoveCard(sr,newStatus,null);
 }
 function sfMoveCard(sr,status,opt){
+  showStatus('Updating…','info',0);
   google.script.run.withSuccessHandler(function(res){
     if(res&&res.success){
       showStatus('Moved #'+sr+' → '+status,'success',2000);
-      SF.dash=null; SF.charts=null; SF.hira=null;
-      sfRenderActions();
-    } else showStatus('Move failed','error',3000);
+      sfReloadAfterWrite();
+    } else showStatus('Move failed: '+(res&&res.message||''),'error',3500);
+  }).withFailureHandler(function(err){
+    showStatus('Move failed: '+(err&&err.message||err),'error',5000);
   }).updateActionStatus(sr,status,opt||undefined);
 }
 
@@ -4831,10 +4848,13 @@ function sfSubmitIncident(){
     persons:val('sfi-persons'),zone:val('sfi-zone'),location:val('sfi-loc'),
     description:val('sfi-desc'),rootCause:val('sfi-rc'),capa:val('sfi-capa') };
   function val(id){var e=document.getElementById(id);return e?e.value:'';}
+  showStatus('Logging incident…','info',0);
   google.script.run.withSuccessHandler(function(res){
     if(res&&res.success){ sfCloseModal(); showStatus('Incident logged','success',2500);
-      SF.dash=null; SF.charts=null; loadSafety(); }
-    else showStatus('Failed to log incident','error',3000);
+      sfReloadAfterWrite(); }
+    else showStatus('Failed to log incident: '+(res&&res.message||''),'error',3500);
+  }).withFailureHandler(function(err){
+    showStatus('Failed to log incident: '+(err&&err.message||err),'error',5000);
   }).addIncident(d);
 }
 </script>
