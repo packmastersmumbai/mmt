@@ -1424,9 +1424,9 @@ function _prefetchRecords() {
             if (grid && !grid.querySelector('.mb-panel')) _renderMachineList(_boardData);
           }
         }
-        next();
+        setTimeout(next, 250);
       })
-      .withFailureHandler(function() { next(); })
+      .withFailureHandler(function() { setTimeout(next, 250); })
       .getAllBoardRecords(type);
   }
   next();
