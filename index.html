@@ -882,7 +882,7 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
       <div class="mb-chips" id="mb-mac-chips"></div>
     </div>
     <!-- fixed action bar -->
-    <div class="mb-actionbar" id="mb-actionbar">
+    <div class="mb-actionbar locked" id="mb-actionbar">
       <button class="mb-ab-btn" data-act="bd" onclick="mbAction('bd')">
         <span class="ab-ico" style="color:#dc2626">&#x25CF;</span>BD<span class="ab-n" id="ab-n-bd"></span></button>
       <button class="mb-ab-btn" data-act="pm" onclick="mbAction('pm')">
@@ -1434,6 +1434,7 @@ function renderBoard(data) {
   document.getElementById('mb-count').textContent = data.total + ' machines';
   _renderCatChips(data);
   _renderMacChips(data);
+  _updateActionBar();
   _renderRecList();
 }
 
