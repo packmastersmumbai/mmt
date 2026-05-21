@@ -4648,8 +4648,20 @@ function sfPersonOptions(sel){
   return '<option value="">— select —</option>'+p.map(function(x){
     return '<option'+(x===sel?' selected':'')+'>'+sfEsc(x)+'</option>';}).join('');
 }
+function sfFindHazard(sr){
+  var pools=[SF.hira];
+  if(SF.kanban&&SF.kanban.columns){
+    Object.keys(SF.kanban.columns).forEach(function(k){
+      pools.push(SF.kanban.columns[k]); });
+  }
+  for(var i=0;i<pools.length;i++){
+    var p=pools[i]||[];
+    for(var j=0;j<p.length;j++) if(p[j].sr===sr) return p[j];
+  }
+  return null;
+}
 function sfHazardDetail(sr){
-  var r=(SF.hira||[]).filter(function(x){return x.sr===sr;})[0];
+  var r = (sr!=null) ? sfFindHazard(sr) : null;
   var isNew = !r;
   if(isNew) r={sr:'',section:'',activity:'',di:'D',rnr:'R',hazard:'',L:1,C:1,
     risk:1,classification:'Negligible',controls:'',responsible:'',target:'',
@@ -4790,9 +4802,13 @@ function sfRenderIncidents(){
 function sfModal(title, bodyHtml){
   document.getElementById('form-modal-title').textContent=title;
   document.getElementById('form-modal-body').innerHTML=bodyHtml;
-  document.getElementById('form-modal').classList.add('active');
+  document.getElementById('form-modal').classList.add('open');
 }
-function sfCloseModal(){ closeFormModal(); }
+function sfCloseModal(){
+  var m=document.getElementById('form-modal');
+  if(m) m.classList.remove('open');
+  if(typeof closeFormModal==='function'){ try{closeFormModal();}catch(e){} }
+}
 
 function sfNewIncident(){
   var body='<div style="display:flex;flex-direction:column;gap:8px;font-size:12px">'+
