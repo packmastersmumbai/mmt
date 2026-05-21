@@ -1384,11 +1384,15 @@ var _recordsByMachine = {};    // {machineId: {bd:[],pm:[],clit:[],checklist:[]}
 
 function loadBoard(highlightMachineId) {
   if (highlightMachineId) { _highlightId = highlightMachineId; _mbOpenMachine = highlightMachineId; }
-  if (_boardData && _boardData.success) { renderBoard(_boardData); return; }
+  if (_boardData && _boardData.success) {
+    renderBoard(_boardData);
+    if (!_boardRecordsCache.bd) _prefetchRecords(); // records not yet pulled
+    return;
+  }
   document.getElementById('board-grid').innerHTML =
     '<div class="loading-spinner" style="padding:40px"><div class="spinner-ring"></div>Loading machines&hellip;</div>';
   google.script.run
-    .withSuccessHandler(function(data) { _boardData = data; renderBoard(data); _prefetchRecords(); })
+    .withSuccessHandler(function(data) { _boardData = data; renderBoard(data); setTimeout(_prefetchRecords, 300); })
     .withFailureHandler(function(e) {
       document.getElementById('board-grid').innerHTML =
         '<div style="padding:20px;color:#dc2626;font-size:13px">Error: ' + esc((e && e.message) || 'unknown') + '</div>';
