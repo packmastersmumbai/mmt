@@ -4321,6 +4321,11 @@ function submitCLITForm(machineId) {
 // INIT — resolve startup route from server-injected vars
 // ═══════════════════════════════════════════════════════
 
+// SF state — declared before init() so a direct #safety load (which calls
+// loadSafety() during init) does not hit an undefined SF.
+var SF = { tab:'dashboard', dash:null, hira:null, charts:null, lists:null,
+  heatmap:null, chartObjs:[], chartTypes:{} };
+
 (function init() {
   var startHash = 'board';
 
@@ -4353,11 +4358,8 @@ function submitCLITForm(machineId) {
 })();
 
 // ═══════════════════════════════════════════════════════
-// SAFETY / OHS MODULE
+// SAFETY / OHS MODULE  (SF declared earlier, above init())
 // ═══════════════════════════════════════════════════════
-var SF = { tab:'dashboard', dash:null, hira:null, charts:null, lists:null,
-  heatmap:null, chartObjs:[], chartTypes:{} };
-
 var SF_RISK_COLORS = { Negligible:'#16a34a', Tolerable:'#eab308',
   Substantial:'#f97316', Intolerable:'#dc2626', Critical:'#7f1d1d' };
 var SF_STATUS_COLORS = { Open:'#f59e0b', 'In Progress':'#0ea5e9',
