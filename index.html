@@ -1056,14 +1056,6 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 
     </div><!-- /cl-content-wrap -->
 
-    <!-- Checklist photo enlarge preview — kept OUTSIDE cl-content-wrap so it
-         is not hidden when the checklist view is inactive (display:none on a
-         parent collapses position:fixed children too). -->
-    <div id="cl-hoverWrap" class="cl-hover-wrap">
-      <img id="cl-hoverZoom" src="" alt="">
-      <div id="cl-hoverCap" class="cl-hover-cap"></div>
-    </div>
-
     <!-- Photo Modal -->
     <div class="cl-photo-modal" id="cl-photoModal">
       <div class="cl-photo-box">
@@ -1207,6 +1199,13 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
     </div>
     <div class="form-body" id="rec-detail-body"></div>
   </div>
+</div>
+
+<!-- Checklist photo enlarge preview — at app root (outside all view-* panels
+     and modals) so display:none on a parent never collapses it to 0×0. -->
+<div id="cl-hoverWrap" class="cl-hover-wrap">
+  <img id="cl-hoverZoom" src="" alt="">
+  <div id="cl-hoverCap" class="cl-hover-cap"></div>
 </div>
 
 <!-- ══════ INLINE FORM MODAL ══════ -->
