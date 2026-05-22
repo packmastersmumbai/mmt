@@ -3052,18 +3052,24 @@ function clImgHoverOut() {
   if (wrap && wrap.getAttribute('data-pinned')) return; // keep pinned previews
   _clHidePreview();
 }
-/* Tap a thumbnail (touch devices) — show preview pinned; tap again to toggle. */
+/* Tap a thumbnail — show preview pinned; tap the SAME thumbnail again to close.
+   Only a previously PINNED preview of the same image toggles closed; a preview
+   merely shown by a synthesized hover (touch fires mouseover+click) must not
+   self-close on the click that follows. */
 function clImgTap(thumb) {
   var wrap = document.getElementById('cl-hoverWrap');
   var z    = document.getElementById('cl-hoverZoom');
   if (!wrap) return;
   var imgId = thumb.getAttribute('data-imgid');
-  var open  = wrap.style.display === 'block' && z && z.getAttribute('data-cur') === imgId;
-  if (open) { _clHidePreview(); return; }
+  var pinnedSame = wrap.getAttribute('data-pinned') &&
+                   wrap.style.display === 'block' &&
+                   z && z.getAttribute('data-cur') === imgId;
+  if (pinnedSame) { _clHidePreview(); return; }
   _clShowPreview(thumb);
   wrap.setAttribute('data-pinned', '1');
 }
-/* Tap anywhere on the pinned preview dismisses it. */
+/* Tap on the pinned preview itself dismisses it. The thumbnail's own onclick
+   calls event.stopPropagation(), so the opening tap never reaches here. */
 document.addEventListener('click', function(e) {
   var wrap = document.getElementById('cl-hoverWrap');
   if (wrap && wrap.getAttribute('data-pinned') &&
