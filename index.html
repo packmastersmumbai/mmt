@@ -391,9 +391,14 @@ body {
   display:flex; justify-content:space-between; }
 .mb-scope b { color:#0f172a; }
 /* image hover preview (daily checklist) */
-.cl-hover-zoom { position:fixed; z-index:1200; pointer-events:none;
-  border:3px solid #fff; border-radius:10px; box-shadow:0 12px 40px rgba(0,0,0,.45);
-  max-width:92vw; max-height:90vh; display:none; background:#000; }
+.cl-hover-wrap { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+  z-index:1200; display:none; max-width:92vw; max-height:90vh;
+  border:3px solid #fff; border-radius:10px; overflow:hidden;
+  box-shadow:0 12px 40px rgba(0,0,0,.45); background:#000; }
+.cl-hover-wrap img { display:block; max-width:92vw; max-height:84vh; }
+.cl-hover-cap { font-size:12px; font-weight:600; color:#fff; background:#0f172a;
+  padding:6px 10px; text-align:center; letter-spacing:.3px; }
+.cl-hover-cap:empty { display:none; }
 /* Category group — collapsible */
 .cat-group { margin-bottom:14px; }
 .cat-group-title {
@@ -1048,7 +1053,10 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 
     <!-- Image Viewer -->
     <div id="cl-imgViewer"><img id="cl-imgViewerSrc" src=""></div>
-    <img id="cl-hoverZoom" class="cl-hover-zoom" src="" alt="">
+    <div id="cl-hoverWrap" class="cl-hover-wrap">
+      <img id="cl-hoverZoom" src="" alt="">
+      <div id="cl-hoverCap" class="cl-hover-cap"></div>
+    </div>
 
     </div><!-- /cl-content-wrap -->
 
@@ -2005,6 +2013,11 @@ function openChecklistRecord(rowNum, machineId, machineName) {
 }
 
 function _renderChecklistDetail(r) {
+  // Stash batch info for the enlarged-image caption (used by clImgHover/clImgTap).
+  window._clImgCaption = [
+    r.pmBatch   ? 'PM Batch: ' + r.pmBatch : '',
+    r.bulkBatch ? 'Bulk Batch: ' + r.bulkBatch : ''
+  ].filter(Boolean).join('   ·   ');
   function row(label, value) {
     if (!value) return '';
     return '<div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #f1f5f9">'+
@@ -2033,10 +2046,11 @@ function _renderChecklistDetail(r) {
       var thumb  = '';
       if (imgId) {
         var src = 'https://lh3.googleusercontent.com/d/' + imgId + '=w200';
-        thumb = '<img src="'+esc(src)+'" style="'+thumbStyle+'" '+
+        thumb = '<img src="'+esc(src)+'" style="'+thumbStyle+';cursor:zoom-in" '+
           'data-imgid="'+esc(imgId)+'" '+
           'onmouseover="clImgHover(event,this)" onmousemove="clImgHover(event,this)" '+
-          'onmouseout="clImgHoverOut()" onclick="clViewImg(\'https://lh3.googleusercontent.com/d/'+esc(imgId)+'=w1600\')" '+
+          'onmouseout="clImgHoverOut()" '+
+          'onclick="event.stopPropagation();clImgTap(this)" '+
           'onerror="this.style.display=\'none\'" alt="photo">';
       }
       var statusColor = ok ? (gyr && v.charAt(0)==='Y' ? '#f59e0b' : gyr && v.charAt(0)==='R' ? '#dc2626' : '#16a34a') : (na ? '#94a3b8' : '#dc2626');
@@ -2045,7 +2059,7 @@ function _renderChecklistDetail(r) {
         '<span style="font-size:13px;color:'+statusColor+';flex-shrink:0;width:16px">'+statusIcon+'</span>'+
         '<span style="font-size:12px;color:#1e293b;flex:1;'+(ok?'':'opacity:0.6')+'">'+esc(lbl)+'</span>'+
         (thumb ? '<div style="position:relative">'+thumb+'</div>' : '')+
-        (v && v !== 'Y' && v !== 'N' ? '<span style="font-size:10px;background:#f1f5f9;color:#475569;padding:1px 6px;border-radius:8px;flex-shrink:0">'+esc(v)+'</span>' : '')+
+        (na ? '<span style="font-size:10px;background:#f1f5f9;color:#475569;padding:1px 6px;border-radius:8px;flex-shrink:0">N/A</span>' : '')+
       '</div>';
     }).join('');
     var photoCount = items.filter(function(v,i){return imgMap&&imgMap[i]&&r.images&&r.images[imgMap[i]];}).length;
@@ -3005,25 +3019,55 @@ function clViewImg(src) {
   v.style.display = 'flex';
 }
 
-/* Large floating image preview while hovering a checklist photo thumbnail. */
-function clImgHover(e, thumb) {
-  var z = document.getElementById('cl-hoverZoom');
-  if (!z) return;
+/* Large centred image preview for a checklist photo thumbnail.
+   Desktop: shown on hover. Touch: shown on tap (clImgTap) and pinned. */
+function _clShowPreview(thumb) {
+  var wrap = document.getElementById('cl-hoverWrap');
+  var z    = document.getElementById('cl-hoverZoom');
+  var cap  = document.getElementById('cl-hoverCap');
+  if (!wrap || !z) return;
   var imgId = thumb.getAttribute('data-imgid');
-  var big = 'https://lh3.googleusercontent.com/d/' + imgId + '=w1600';
   if (z.getAttribute('data-cur') !== imgId) {
-    z.src = big; z.setAttribute('data-cur', imgId);
+    z.src = 'https://lh3.googleusercontent.com/d/' + imgId + '=w1600';
+    z.setAttribute('data-cur', imgId);
   }
-  // large preview — centred on screen (too big to follow the cursor)
-  z.style.display = 'block';
-  z.style.left = '50%';
-  z.style.top  = '50%';
-  z.style.transform = 'translate(-50%, -50%)';
+  if (cap) cap.textContent = window._clImgCaption || '';
+  wrap.style.display = 'block';
+}
+function _clHidePreview() {
+  var wrap = document.getElementById('cl-hoverWrap');
+  if (wrap) { wrap.style.display = 'none'; wrap.removeAttribute('data-pinned'); }
+}
+/* Hover (desktop only) — ignored while a tap-pinned preview is open. */
+function clImgHover(e, thumb) {
+  var wrap = document.getElementById('cl-hoverWrap');
+  if (wrap && wrap.getAttribute('data-pinned')) return;
+  _clShowPreview(thumb);
 }
 function clImgHoverOut() {
-  var z = document.getElementById('cl-hoverZoom');
-  if (z) z.style.display = 'none';
+  var wrap = document.getElementById('cl-hoverWrap');
+  if (wrap && wrap.getAttribute('data-pinned')) return; // keep pinned previews
+  _clHidePreview();
 }
+/* Tap a thumbnail (touch devices) — show preview pinned; tap again to toggle. */
+function clImgTap(thumb) {
+  var wrap = document.getElementById('cl-hoverWrap');
+  var z    = document.getElementById('cl-hoverZoom');
+  if (!wrap) return;
+  var imgId = thumb.getAttribute('data-imgid');
+  var open  = wrap.style.display === 'block' && z && z.getAttribute('data-cur') === imgId;
+  if (open) { _clHidePreview(); return; }
+  _clShowPreview(thumb);
+  wrap.setAttribute('data-pinned', '1');
+}
+/* Tap anywhere on the pinned preview dismisses it. */
+document.addEventListener('click', function(e) {
+  var wrap = document.getElementById('cl-hoverWrap');
+  if (wrap && wrap.getAttribute('data-pinned') &&
+      (e.target === wrap || wrap.contains(e.target))) {
+    _clHidePreview();
+  }
+});
 
 document.addEventListener('click', function(e) {
   if (e.target.id === 'cl-imgViewer') document.getElementById('cl-imgViewer').style.display = 'none';
