@@ -1053,12 +1053,16 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 
     <!-- Image Viewer -->
     <div id="cl-imgViewer"><img id="cl-imgViewerSrc" src=""></div>
+
+    </div><!-- /cl-content-wrap -->
+
+    <!-- Checklist photo enlarge preview — kept OUTSIDE cl-content-wrap so it
+         is not hidden when the checklist view is inactive (display:none on a
+         parent collapses position:fixed children too). -->
     <div id="cl-hoverWrap" class="cl-hover-wrap">
       <img id="cl-hoverZoom" src="" alt="">
       <div id="cl-hoverCap" class="cl-hover-cap"></div>
     </div>
-
-    </div><!-- /cl-content-wrap -->
 
     <!-- Photo Modal -->
     <div class="cl-photo-modal" id="cl-photoModal">
