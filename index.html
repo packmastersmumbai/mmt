@@ -1244,11 +1244,11 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 
 // ═══════════════════════════════════════════════════════
 // google.script.run POLYFILL (GitHub Pages → GAS)
-// Small payloads: JSONP/GET (script-tag injection, no CORS)
-// Large payloads: POST via fetch (supports big data like images)
+// GET fetch for small payloads, POST fetch for large (images etc.)
+// GAS exec returns Access-Control-Allow-Origin: * on GET — no CORS issues.
+// Script-tag JSONP removed: Chrome ORB blocks it since 2024.
 // ═══════════════════════════════════════════════════════
 (function() {
-  var _cbId = 0;
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbznhY-2hEreRwLK_7bQOmbvjusfT8OpycIx1FfDfBhNpKnYiGjWdG1kftG9x1Y2td13/exec';
   var POST_THRESHOLD = 1800; // bytes — switch to POST if URL would exceed this
   var _s = function() {}, _f = function(e) { console.error('API error', e); };
@@ -1267,8 +1267,6 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 
         if (urlLen > POST_THRESHOLD) {
           // ── POST mode (large payloads like image uploads) ──
-          // GAS redirects POST→GET (302), so we must use no-cors mode
-          // and send via the exec URL which handles CORS for text/plain
           fetch(GAS_URL, {
             method: 'POST',
             body: JSON.stringify({ fn: prop, args: args }),
@@ -1286,19 +1284,18 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
           })
           .catch(function(err) { f(new Error('Network error calling ' + prop + ': ' + err.message)); });
         } else {
-          // ── JSONP/GET mode (small payloads, no CORS issues) ──
-          var cbName = '_gscb' + (++_cbId);
+          // ── GET fetch mode (replaces JSONP — GAS returns CORS headers on GET) ──
           var url = GAS_URL + '?fn=' + encodeURIComponent(prop) +
-            '&args=' + encodeURIComponent(argsJson) +
-            '&callback=' + cbName;
-          window[cbName] = function(data) {
-            delete window[cbName];
+            '&args=' + encodeURIComponent(argsJson);
+          fetch(url)
+          .then(function(resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.json();
+          })
+          .then(function(data) {
             try { s(data); } catch(e) { f(e); }
-          };
-          var script = document.createElement('script');
-          script.src = url;
-          script.onerror = function() { delete window[cbName]; f(new Error('Network error calling ' + prop)); };
-          document.head.appendChild(script);
+          })
+          .catch(function(err) { f(new Error('Network error calling ' + prop + ': ' + err.message)); });
         }
       };
     }
@@ -1313,6 +1310,7 @@ var _p=new URLSearchParams(window.location.search);
 var INIT_MACHINE_ID=_p.get('machine')||'';
 var INIT_ACTION=_p.get('action')||'';
 var INIT_SLIP=_p.get('slip')||'';
+var INIT_SAFETY_SR=_p.get('sr')||'';
 
 // ═══════════════════════════════════════════════════════
 // HTML ESCAPE HELPER
@@ -4515,6 +4513,13 @@ var SF = { tab:'dashboard', dash:null, hira:null, charts:null, lists:null,
     startHash = 'bd';
   }
 
+  // 5. Special: safety record deep-link (?action=safety&sr=NN) — open the HIRA
+  //    tab pre-filtered to that Sr. SF.pendingSr is consumed by sfRenderHira().
+  if (INIT_ACTION === 'safety' && INIT_SAFETY_SR) {
+    startHash = 'safety';
+    SF.pendingSr = String(INIT_SAFETY_SR);
+  }
+
   navigate(startHash, App.machineId || null);
   App.initialized = true;
 })();
@@ -4536,6 +4541,8 @@ function sfEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</
 
 /** Entry point — called by navigate('safety'). */
 function loadSafety(){
+  // Deep-linked to a specific hazard Sr → force the HIRA tab.
+  if(SF.pendingSr){ SF.tab = 'hira'; }
   // wire tab clicks once
   var tabs = document.getElementById('sf-tabs');
   if(tabs && !tabs._wired){
@@ -4785,9 +4792,18 @@ function sfRenderHira(){
   if(!SF.hira){
     google.script.run.withSuccessHandler(function(r){
       SF.hira = r && r.success ? r.rows : [];
-      sfHiraFilter();
+      _sfApplyPendingSr();
     }).getHiraRegister(null);
-  } else sfHiraFilter();
+  } else _sfApplyPendingSr();
+}
+// Consume a deep-linked hazard Sr (from ?action=safety&sr=): filter to it and
+// open its detail sheet directly. Falls back to a normal render if not found.
+function _sfApplyPendingSr(){
+  var sr = SF.pendingSr; SF.pendingSr = null;
+  sfHiraFilter();
+  if(!sr) return;
+  var hit=(SF.hira||[]).filter(function(r){ return String(r.sr)===String(sr); })[0];
+  if(hit){ try{ sfHazardDetail(hit.sr); }catch(e){} }
 }
 function sfHiraFilter(opt){
   var rows=SF.hira||[];
