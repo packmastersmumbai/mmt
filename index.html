@@ -5184,10 +5184,48 @@ function sfRenderIncidents(){
       '<div class="sf-canvas-box"><canvas id="sfi-type"></canvas></div></div>'+
     '<div class="sf-card"><h4>Incidents by Zone</h4>'+
       '<div class="sf-canvas-box"><canvas id="sfi-zone"></canvas></div></div>'+
-    '<div class="sf-banner">Use the + button to log a new incident.</div></div>'+
+    '<div class="sf-banner">Use the + button to log a new incident.</div>'+
+    '<div id="sf-inc-list"><div class="sf-card">Loading records…</div></div></div>'+
     '<button class="sf-fab" onclick="sfNewIncident()">+</button>';
   sfChartDoughnut('sfi-type', (SF.charts||{}).incidentType, null);
   sfChartHBar('sfi-zone', (SF.charts||{}).incidentZone, '#0ea5e9');
+  google.script.run.withSuccessHandler(function(res){
+    var el=document.getElementById('sf-inc-list'); if(!el) return;
+    if(!res||!res.success){ el.innerHTML='<div class="sf-card">Could not load records: '+
+      sfEsc(res&&res.message||'unknown')+'</div>'; return; }
+    SF.incidents=res.rows;
+    el.innerHTML=sfIncidentsHtml(res.rows);
+  }).withFailureHandler(function(err){
+    var el=document.getElementById('sf-inc-list'); if(el) el.innerHTML=
+      '<div class="sf-card">Could not load records: '+sfEsc(err&&err.message||err)+'</div>';
+  }).getIncidents();
+}
+function sfIncColor(type){
+  return /accident/i.test(type||'') ? '#dc2626' : '#f59e0b'; // accident red, near-miss amber
+}
+function sfIncDate(iso){
+  if(!iso) return '';
+  var d=new Date(iso); if(isNaN(d)) return sfEsc(String(iso).substr(0,10));
+  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+}
+function sfIncidentsHtml(rows){
+  if(!rows||!rows.length) return '<div class="sf-card">No incident records yet.</div>';
+  return '<div class="sf-banner">'+rows.length+' record'+(rows.length>1?'s':'')+
+    ' (newest first)</div>'+rows.map(function(r){
+    return '<div class="sf-row" style="border-left-color:'+sfIncColor(r.type)+'">'+
+      '<div class="top"><span class="act">#'+sfEsc(r.sr)+' &middot; '+sfEsc(r.type)+'</span>'+
+        '<span class="sf-pill risk" style="background:'+sfIncColor(r.type)+'">'+
+          sfEsc(r.capaStatus||'—')+'</span></div>'+
+      '<div class="haz">'+sfEsc(r.description)+'</div>'+
+      '<div class="meta"><span>'+sfIncDate(r.date)+(r.time?' '+sfEsc(r.time):'')+'</span>'+
+        (r.zone?'<span>'+sfEsc(r.zone)+'</span>':'')+
+        (r.location?'<span>'+sfEsc(r.location)+'</span>':'')+
+        (r.persons?'<span>'+sfEsc(r.persons)+' person(s)</span>':'')+
+        (r.shift?'<span>Shift '+sfEsc(r.shift)+'</span>':'')+'</div>'+
+      (r.rootCause?'<div class="meta"><span><b>Root cause:</b> '+sfEsc(r.rootCause)+'</span></div>':'')+
+      (r.capa?'<div class="meta"><span><b>CAPA:</b> '+sfEsc(r.capa)+'</span></div>':'')+
+      '</div>';
+  }).join('');
 }
 
 /* ---------- ENTRY FORMS ---------- */
