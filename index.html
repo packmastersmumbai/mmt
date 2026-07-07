@@ -1311,6 +1311,7 @@ var INIT_MACHINE_ID=_p.get('machine')||'';
 var INIT_ACTION=_p.get('action')||'';
 var INIT_SLIP=_p.get('slip')||'';
 var INIT_SAFETY_SR=_p.get('sr')||'';
+var INIT_ROW=_p.get('row')||'';
 
 // ═══════════════════════════════════════════════════════
 // HTML ESCAPE HELPER
@@ -4518,6 +4519,13 @@ var SF = { tab:'dashboard', dash:null, hira:null, charts:null, lists:null,
   if (INIT_ACTION === 'safety' && INIT_SAFETY_SR) {
     startHash = 'safety';
     SF.pendingSr = String(INIT_SAFETY_SR);
+  }
+
+  // 6. Special: checklist record deep-link (?action=viewchecklist&row=NN) — land
+  //    on the checklist view, then pop the record-detail modal for that row.
+  if (INIT_ACTION === 'viewchecklist' && INIT_ROW) {
+    startHash = 'checklist';
+    setTimeout(function() { openChecklistRecord(INIT_ROW); }, 300);
   }
 
   navigate(startHash, App.machineId || null);
