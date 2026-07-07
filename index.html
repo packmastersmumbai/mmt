@@ -1312,6 +1312,7 @@ var INIT_ACTION=_p.get('action')||'';
 var INIT_SLIP=_p.get('slip')||'';
 var INIT_SAFETY_SR=_p.get('sr')||'';
 var INIT_ROW=_p.get('row')||'';
+var INIT_TYPE=_p.get('type')||'';
 
 // ═══════════════════════════════════════════════════════
 // HTML ESCAPE HELPER
@@ -4509,9 +4510,21 @@ var SF = { tab:'dashboard', dash:null, hira:null, charts:null, lists:null,
     startHash = 'mhc';
   }
 
-  // 4. Special: slip-based views (viewbd with slip param)
+  // 4. Special: BD slip deep-link (viewbd + slip) — land on the BD view, then
+  //    pop the record-detail modal for that slip.
   if (INIT_ACTION === 'viewbd' && INIT_SLIP) {
     startHash = 'bd';
+    setTimeout(function() { openRecordDetail(INIT_SLIP, 'bd'); }, 300);
+  }
+
+  // 4b. Generic record deep-link (?action=viewrec&type=<bd|pm|clit>&slip=NN) —
+  //     used by Telegram/WhatsApp share links to open the exact PM/CLIT/BD record.
+  if (INIT_ACTION === 'viewrec' && INIT_SLIP && INIT_TYPE) {
+    var _rt = String(INIT_TYPE).toLowerCase();
+    if (['bd', 'pm', 'clit'].indexOf(_rt) !== -1) {
+      startHash = _rt;
+      setTimeout(function() { openRecordDetail(INIT_SLIP, _rt); }, 300);
+    }
   }
 
   // 5. Special: safety record deep-link (?action=safety&sr=NN) — open the HIRA
