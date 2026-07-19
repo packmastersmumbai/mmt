@@ -5545,8 +5545,15 @@ function sfSubmitIncident(){
 // ═══════════════════════════════════════════════════════
 // FACILITY LOGS — Housekeeping · Electricity · Water
 // ═══════════════════════════════════════════════════════
-var FL = { hkCfg:null, hkState:{}, hkMonth:null, rdMonth:null, rdRepKind:'elec',
-  meters:{elec:[],water:[]}, personnel:[] };
+// FL may be referenced by navigate('hk') during init, which runs BEFORE this
+// assignment (this block is at the end of the script). _flEnsure() lazily
+// creates it so hkInit/rdInit never hit an undefined FL.
+var FL;
+function _flEnsure(){
+  if (!FL) FL = { hkCfg:null, hkState:{}, hkMonth:null, rdMonth:null,
+    rdRepKind:'elec', meters:{elec:[],water:[]}, personnel:[] };
+  return FL;
+}
 
 function _flToday(){ var d=new Date(); return d.getFullYear()+'-'+_flP(d.getMonth()+1)+'-'+_flP(d.getDate()); }
 function _flP(n){ return n<10?'0'+n:''+n; }
@@ -5571,6 +5578,7 @@ function flFillPeople(sel, placeholder){
 
 // ── HOUSEKEEPING ──
 function hkInit(){
+  _flEnsure();
   document.getElementById('hk-datesub').textContent = _flToday();
   FL.hkMonth = FL.hkMonth || _flMY(new Date());
   flLoadPeople(function(){ flFillPeople('hk-by','By / नाम…'); flFillPeople('hk-sup','Supervisor / पर्यवेक्षक (verify)…'); });
@@ -5691,6 +5699,7 @@ function hkDrill(activity,day){
 
 // ── READINGS ──
 function rdInit(){
+  _flEnsure();
   document.getElementById('rd-datesub').textContent=_flToday();
   rdBack();
   flLoadPeople(function(){});
