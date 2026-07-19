@@ -3734,7 +3734,8 @@ function renderLabels() {
   var activeChip = document.querySelector('#lbl-type-chips .lbl-chip.active');
   var ft = activeChip ? activeChip.dataset.ltype : 'all';
   var ff = document.getElementById('labels-ff').value;
-  var list = LBL_DATA.filter(function(d) {
+  var SRC = (window._labelLive && window._labelLive.length) ? window._labelLive : LBL_DATA;
+  var list = SRC.filter(function(d) {
     if (ft !== 'all' && d.t !== ft) return false;
     if (ff !== 'all' && d.f !== ff) return false;
     return true;
@@ -4094,7 +4095,14 @@ var _labelsLoaded = false;
 function loadLabels() {
   if (_labelsLoaded) return;
   _labelsLoaded = true;
-  renderLabels();
+  renderLabels();  // instant demo render; replaced by live data below
+  // Pull ALL real records (machines, spares, calibration) from the sheets.
+  google.script.run.withSuccessHandler(function(r){
+    if (r && r.success && r.labels && r.labels.length) {
+      window._labelLive = r.labels;
+      renderLabels();
+    }
+  }).withFailureHandler(function(){ /* keep demo fallback */ }).getLabelData();
   // Wire up type chip delegated click
   var chipsEl = document.getElementById('lbl-type-chips');
   if (chipsEl) {
