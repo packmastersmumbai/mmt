@@ -2661,6 +2661,11 @@ function navigate(hash, machineId, skipPush) {
   }
   if (hash === 'labels')    loadLabels();
   if (hash === 'safety')    loadSafety();
+  // Facility views (#view-hk/#view-readings) are siblings AFTER .app-content,
+  // which keeps a min-height and would reserve blank space above them.
+  // Collapse .app-content while a facility view is active, restore otherwise.
+  var _ac = document.querySelector('.app-content');
+  if (_ac) _ac.style.display = (hash === 'hk' || hash === 'readings') ? 'none' : '';
   if (hash === 'hk')        hkInit();
   if (hash === 'readings')  rdInit();
   if (hash === 'checklist') {
