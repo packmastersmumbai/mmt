@@ -836,20 +836,46 @@ body {
 .fl-ctrl:focus{ border-color:var(--flacc); box-shadow:0 0 0 3px #4dd8c022; }
 select.fl-ctrl{ font-weight:600; }
 .fl-by,.fl-sup{ max-width:230px; }
-.fl-summary{ display:flex; align-items:center; gap:12px; font-size:12.5px; color:var(--fldim); margin-bottom:12px; font-variant-numeric:tabular-nums; }
-.fl-summary b{ color:var(--flink); }
-.fl-prog{ flex:1; max-width:180px; height:6px; background:#0c1218; border:1px solid var(--fledge); border-radius:99px; overflow:hidden; }
+.fl-summary{ display:flex; align-items:center; gap:14px; font-size:14px; color:var(--fldim); margin-bottom:12px; font-variant-numeric:tabular-nums; flex-wrap:wrap; }
+.fl-summary b{ color:var(--flink); font-size:15px; }
+.fl-prog{ flex:1; min-width:120px; max-width:220px; height:8px; background:#0c1218; border:1px solid var(--fledge); border-radius:99px; overflow:hidden; }
 .fl-prog i{ display:block; height:100%; width:0; background:linear-gradient(90deg,var(--flacc),#5fe6cd); transition:width .2s; }
-.fl-loading{ padding:26px; text-align:center; color:var(--flfaint); font-size:13px; }
+.fl-loading{ padding:26px; text-align:center; color:var(--flfaint); font-size:14px; }
+/* ── housekeeping: bulk actions, coverage, exception surfacing ── */
+.fl-allok{ width:100%; margin-bottom:12px; padding:15px; border-radius:13px; cursor:pointer;
+  font:800 15px 'Archivo'; color:#04120f; border:0;
+  background:linear-gradient(180deg,#5fe6cd,#31b39c); box-shadow:0 8px 20px -10px #31b39c88; }
+.fl-allok:active{ transform:translateY(1px); }
+.fl-allok.undo{ background:var(--flpanel); color:var(--flink); border:1px solid var(--fledge2); box-shadow:none; }
+/* per-activity "All OK" — sits in the header, must not trigger the accordion */
+.fl-actok{ flex-shrink:0; font:700 12.5px 'Archivo'; padding:8px 12px; border-radius:9px; cursor:pointer;
+  background:#0c1218; border:1px solid var(--fledge2); color:var(--fldim); min-height:36px; }
+.fl-actok:hover{ border-color:var(--flgood); color:var(--flgood); }
+.fl-actok.on{ background:#0d1a13; border-color:#1e5a3c; color:var(--flgood); }
+/* a failed parameter must be visible without opening the accordion */
+.fl-act.hasfail{ border-color:#5a1e1e; }
+.fl-act.hasfail .fl-acthd{ background:#170d0d; }
+.fl-failnote{ font:700 12.5px 'Archivo'; color:var(--flR); padding:0 14px 12px; display:none; }
+.fl-act.hasfail .fl-failnote{ display:block; }
+.fl-act.open .fl-failnote{ display:none; }
+/* today-already-logged banner */
+.fl-warnbar{ display:none; align-items:center; gap:10px; padding:13px 15px; border-radius:12px; margin-bottom:13px;
+  background:#1a1408; border:1px solid #6b4a12; color:var(--flwarn); font:600 13.5px 'Archivo'; }
+.fl-warnbar.show{ display:flex; }
+.fl-cov{ display:flex; gap:9px; align-items:center; flex-wrap:wrap; margin-bottom:13px; }
+.fl-covpill{ font:700 13px 'Archivo'; padding:8px 13px; border-radius:99px; border:1px solid var(--fledge); background:#0c1218; color:var(--fldim); }
+.fl-covpill b{ color:var(--flink); } .fl-covpill.ok{ border-color:#1e5a3c; color:var(--flgood); } .fl-covpill.ok b{ color:var(--flgood); }
+.fl-covpill.warn{ border-color:#6b4a12; color:var(--flwarn); } .fl-covpill.warn b{ color:var(--flwarn); }
+.fl-covpill.bad{ border-color:#5a1e1e; color:var(--flR); } .fl-covpill.bad b{ color:var(--flR); }
 /* accordion */
 .fl-act{ border:1px solid var(--fledge); border-radius:12px; margin-bottom:9px; background:#12171e; overflow:hidden; }
 .fl-act.open{ border-color:var(--fledge2); }
-.fl-acthd{ display:flex; align-items:center; gap:11px; padding:12px 14px; cursor:pointer; }
+.fl-acthd{ display:flex; align-items:center; gap:11px; padding:14px; cursor:pointer; min-height:60px; }
 .fl-acthd:hover{ background:#161d26; }
-.fl-caret{ color:var(--flfaint); font-size:11px; width:11px; transition:.2s; }
+.fl-caret{ color:var(--flfaint); font-size:12px; width:12px; transition:.2s; }
 .fl-act.open .fl-caret{ transform:rotate(90deg); color:var(--flacc); }
-.fl-actname{ flex:1; font-weight:600; font-size:14px; }
-.fl-actname small{ display:block; font-weight:400; font-size:11px; color:var(--fldim); }
+.fl-actname{ flex:1; font-weight:700; font-size:15.5px; }
+.fl-actname small{ display:block; font-weight:400; font-size:12.5px; color:var(--fldim); margin-top:2px; }
 .fl-badge{ font:600 11.5px 'Archivo'; padding:4px 10px; border-radius:99px; display:flex; align-items:center; gap:6px; border:1px solid var(--fledge); color:var(--flfaint); }
 .fl-badge .led{ width:8px; height:8px; border-radius:50%; background:var(--flfaint); }
 .fl-badge.part{ color:var(--flwarn); border-color:#5a4212; } .fl-badge.part .led{ background:var(--flwarn); box-shadow:0 0 7px var(--flwarn); }
@@ -857,9 +883,9 @@ select.fl-ctrl{ font-weight:600; }
 .fl-actbd{ display:none; padding:2px 14px 14px; border-top:1px solid var(--fledge); }
 .fl-act.open .fl-actbd{ display:block; }
 .fl-params{ display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
-.fl-pchip{ font:500 12.5px 'Archivo'; padding:8px 12px; border-radius:99px; border:1px solid var(--fledge); background:#0c1218; color:var(--fldim); cursor:pointer; display:flex; align-items:center; gap:7px; }
-.fl-pchip small{ color:var(--flfaint); font-size:10.5px; }
-.fl-pchip .mk{ width:15px; height:15px; border-radius:5px; border:1.5px solid var(--flfaint); display:grid; place-items:center; font-size:10px; color:transparent; }
+.fl-pchip{ font:600 14px 'Archivo'; padding:11px 14px; border-radius:12px; border:1px solid var(--fledge); background:#0c1218; color:var(--fldim); cursor:pointer; display:flex; align-items:center; gap:9px; min-height:48px; }
+.fl-pchip small{ color:var(--flfaint); font-size:12px; display:block; font-weight:400; }
+.fl-pchip .mk{ width:22px; height:22px; border-radius:6px; border:2px solid var(--flfaint); display:grid; place-items:center; font-size:13px; font-weight:700; color:transparent; flex-shrink:0; }
 .fl-pchip.yes{ background:#0d1a13; border-color:#1e5a3c; color:var(--flgood); } .fl-pchip.yes .mk{ background:var(--flgood); border-color:var(--flgood); color:#04120f; }
 .fl-pchip.no{ background:#1a0d0d; border-color:#5a1e1e; color:var(--flR); } .fl-pchip.no .mk{ background:var(--flR); border-color:var(--flR); color:#fff; }
 .fl-pchip.na{ background:#14171c; border-color:var(--fledge2); color:var(--flfaint); } .fl-pchip.na .mk{ color:var(--flfaint); font-size:9px; }
@@ -1353,11 +1379,13 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
     </div>
 
     <div id="hk-form-pane">
+      <div class="fl-warnbar" id="hk-warnbar"></div>
       <div class="fl-summary">
         <span>Activities <b id="hk-actcount">0/0</b></span>
         <span class="fl-prog"><i id="hk-progbar"></i></span>
-        <span>Audit <b id="hk-audit">0%</b></span>
       </div>
+      <div class="fl-cov" id="hk-cov"></div>
+      <button class="fl-allok" id="hk-allok" onclick="hkAllOk()">&#x2713; Mark ALL activities OK / सब ठीक</button>
       <select class="fl-ctrl fl-sup" id="hk-sup"><option value="">Supervisor / पर्यवेक्षक (verify)…</option></select>
       <div id="hk-acts"><div class="fl-loading">Loading activities…</div></div>
       <button class="fl-submit" id="hk-submit" onclick="hkSubmit()">Submit Housekeeping / जमा करें</button>
@@ -5644,6 +5672,7 @@ function hkInit(){
   document.getElementById('hk-datesub').textContent = _flToday();
   FL.hkMonth = FL.hkMonth || _flMY(new Date());
   flLoadPeople(function(){ flFillPeople('hk-by','By / नाम…'); flFillPeople('hk-sup','Supervisor / पर्यवेक्षक (verify)…'); });
+  hkTodayCheck();
   if (!FL.hkCfg) {
     google.script.run.withSuccessHandler(function(r){
       if(r&&r.success){ FL.hkCfg=r.activities; hkRenderForm(); }
@@ -5663,12 +5692,52 @@ function hkRenderForm(){
     h+='<div class="fl-act" data-ai="'+ai+'">'+
       '<div class="fl-acthd" onclick="hkToggle('+ai+')"><span class="fl-caret">▶</span>'+
         '<span class="fl-actname">'+esc(a.en)+'<small>'+esc(a.hi)+'</small></span>'+
+        '<button class="fl-actok" id="hk-ok-'+ai+'" onclick="event.stopPropagation();hkActOk('+ai+')">✓ All</button>'+
         '<span class="fl-badge" id="hk-badge-'+ai+'"><span class="led"></span>0/'+a.params.length+'</span></div>'+
+      '<div class="fl-failnote" id="hk-fail-'+ai+'"></div>'+
       '<div class="fl-actbd"><div class="fl-params">'+chips+'</div>'+
         '<textarea class="fl-ctrl fl-rem" placeholder="Remarks / deviation" oninput="FL.hkState[FL.hkCfg['+ai+'].en].remarks=this.value"></textarea></div></div>';
   });
   document.getElementById('hk-acts').innerHTML=h;
+  var ab=document.getElementById('hk-allok');
+  if(ab){ ab.classList.remove('undo'); ab.innerHTML='✓ Mark ALL activities OK / सब ठीक'; }
   hkUpdateSummary();
+}
+// Set every parameter of one activity to Y (or clear it if already all-Y).
+function hkActOk(ai){
+  var a=FL.hkCfg[ai], st=FL.hkState[a.en];
+  var allY=a.params.every(function(p){ return st.params[p.en]==='Y'; });
+  var wrap=document.querySelectorAll('#hk-acts .fl-act')[ai];
+  a.params.forEach(function(p,pi){
+    if(allY) delete st.params[p.en]; else st.params[p.en]='Y';
+    var chip=wrap.querySelector('.fl-pchip[data-p="'+pi+'"]');
+    if(chip){ chip.classList.remove('yes','no','na');
+      if(!allY) chip.classList.add('yes');
+      chip.querySelector('.mk').textContent=allY?'':'✓'; }
+  });
+  document.getElementById('hk-ok-'+ai).classList.toggle('on', !allY);
+  hkBadge(ai); hkUpdateSummary();
+}
+// Mark every activity OK in one tap; tapping again clears everything.
+function hkAllOk(){
+  var btn=document.getElementById('hk-allok');
+  var undo=btn.classList.contains('undo');
+  FL.hkCfg.forEach(function(a,ai){
+    var st=FL.hkState[a.en], wrap=document.querySelectorAll('#hk-acts .fl-act')[ai];
+    a.params.forEach(function(p,pi){
+      if(undo) delete st.params[p.en]; else st.params[p.en]='Y';
+      var chip=wrap.querySelector('.fl-pchip[data-p="'+pi+'"]');
+      if(chip){ chip.classList.remove('yes','no','na');
+        if(!undo) chip.classList.add('yes');
+        chip.querySelector('.mk').textContent=undo?'':'✓'; }
+    });
+    document.getElementById('hk-ok-'+ai).classList.toggle('on', !undo);
+    hkBadge(ai);
+  });
+  btn.classList.toggle('undo', !undo);
+  btn.innerHTML=undo?'✓ Mark ALL activities OK / सब ठीक':'↺ Clear all / सब हटाएँ';
+  hkUpdateSummary();
+  showStatus(undo?'Cleared — mark each item':'All marked OK — now change only the exceptions','info',3500);
 }
 function hkToggle(ai){ document.querySelectorAll('#hk-acts .fl-act')[ai].classList.toggle('open'); }
 function hkCyc(el){
@@ -5684,22 +5753,41 @@ function hkCyc(el){
 function hkBadge(ai){
   var a=FL.hkCfg[ai], st=FL.hkState[a.en].params, keys=Object.keys(st);
   var pass=keys.filter(function(k){return st[k]==='Y'||st[k]==='NA';}).length;
+  var fails=keys.filter(function(k){return st[k]==='N';});
   var b=document.getElementById('hk-badge-'+ai);
   b.className='fl-badge'; b.innerHTML='<span class="led"></span>'+keys.length+'/'+a.params.length;
+  // A failure must be readable with the accordion CLOSED — otherwise the one
+  // thing needing action is the one thing hidden.
+  var wrap=document.querySelectorAll('#hk-acts .fl-act')[ai];
+  var note=document.getElementById('hk-fail-'+ai);
+  if(wrap) wrap.classList.toggle('hasfail', fails.length>0);
+  if(note) note.textContent=fails.length?('✗ '+fails.join(' · ')):'';
   if(keys.length===0) return;
   if(keys.length===a.params.length && pass===keys.length){ b.className='fl-badge full'; b.innerHTML='<span class="led"></span>'+a.params.length+'/'+a.params.length; }
   else b.className='fl-badge part';
 }
 function hkUpdateSummary(){
-  var acts=0,pass=0,tot=0;
+  var acts=0,pass=0,tot=0,fail=0,configured=0;
   FL.hkCfg.forEach(function(a){
+    configured+=a.params.length;
     var st=FL.hkState[a.en].params, keys=Object.keys(st);
-    if(keys.length){ acts++; keys.forEach(function(k){ tot++; if(st[k]==='Y'||st[k]==='NA') pass++; }); }
+    if(keys.length){ acts++; keys.forEach(function(k){ tot++;
+      if(st[k]==='Y'||st[k]==='NA') pass++; else if(st[k]==='N') fail++; }); }
   });
   document.getElementById('hk-actcount').textContent=acts+'/'+FL.hkCfg.length;
+  document.getElementById('hk-progbar').style.width=(configured?tot/configured*100:0)+'%';
+  // Score AND coverage together — a 100% score over 1 of 53 items is not a clean site.
   var score=tot?Math.round(pass/tot*100):0;
-  document.getElementById('hk-audit').textContent=score+'%';
-  document.getElementById('hk-progbar').style.width=(FL.hkCfg.length?acts/FL.hkCfg.length*100:0)+'%';
+  var covPct=configured?Math.round(tot/configured*100):0;
+  var missed=configured-tot;
+  var cov=document.getElementById('hk-cov'); if(!cov) return;
+  var scoreCls=!tot?'':score===100?'ok':score>=80?'warn':'bad';
+  var covCls=missed===0?'ok':covPct>=60?'warn':'bad';
+  cov.innerHTML=
+    '<span class="fl-covpill '+scoreCls+'">Audit <b>'+(tot?score+'%':'—')+'</b>'+(tot?' <small>('+pass+'/'+tot+')</small>':'')+'</span>'+
+    '<span class="fl-covpill '+covCls+'">Coverage <b>'+tot+'/'+configured+'</b></span>'+
+    (fail?'<span class="fl-covpill bad">✗ <b>'+fail+'</b> failed</span>':'')+
+    (missed?'<span class="fl-covpill warn">'+missed+' not checked</span>':'');
 }
 function hkSubmit(){
   var by=document.getElementById('hk-by').value;
@@ -5712,12 +5800,33 @@ function hkSubmit(){
     activities.push({ en:a.en, remarks:st.remarks, params:keys.map(function(k){return {en:k,result:st.params[k]};}) });
   });
   if(!activities.length){ showStatus('Check at least one activity','error',3000); return; }
+  hkSend(by,sup,activities,false);
+}
+function hkSend(by,sup,activities,force){
   showStatus('Submitting…','info',0);
   google.script.run.withSuccessHandler(function(r){
-    if(r&&r.success){ showStatus('Logged ✓  Audit '+r.auditScore+'%','success',4000); hkRenderForm(); }
-    else showStatus('Failed: '+((r&&r.error)||'?'),'error',5000);
+    if(r&&r.success){
+      var msg='Logged ✓  Audit '+r.auditScore+'%  ·  covered '+r.checked+'/'+r.configured;
+      if(r.failed) msg+='  ·  '+r.failed+' failed';
+      if(r.missed) msg+='  ⚠ '+r.missed+' not checked';
+      showStatus(msg,'success',6000);
+      FL.hkTodayLogged=true; hkRenderForm(); hkTodayCheck();
+    } else if(r&&r.duplicate){
+      // Never silently double-write the day. Ask, then honour the answer.
+      if(confirm(r.error+'\n\nAdd this as a SECOND round for today?')) hkSend(by,sup,activities,true);
+      else showStatus('Not submitted','info',3000);
+    } else showStatus('Failed: '+((r&&r.error)||'?'),'error',5000);
   }).withFailureHandler(function(e){ showStatus('Failed: '+(e&&e.message||e),'error',5000); })
-    .submitHkLog({ by:by, supervisor:sup, date:_flToday(), time:_flNowTime(), activities:activities });
+    .submitHkLog({ by:by, supervisor:sup, date:_flToday(), time:_flNowTime(), activities:activities, force:!!force });
+}
+// Warn BEFORE 53 chips get filled, not after.
+function hkTodayCheck(){
+  google.script.run.withSuccessHandler(function(r){
+    var bar=document.getElementById('hk-warnbar'); if(!bar||!r||!r.success) return;
+    if(r.logged){ bar.className='fl-warnbar show';
+      bar.innerHTML='⚠ Already logged today by <b>'+esc(r.by||'?')+'</b>'+(r.time?' at '+esc(r.time):'')+' — submitting again adds a second round.'; }
+    else bar.className='fl-warnbar';
+  }).getHkTodayStatus(_flToday());
 }
 // HK report
 function hkShowReport(){
