@@ -867,47 +867,68 @@ select.fl-ctrl{ font-weight:600; }
 .fl-submit{ margin-top:16px; width:100%; border:0; border-radius:12px; padding:15px; font:800 15px 'Archivo'; cursor:pointer;
   color:#04120f; background:linear-gradient(180deg,#5fe6cd,#31b39c); box-shadow:0 10px 22px -10px #31b39c88; }
 .fl-submit:active{ transform:translateY(1px); }
-/* readings */
-.fl-launch{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
-@media(max-width:460px){ .fl-launch{ grid-template-columns:1fr; } }
-.fl-launchbtn{ display:flex; flex-direction:column; align-items:center; gap:3px; padding:26px 14px; border-radius:16px; cursor:pointer;
-  background:var(--flpanel); border:1px solid var(--fledge); color:var(--flink); }
+/* readings — 3-up launcher; single column on narrow phones */
+.fl-launch{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
+@media(max-width:560px){ .fl-launch{ grid-template-columns:1fr; } }
+.fl-launchbtn{ display:flex; flex-direction:column; align-items:center; gap:4px; padding:26px 14px; border-radius:16px; cursor:pointer;
+  background:var(--flpanel); border:1px solid var(--fledge); color:var(--flink); min-height:132px; justify-content:center; }
 .fl-launchbtn:hover{ border-color:var(--fledge2); }
+.fl-launchbtn:active{ transform:translateY(1px); }
 .fl-launchbtn.elec .fl-lg{ color:var(--flY); } .fl-launchbtn.water .fl-lg{ color:var(--flB); }
-.fl-lg{ font-size:32px; } .fl-ln{ font-weight:700; font-size:16px; } .fl-lh{ font-size:12px; color:var(--fldim); }
-.fl-llast{ font-size:11px; color:var(--flfaint); margin-top:4px; font-variant-numeric:tabular-nums; }
-.fl-linkbtn{ width:100%; background:transparent; border:1px dashed var(--fledge2); color:var(--fldim); border-radius:11px; padding:12px; font:600 13px 'Archivo'; cursor:pointer; }
+.fl-launchbtn.solar .fl-lg{ color:#fbbf24; }
+.fl-lg{ font-size:34px; line-height:1; } .fl-ln{ font-weight:700; font-size:17px; } .fl-lh{ font-size:13px; color:var(--fldim); }
+.fl-llast{ font-size:12.5px; color:var(--flfaint); margin-top:5px; font-variant-numeric:tabular-nums; }
+/* Report is a peer action, not a footnote — solid panel, not a dashed hint. */
+.fl-linkbtn{ width:100%; background:var(--flpanel); border:1px solid var(--fledge2); color:var(--flink);
+  border-radius:13px; padding:16px; font:700 15px 'Archivo'; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:10px; min-height:52px; }
+.fl-linkbtn:hover{ border-color:var(--flacc); color:var(--flacc); }
+.fl-linkbtn:active{ transform:translateY(1px); }
 .fl-back{ background:transparent; border:0; color:var(--flacc); font:600 14px 'Archivo'; cursor:pointer; padding:4px 0 12px; }
 .fl-selline{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:6px; }
-.fl-fld label{ display:block; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--flfaint); margin:0 0 6px; font-weight:600; }
-.fl-seclbl{ font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--flfaint); font-weight:700; margin:18px 0 9px; display:flex; align-items:center; gap:9px; }
+.fl-fld label{ display:block; font-size:12.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--fldim); margin:0 0 7px; font-weight:700; }
+.fl-seclbl{ font-size:12.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--fldim); font-weight:800; margin:22px 0 11px; display:flex; align-items:center; gap:10px; }
 .fl-seclbl::after{ content:""; flex:1; height:1px; background:var(--fledge); }
 .fl-u{ color:var(--flfaint); }
 .fl-g2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .fl-g3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
 @media(max-width:460px){ .fl-g3{ grid-template-columns:1fr; } }
-.fl-fld.num .fl-ctrl{ text-align:right; font-variant-numeric:tabular-nums; font-size:17px; }
+.fl-fld.num .fl-ctrl{ text-align:right; font-variant-numeric:tabular-nums; font-size:19px; font-weight:600; }
 .fl-ro{ color:var(--flacc); }
 .fl-fld.ph{ position:relative; } .fl-fld.ph .fl-ctrl{ padding-left:34px; }
 .fl-fld.ph label span{ display:none; }
 .fl-fld.ph::before{ content:""; position:absolute; left:12px; bottom:14px; width:12px; height:12px; border-radius:50%; box-shadow:0 0 8px currentColor; }
 .fl-fld.ph.R::before{ background:var(--flR); color:var(--flR); } .fl-fld.ph.Y::before{ background:var(--flY); color:var(--flY); } .fl-fld.ph.B::before{ background:var(--flB); color:var(--flB); }
-.fl-chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
-.fl-chip{ font:500 12px 'Archivo'; padding:6px 11px; border-radius:9px; border:1px solid var(--fledge); background:#0c1218; color:var(--fldim); }
+.fl-chips{ display:flex; flex-wrap:wrap; gap:9px; margin-top:16px; }
+.fl-chip{ font:600 13.5px 'Archivo'; padding:9px 13px; border-radius:10px; border:1px solid var(--fledge); background:#0c1218; color:var(--fldim); }
 .fl-chip b{ color:var(--flink); } .fl-chip.ok{ border-color:#1e5a3c; color:var(--flgood); } .fl-chip.ok b{ color:var(--flgood); }
 .fl-chip.warn{ border-color:#6b4a12; color:var(--flwarn); } .fl-chip.warn b{ color:var(--flwarn); }
-.fl-monthbar{ display:flex; align-items:center; justify-content:center; gap:16px; margin:8px 0 14px; font-weight:700; font-size:14px; }
-.fl-mbtn{ width:34px; height:34px; border-radius:9px; background:var(--flpanel); border:1px solid var(--fledge); color:var(--flink); font-size:16px; cursor:pointer; }
-.fl-gridwrap{ overflow-x:auto; border:1px solid var(--fledge); border-radius:12px; }
-.fl-tbl{ border-collapse:collapse; width:100%; font-size:12px; font-variant-numeric:tabular-nums; }
-.fl-tbl th,.fl-tbl td{ padding:7px 9px; border-bottom:1px solid var(--fledge); white-space:nowrap; text-align:right; }
-.fl-tbl th{ color:var(--fldim); font-weight:600; position:sticky; top:0; background:#12171e; text-align:right; }
+.fl-monthbar{ display:flex; align-items:center; justify-content:center; gap:18px; margin:10px 0 16px; font-weight:800; font-size:16px; }
+.fl-mbtn{ width:44px; height:44px; border-radius:11px; background:var(--flpanel); border:1px solid var(--fledge2); color:var(--flink); font-size:19px; cursor:pointer; }
+.fl-mbtn:active{ transform:translateY(1px); }
+.fl-gridwrap{ overflow-x:auto; border:1px solid var(--fledge); border-radius:12px; -webkit-overflow-scrolling:touch; }
+.fl-tbl{ border-collapse:collapse; width:100%; font-size:14px; font-variant-numeric:tabular-nums; }
+.fl-tbl th,.fl-tbl td{ padding:12px 14px; border-bottom:1px solid var(--fledge); white-space:nowrap; text-align:right; }
+.fl-tbl th{ color:var(--fldim); font-weight:700; font-size:12.5px; letter-spacing:.05em; text-transform:uppercase; position:sticky; top:0; background:#12171e; text-align:right; }
 .fl-tbl td:first-child,.fl-tbl th:first-child{ text-align:left; position:sticky; left:0; background:#12171e; }
 .fl-tbl td.amber{ background:#1a1408; color:var(--flwarn); }
 .fl-tbl tr:hover td{ background:#161d26; }
 .fl-tbl .cell{ display:inline-block; width:16px; text-align:center; cursor:pointer; }
 .fl-cellfull{ color:var(--flgood); } .fl-cellpart{ color:var(--flwarn); }
-.fl-tbl tfoot td{ font-weight:700; color:var(--flink); border-top:2px solid var(--fledge2); }
+.fl-tbl tfoot td{ font-weight:800; font-size:15px; color:var(--flink); border-top:2px solid var(--fledge2); }
+/* ── solar: live KPI band + month summary ── */
+.fl-kpis{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:16px 0 4px; }
+@media(max-width:460px){ .fl-kpis{ grid-template-columns:1fr 1fr; } }
+.fl-kpi{ background:var(--flpanel); border:1px solid var(--fledge); border-radius:13px; padding:14px 12px; text-align:center; }
+.fl-kpi .k{ display:block; font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--flfaint); font-weight:700; margin-bottom:6px; }
+.fl-kpi .v{ display:block; font-size:24px; font-weight:800; color:var(--flink); font-variant-numeric:tabular-nums; line-height:1.1; }
+.fl-kpi .u{ font-size:12.5px; color:var(--fldim); font-weight:600; margin-left:3px; }
+.fl-kpi.good .v{ color:var(--flgood); } .fl-kpi.warn .v{ color:var(--flwarn); } .fl-kpi.bad .v{ color:var(--flR); }
+/* generation vs expected — the one graphic that reads at a glance */
+.fl-bar{ height:12px; border-radius:99px; background:#0c1218; border:1px solid var(--fledge); overflow:hidden; margin:14px 0 6px; }
+.fl-bar > i{ display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,#f59e0b,#fbbf24); transition:width .45s ease; }
+.fl-barlbl{ display:flex; justify-content:space-between; font-size:12.5px; color:var(--fldim); font-weight:600; font-variant-numeric:tabular-nums; }
+@media(prefers-reduced-motion:reduce){ .fl-bar > i{ transition:none; } }
 </style>
 <script>
 // ─── taskHtml (client-side, replaces GAS server-side template) ───
@@ -1372,8 +1393,12 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
           <span class="fl-lg">&#x1F4A7;</span><span class="fl-ln">Water</span>
           <span class="fl-lh">पानी</span><span class="fl-llast" id="rd-water-last"></span>
         </button>
+        <button class="fl-launchbtn solar" onclick="rdOpen('solar')">
+          <span class="fl-lg">&#x2600;</span><span class="fl-ln">Solar</span>
+          <span class="fl-lh">सौर ऊर्जा</span><span class="fl-llast" id="rd-solar-last"></span>
+        </button>
       </div>
-      <button class="fl-linkbtn" onclick="rdReport('elec')">View monthly report / मासिक रिपोर्ट</button>
+      <button class="fl-linkbtn" onclick="rdReport('elec')">&#x1F4C8; View monthly report / मासिक रिपोर्ट</button>
     </div>
 
     <!-- electricity form -->
@@ -1429,6 +1454,32 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
       <button class="fl-submit" onclick="wtSubmit()">Submit Water / जमा करें</button>
     </div>
 
+    <!-- solar form -->
+    <div id="rd-solar-form" style="display:none">
+      <button class="fl-back" onclick="rdBack()">‹ Back</button>
+      <div class="fl-selline">
+        <div class="fl-fld"><label>Plant / Meter</label><select class="fl-ctrl" id="sl-meter"></select></div>
+        <div class="fl-fld"><label>Time</label><input class="fl-ctrl" id="sl-time"></div>
+      </div>
+      <div class="fl-seclbl">Meter Reading <span class="fl-u">(cumulative kWh)</span></div>
+      <div class="fl-g2">
+        <div class="fl-fld num"><label>Reading</label><input class="fl-ctrl" id="sl-read" inputmode="decimal" oninput="slLive()"></div>
+        <div class="fl-fld num"><label>Generated (auto)</label><div class="fl-ctrl fl-ro" id="sl-gen">—</div></div>
+      </div>
+      <div class="fl-seclbl">Today's Performance</div>
+      <div class="fl-kpis">
+        <div class="fl-kpi"><span class="k">Generated</span><span class="v" id="sl-k-gen">—</span></div>
+        <div class="fl-kpi"><span class="k">Of Expected</span><span class="v" id="sl-k-pct">—</span></div>
+        <div class="fl-kpi"><span class="k">Yield</span><span class="v" id="sl-k-sp">—</span></div>
+      </div>
+      <div class="fl-bar"><i id="sl-bar" style="width:0%"></i></div>
+      <div class="fl-barlbl"><span id="sl-barl">0 kWh</span><span id="sl-barr">expected —</span></div>
+      <div class="fl-chips" id="sl-chips"></div>
+      <div class="fl-seclbl">Remarks</div>
+      <textarea class="fl-ctrl fl-rem" id="sl-rem" placeholder="Cleaning, cloud cover, string fault…"></textarea>
+      <button class="fl-submit" onclick="slSubmit()">Submit Solar / जमा करें</button>
+    </div>
+
     <!-- report -->
     <div id="rd-report" style="display:none">
       <button class="fl-back" onclick="rdBack()">‹ Back</button>
@@ -1436,6 +1487,7 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
         <div class="fl-seg" id="rd-kindseg">
           <button class="fl-segbtn active" data-rdkind="elec">⚡ Electricity</button>
           <button class="fl-segbtn" data-rdkind="water">💧 Water</button>
+          <button class="fl-segbtn" data-rdkind="solar">☀ Solar</button>
         </div>
         <select class="fl-ctrl" id="rd-rep-meter"></select>
       </div>
@@ -1444,6 +1496,7 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
         <span id="rd-monthlbl"></span>
         <button class="fl-mbtn" onclick="rdRepShift(1)">›</button>
       </div>
+      <div id="rd-repsum"></div>
       <div class="fl-gridwrap" id="rd-reptable"><div class="fl-loading">Loading…</div></div>
     </div>
   </div>
@@ -4795,9 +4848,9 @@ var SF = { tab:'dashboard', dash:null, hira:null, charts:null, lists:null,
   // 7. Facility-log deep-links (Telegram) — land on the relevant page/report.
   if (INIT_ACTION === 'viewhk') { startHash = 'hk'; setTimeout(function(){
     var s=document.querySelector('#hk-seg .fl-segbtn[data-hkview="report"]'); if(s) s.click(); }, 400); }
-  if (INIT_ACTION === 'viewelec' || INIT_ACTION === 'viewwater') {
+  if (INIT_ACTION === 'viewelec' || INIT_ACTION === 'viewwater' || INIT_ACTION === 'viewsolar') {
     startHash = 'readings';
-    setTimeout(function(){ rdReport(INIT_ACTION === 'viewwater' ? 'water' : 'elec'); }, 400);
+    setTimeout(function(){ rdReport(INIT_ACTION === 'viewwater' ? 'water' : INIT_ACTION === 'viewsolar' ? 'solar' : 'elec'); }, 400);
   }
 
   navigate(startHash, App.machineId || null);
@@ -5559,7 +5612,8 @@ function sfSubmitIncident(){
 var FL;
 function _flEnsure(){
   if (!FL) FL = { hkCfg:null, hkState:{}, hkMonth:null, rdMonth:null,
-    rdRepKind:'elec', meters:{elec:[],water:[]}, personnel:[] };
+    rdRepKind:'elec', meters:{elec:[],water:[],solar:[]}, personnel:[],
+    solarCfg:{inverterKw:33, dcKw:30, yieldPerKw:3.4} };
   return FL;
 }
 
@@ -5711,24 +5765,29 @@ function rdInit(){
   document.getElementById('rd-datesub').textContent=_flToday();
   rdBack();
   flLoadPeople(function(){});
-  ['elec','water'].forEach(function(k){
+  ['elec','water','solar'].forEach(function(k){
     google.script.run.withSuccessHandler(function(r){
       FL.meters[k]=(r&&r.meters)||[];
       rdFillMeters();
     }).getMeterList(k);
   });
+  google.script.run.withSuccessHandler(function(c){ if(c) FL.solarCfg=c; slLive(); }).getSolarConfig();
 }
 function rdFillMeters(){
-  ['el-meter','wt-meter','rd-rep-meter'].forEach(function(id){
+  var byId={ 'el-meter':'elec', 'wt-meter':'water', 'sl-meter':'solar' };
+  ['el-meter','wt-meter','sl-meter','rd-rep-meter'].forEach(function(id){
     var el=document.getElementById(id); if(!el) return;
-    var list=(id==='wt-meter')?FL.meters.water:(id==='el-meter')?FL.meters.elec:FL.meters[FL.rdRepKind];
+    var list=FL.meters[byId[id]||FL.rdRepKind]||[];
+    var keep=el.value;
     el.innerHTML=list.map(function(m){return '<option>'+esc(m)+'</option>';}).join('');
+    if(keep && list.indexOf(keep)>-1) el.value=keep;
   });
 }
-function rdBack(){ ['rd-elec-form','rd-water-form','rd-report'].forEach(function(id){document.getElementById(id).style.display='none';}); document.getElementById('rd-launch').style.display='block'; }
+function rdBack(){ ['rd-elec-form','rd-water-form','rd-solar-form','rd-report'].forEach(function(id){var e=document.getElementById(id); if(e) e.style.display='none';}); document.getElementById('rd-launch').style.display='block'; }
 function rdOpen(kind){
   document.getElementById('rd-launch').style.display='none';
   if(kind==='elec'){ document.getElementById('rd-elec-form').style.display='block'; document.getElementById('el-time').value=_flNowTime(); }
+  else if(kind==='solar'){ document.getElementById('rd-solar-form').style.display='block'; document.getElementById('sl-time').value=_flNowTime(); slLive(); }
   else { document.getElementById('rd-water-form').style.display='block'; document.getElementById('wt-time').value=_flNowTime(); }
 }
 function _v(id){ return document.getElementById(id).value; }
@@ -5780,6 +5839,52 @@ function wtSubmit(){
   }).withFailureHandler(function(e){ showStatus('Failed: '+(e&&e.message||e),'error',5000); })
     .submitWaterReading({ meterNo:meter, date:_flToday(), time:_v('wt-time'), reading:_n('wt-read'), remarks:_v('wt-rem'), by:_flReader() });
 }
+// ── SOLAR ──
+// Live panel. Generation needs the PREVIOUS meter reading, which only the
+// server has, so until submit we show expected/plant figures and treat the
+// typed value as a meter reading — never as generation.
+function slLive(){
+  var cfg=FL.solarCfg||{}, dc=Number(cfg.dcKw)||0, y=Number(cfg.yieldPerKw)||0;
+  var expected=Math.round(dc*y*100)/100;
+  var g=FL.slPrevGen;   // set after a submit round-trip; null before
+  var pct=(g!=null&&expected>0)?Math.round(g/expected*1000)/10:null;
+  var sp =(g!=null&&dc>0)?Math.round(g/dc*100)/100:null;
+  var set=function(id,v){ var e=document.getElementById(id); if(e) e.innerHTML=v; };
+  set('sl-k-gen', g!=null?(g+'<span class="u">kWh</span>'):'—');
+  set('sl-k-pct', pct!=null?(pct+'<span class="u">%</span>'):'—');
+  set('sl-k-sp',  sp!=null?(sp+'<span class="u">kWh/kWp</span>'):'—');
+  var kp=document.getElementById('sl-k-pct')&&document.getElementById('sl-k-pct').parentNode;
+  if(kp){ kp.className='fl-kpi'+(pct==null?'':pct>=85?' good':pct>=50?' warn':' bad'); }
+  var bar=document.getElementById('sl-bar');
+  if(bar) bar.style.width=(pct==null?0:Math.max(0,Math.min(100,pct)))+'%';
+  set('sl-barl', (g!=null?g:0)+' kWh');
+  set('sl-barr', 'expected '+(expected||'—')+' kWh');
+  var chips=document.getElementById('sl-chips');
+  if(chips){
+    chips.innerHTML='<span class="fl-chip">Plant <b>'+esc(cfg.dcKw||'—')+' kW</b> DC · inverter <b>'+esc(cfg.inverterKw||'—')+' kW</b> · <b>'+esc(cfg.yieldPerKw||'—')+'</b> kWh/kWp/day</span>'
+      + (g==null?'<span class="fl-chip">Enter meter reading · generation computed vs last entry</span>':'');
+  }
+}
+function slSubmit(){
+  var meter=_v('sl-meter'); if(!meter){ showStatus('No plant/meter','error',3000); return; }
+  if(_n('sl-read')===null){ showStatus('Enter meter reading','error',3000); return; }
+  showStatus('Submitting…','info',0);
+  google.script.run.withSuccessHandler(function(r){
+    if(r&&r.success){
+      var msg=(r.generated===''||r.generated==null)
+        ? 'Saved ✓  first reading — generation from next entry'
+        : 'Saved ✓  '+r.generated+' kWh  ·  '+r.percent+'% of expected';
+      showStatus(msg+(r.warnings&&r.warnings.length?'  ⚠ '+r.warnings.length:''),'success',5000);
+      FL.slPrevGen=(r.generated===''||r.generated==null)?null:Number(r.generated);
+      slLive();
+      ['sl-read','sl-rem'].forEach(function(i){document.getElementById(i).value='';});
+      document.getElementById('sl-gen').textContent='—';
+      rdBack();
+    } else showStatus('Failed: '+((r&&r.error)||'?'),'error',5000);
+  }).withFailureHandler(function(e){ showStatus('Failed: '+(e&&e.message||e),'error',5000); })
+    .submitSolarReading({ meterNo:meter, date:_flToday(), time:_v('sl-time'),
+      reading:_n('sl-read'), remarks:_v('sl-rem'), by:_flReader() });
+}
 // reader name — reuse hk-by if set, else 'web-app'
 function _flReader(){ var el=document.getElementById('hk-by'); return (el&&el.value)||'web-app'; }
 // readings report
@@ -5793,10 +5898,31 @@ function rdReport(kind){
   rdLoadReport();
 }
 function rdRepShift(d){ var p=FL.rdMonth.split('-'); var dt=new Date(+p[0],+p[1]-1+d,1); FL.rdMonth=_flMY(dt); rdLoadReport(); }
+// Month summary band — solar gets KPIs; elec/water get a single total.
+function rdRenderSummary(r){
+  var el=document.getElementById('rd-repsum'); if(!el) return;
+  var t=(r&&r.totals)||{};
+  if(!r||!r.rows||!r.rows.length){ el.innerHTML=''; return; }
+  if(FL.rdRepKind==='solar'){
+    var p=Number(t.percent), cls=(t.percent===''||isNaN(p))?'':(p>=85?' good':p>=50?' warn':' bad');
+    el.innerHTML='<div class="fl-kpis" style="margin-top:0">'+
+      '<div class="fl-kpi"><span class="k">Generated</span><span class="v">'+esc(t.generated)+'<span class="u">kWh</span></span></div>'+
+      '<div class="fl-kpi'+cls+'"><span class="k">Of Expected</span><span class="v">'+(t.percent===''?'—':esc(t.percent)+'<span class="u">%</span>')+'</span></div>'+
+      '<div class="fl-kpi"><span class="k">Best Day</span><span class="v">'+(t.best==null?'—':esc(t.best)+'<span class="u">kWh</span>')+'</span></div>'+
+      '</div><div class="fl-bar"><i style="width:'+Math.max(0,Math.min(100,isNaN(p)?0:p))+'%"></i></div>'+
+      '<div class="fl-barlbl"><span>'+esc(t.days||0)+' days logged</span><span>expected '+esc(t.expected)+' kWh</span></div>';
+  } else {
+    var unit=FL.rdRepKind==='elec'?'kWh':'units';
+    el.innerHTML='<div class="fl-kpis" style="margin-top:0;grid-template-columns:1fr 1fr">'+
+      '<div class="fl-kpi"><span class="k">Total Used</span><span class="v">'+esc(t.used)+'<span class="u">'+unit+'</span></span></div>'+
+      '<div class="fl-kpi"><span class="k">Readings</span><span class="v">'+esc(r.rows.length)+'</span></div></div>';
+  }
+}
 function rdLoadReport(){
   document.getElementById('rd-monthlbl').textContent=_flMYLabel(FL.rdMonth);
   var meter=_v('rd-rep-meter');
   document.getElementById('rd-reptable').innerHTML='<div class="fl-loading">Loading…</div>';
+  var _sum=document.getElementById('rd-repsum'); if(_sum) _sum.innerHTML='';
   google.script.run.withSuccessHandler(function(r){
     if(!r||!r.success){ document.getElementById('rd-reptable').innerHTML='<div class="fl-loading">'+esc((r&&r.error)||'?')+'</div>'; return; }
     var h='<table class="fl-tbl"><thead><tr>';
@@ -5805,11 +5931,20 @@ function rdLoadReport(){
         h+='<tr><td>'+esc(o.date)+'</td><td>'+esc(o.time)+'</td><td>'+esc(o.kWh)+'</td><td>'+esc(o.kVAr)+'</td><td>'+esc(o.pfPanel)+'/'+esc(o.pfMeter)+'</td>'+
           '<td'+amber+'>'+esc(o.vR)+'/'+esc(o.vY)+'/'+esc(o.vB)+'</td><td>'+esc(o.aR)+'/'+esc(o.aY)+'/'+esc(o.aB)+'</td><td>'+esc(o.used)+'</td></tr>'; });
       h+='</tbody><tfoot><tr><td colspan="7">Total kWh used</td><td>'+esc(r.totals.used)+'</td></tr></tfoot>';
+    } else if(FL.rdRepKind==='solar'){
+      h+='<th>Date</th><th>Time</th><th>Meter</th><th>Generated</th><th>Expected</th><th>%</th><th>kWh/kWp</th></tr></thead><tbody>';
+      r.rows.forEach(function(o){
+        var p=Number(o.percent), cls=(o.percent===''||isNaN(p))?'':(p>=85?' class="ok"':p>=50?'':' class="amber"');
+        h+='<tr><td>'+esc(o.date)+'</td><td>'+esc(o.time)+'</td><td>'+esc(o.reading)+'</td><td>'+esc(o.generated)+'</td>'+
+           '<td>'+esc(o.expected)+'</td><td'+cls+'>'+(o.percent===''?'—':esc(o.percent)+'%')+'</td><td>'+esc(o.specific)+'</td></tr>'; });
+      h+='</tbody><tfoot><tr><td colspan="3">Total generated</td><td>'+esc(r.totals.generated)+'</td><td>'+esc(r.totals.expected)+'</td><td>'+(r.totals.percent===''?'—':esc(r.totals.percent)+'%')+'</td><td></td></tr></tfoot>';
     } else { h+='<th>Date</th><th>Time</th><th>Reading</th><th>Used</th></tr></thead><tbody>';
       r.rows.forEach(function(o){ h+='<tr><td>'+esc(o.date)+'</td><td>'+esc(o.time)+'</td><td>'+esc(o.reading)+'</td><td>'+esc(o.used)+'</td></tr>'; });
       h+='</tbody><tfoot><tr><td colspan="3">Total used</td><td>'+esc(r.totals.used)+'</td></tr></tfoot>'; }
     h+='</table>';
+    if(!r.rows.length) h='<div class="fl-loading">No readings recorded this month.</div>';
     document.getElementById('rd-reptable').innerHTML=h;
+    rdRenderSummary(r);
   }).withFailureHandler(function(e){ document.getElementById('rd-reptable').innerHTML='<div class="fl-loading">Failed: '+esc(e.message)+'</div>'; })
     .getReadingsMonth(FL.rdRepKind, FL.rdMonth, meter);
 }
