@@ -868,13 +868,45 @@ body {
 .sf-canvas-box { position:relative; height:240px; }
 .sf-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 @media (max-width:680px){ .sf-grid2 { grid-template-columns:1fr; } }
+/* A doughnut is square; in a wide card it drew at the height and left big
+   empty margins either side. Capping the box keeps the ring at a sensible
+   diameter and pulls the card back to the height it actually needs. */
+@media (min-width:1025px){
+  .sf-grid2 .sf-canvas-box { height:210px; max-width:340px; margin:0 auto; }
+}
 /* heatmap */
-.sf-heat { display:grid; grid-template-columns:auto repeat(5,1fr); gap:3px; }
+/* A 5x5 matrix of two-digit counts is a fixed-size object, not a fluid one.
+   With 1fr columns + aspect-ratio:1.4 each cell grew with the container, so at
+   1400px the cells hit ~250x180px and one matrix ran past a full screen. Cells
+   are capped and the grid centres; the row labels keep their auto column. */
+.sf-heat { display:grid; grid-template-columns:auto repeat(5,minmax(0,64px));
+  gap:3px; justify-content:start; }
 .sf-heat .hc { aspect-ratio:1.4; display:flex; align-items:center; justify-content:center;
-  font-size:13px; font-weight:800; border-radius:5px; cursor:pointer; color:#fff; }
-.sf-heat .hl { font-size:10px; font-weight:700; color:#64748b; display:flex;
-  align-items:center; justify-content:center; }
-.sf-heat .hc.z { color:#cbd5e1; background:#f8fafc !important; }
+  font-size:13px; font-weight:800; border-radius:5px; cursor:pointer;
+  font-variant-numeric:tabular-nums; }
+.sf-heat .hl { font-size:11px; font-weight:700; color:#475569; display:flex;
+  align-items:center; justify-content:center; padding:0 6px; }
+/* Empty cells: no fill, muted ink — they must not read as a risk band. */
+.sf-heat .hc.z { color:#94a3b8; background:#f8fafc !important; }
+@media (min-width:1025px){
+  .sf-heat { grid-template-columns:auto repeat(5,minmax(0,84px)); }
+  .sf-heat .hc { font-size:15px; }
+  /* The matrix is a fixed-size object; on a wide card it must not huddle in
+     the left corner. Sit it beside its own legend instead of stranding ~1000px
+     of empty card to its right. align-items:start would clip the legend to the
+     first grid row, so the legend column is its own flow. */
+  .sf-heatwrap { display:flex; align-items:flex-start; gap:32px; }
+  .sf-heatwrap > div:first-child { flex:none; }
+}
+/* Legend: the bands are ordinal, so they are listed in severity order and
+   carry their own swatch + label — never colour alone. */
+.sf-heatkey { display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:10px;
+  font-size:11px; font-weight:600; color:#475569; }
+.sf-heatkey span { display:inline-flex; align-items:center; gap:6px; }
+.sf-heatkey i { width:11px; height:11px; border-radius:3px; flex:none; }
+@media (min-width:1025px){
+  .sf-heatkey { flex-direction:column; gap:8px; margin-top:0; }
+}
 /* ═══ SAFETY REGISTERS — dense-data system ═══════════════════════════════
    Rows are divider-grouped, not carded: card chrome (padding + gap + shadow)
    was eating ~24px of a 74px row, forcing 10-11px text. Removing it buys the
@@ -5683,14 +5715,30 @@ var SF = { tab:'dashboard', dash:null, hira:null, charts:null, lists:null,
 // ═══════════════════════════════════════════════════════
 // SAFETY / OHS MODULE  (SF declared earlier, above init())
 // ═══════════════════════════════════════════════════════
-var SF_RISK_COLORS = { Negligible:'#16a34a', Tolerable:'#eab308',
-  Substantial:'#f97316', Intolerable:'#dc2626', Critical:'#7f1d1d' };
+/* Risk bands are ORDINAL — the order carries the meaning — so the ramp runs
+   safe→severe and keeps the safety-convention hues. Validated with the dataviz
+   validator: the old Tolerable #eab308 vs Substantial #f97316 pair sat at
+   OKLab dE 14.8, under the hard normal-vision floor of 15; #ea580c lifts that
+   pair to 20.4. Substantial→Intolerable is 8.7, which the method allows only
+   with secondary encoding — every cell and bar here carries its numeral. */
+var SF_RISK_COLORS = { Negligible:'#15803d', Tolerable:'#eab308',
+  Substantial:'#ea580c', Intolerable:'#dc2626', Critical:'#7f1d1d' };
+/* Ink per band, not a blanket white. White on #eab308 is 1.9:1 — the numerals
+   on the yellow heatmap cells were effectively unreadable. Chosen per fill so
+   every band clears 4.5:1: 5.0 / 8.6 / 4.6 / 4.8 / 10.0. */
+var SF_RISK_INK = { Negligible:'#ffffff', Tolerable:'#3b1206',
+  Substantial:'#3b1206', Intolerable:'#ffffff', Critical:'#ffffff' };
 var SF_STATUS_COLORS = { Open:'#f59e0b', 'In Progress':'#0ea5e9',
   Completed:'#16a34a', Verified:'#7c3aed' };
 
 function sfRiskColor(score){
-  if(score>=25) return '#dc2626'; if(score>=16) return '#f97316';
-  if(score>=9) return '#eab308'; return '#16a34a';
+  if(score>=25) return '#dc2626'; if(score>=16) return '#ea580c';
+  if(score>=9) return '#eab308'; return '#15803d';
+}
+/* Matching ink for a score, so heatmap numerals stay legible on every fill. */
+function sfRiskInk(score){
+  if(score>=25) return '#ffffff'; if(score>=16) return '#3b1206';
+  if(score>=9) return '#3b1206'; return '#ffffff';
 }
 function sfDestroyCharts(){ SF.chartObjs.forEach(function(c){try{c.destroy();}catch(e){}}); SF.chartObjs=[]; }
 function sfEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -5782,7 +5830,8 @@ function sfRenderDashboard(){
       '<div class="sf-card"><h4>Action Status</h4><div class="sf-canvas-box"><canvas id="sfc-status"></canvas></div></div>'+
       '<div class="sf-card"><h4>Risk Classification</h4><div class="sf-canvas-box"><canvas id="sfc-class"></canvas></div></div>'+
     '</div>'+
-    '<div class="sf-card"><h4>Hazards by Section</h4><div class="sf-canvas-box" style="height:300px"><canvas id="sfc-section"></canvas></div></div>'+
+    /* No inline height — sfChartHBar sizes the box from the row count. */
+    '<div class="sf-card"><h4>Hazards by Section</h4><div class="sf-canvas-box"><canvas id="sfc-section"></canvas></div></div>'+
     '<div class="sf-card"><h4>Risk Heatmap <span style="font-size:10px;color:#64748b">tap a cell</span></h4>'+
       sfHeatmapHtml()+'</div>'+
     '</div>';
@@ -5803,7 +5852,7 @@ function sfGoTab(t){
 /* ---------- HEATMAP ---------- */
 function sfHeatmapHtml(){
   var cells = (SF.heatmap&&SF.heatmap.cells)||[];
-  var h = '<div class="sf-heat">';
+  var h = '<div class="sf-heatwrap"><div><div class="sf-heat">';
   h += '<div class="hl"></div>';
   for(var c=1;c<=5;c++) h += '<div class="hl">C'+c+'</div>';
   for(var l=5;l>=1;l--){
@@ -5812,10 +5861,24 @@ function sfHeatmapHtml(){
       var cell = cells[l-1] ? cells[l-1][c2-1] : null;
       var n = cell?cell.count:0;
       var col = sfRiskColor(l*c2);
-      h += '<div class="hc'+(n===0?' z':'')+'" style="background:'+col+'" '+
+      // Ink is chosen per band; a blanket white was 1.9:1 on the yellow cells.
+      // role=button + tabindex so the drill-down is keyboard-reachable.
+      h += '<div class="hc'+(n===0?' z':'')+'" role="button" tabindex="0"'+
+        ' aria-label="Likelihood '+l+', consequence '+c2+': '+n+' hazards"'+
+        ' style="background:'+col+';color:'+sfRiskInk(l*c2)+'" '+
         'onclick="sfHeatDrill('+l+','+c2+')">'+n+'</div>';
     }
   }
+  h += '</div>';
+  // Axis captions: L/C alone are meaningless to anyone not fluent in the matrix.
+  h += '<div style="display:flex;justify-content:space-between;font-size:10.5px;'+
+       'color:#64748b;font-weight:600;margin-top:6px;padding-left:26px">'+
+       '<span>Likelihood (L1-L5) &uarr; &middot; Consequence (C1-C5) &rarr;</span></div>';
+  h += '</div>';
+  h += '<div class="sf-heatkey">' +
+    ['Negligible','Tolerable','Substantial','Intolerable','Critical'].map(function(b){
+      return '<span><i style="background:'+SF_RISK_COLORS[b]+'"></i>'+b+'</span>';
+    }).join('') + '</div>';
   h += '</div>';
   return h;
 }
@@ -5847,21 +5910,66 @@ function sfChartBarClass(id, obj){
   var labels = Object.keys(obj);
   SF.chartObjs.push(new Chart(el,{type:'bar',
     data:{labels:labels,datasets:[{label:'Hazards',data:labels.map(function(k){return obj[k];}),
-      backgroundColor:labels.map(function(k){return SF_RISK_COLORS[k]||'#64748b';})}]},
+      backgroundColor:labels.map(function(k){return SF_RISK_COLORS[k]||'#64748b';}),
+      borderRadius:4, borderSkipped:'start', barPercentage:.66, categoryPercentage:.8}]},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false}},
-      scales:{y:{beginAtZero:true,ticks:{precision:0}}}}}));
+      plugins:{legend:{display:false},
+        tooltip:{displayColors:false,callbacks:{label:function(c){
+          return c.parsed.y + (c.parsed.y===1?' hazard':' hazards');}}}},
+      // Recessive grid: the old default drew a full dark box around the plot,
+      // which competed with the bars for attention.
+      scales:{
+        y:{beginAtZero:true,ticks:{precision:0,color:'#64748b',font:{size:11}},
+           grid:{color:'#eef2f6',drawTicks:false},border:{display:false}},
+        x:{ticks:{color:'#334155',font:{size:11}},
+           grid:{display:false},border:{display:false}}}}}));
 }
 function sfChartHBar(id, obj, color){
   var el = document.getElementById(id); if(!el||!obj) return;
   var ent = Object.keys(obj).map(function(k){return [k,obj[k]];})
     .sort(function(a,b){return b[1]-a[1];});
+  // A truncated section code (e.g. "I" instead of "I: Maintenance, Electrical
+  // & Lifting") is a sheet data-entry slip, not a category. Label it so the bar
+  // is explicable rather than an anonymous stub, but never drop the row — the
+  // count is real and hiding it would understate the section total.
+  ent = ent.map(function(e){
+    return [ (String(e[0]).trim().length <= 2 ? e[0] + ' — unlabelled' : e[0]), e[1] ];
+  });
+  // Height follows the row count (28px/row) instead of a fixed 300px, so 11
+  // sections no longer squeeze into the same box as 4. Set on the container
+  // since maintainAspectRatio:false reads its height.
+  var box = el.parentElement;
+  if(box && box.classList.contains('sf-canvas-box')){
+    // 34px/row: long section names wrap to two lines on narrow viewports, and
+    // 28px clipped the second line.
+    box.style.height = Math.max(150, ent.length*34 + 36) + 'px';
+  }
   SF.chartObjs.push(new Chart(el,{type:'bar',
     data:{labels:ent.map(function(e){return e[0];}),
-      datasets:[{label:'Count',data:ent.map(function(e){return e[1];}),backgroundColor:color}]},
+      datasets:[{label:'Count',data:ent.map(function(e){return e[1];}),
+        backgroundColor:color, borderRadius:4, borderSkipped:'start',
+        barPercentage:.72, categoryPercentage:.86}]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false}},
-      scales:{x:{beginAtZero:true,ticks:{precision:0}}}}}));
+      // Values are direct-labelled by the tooltip; the axis stays recessive.
+      plugins:{legend:{display:false},
+        tooltip:{displayColors:false,callbacks:{label:function(c){
+          return c.parsed.x + (c.parsed.x===1?' hazard':' hazards');}}}},
+      scales:{
+        x:{beginAtZero:true,ticks:{precision:0,color:'#64748b',font:{size:11}},
+           grid:{color:'#eef2f6',drawTicks:false},border:{display:false}},
+        // On a phone the full section names are ~34 chars and Chart.js was
+        // clipping them mid-word. Cap the axis and wrap onto two lines rather
+        // than truncating — the section name IS the label's information.
+        y:{ticks:{color:'#334155',font:{size:11},crossAlign:'far',autoSkip:false,
+             callback:function(v){
+               var s=String(this.getLabelForValue(v));
+               if(s.length<=26) return s;
+               var cut=s.lastIndexOf(' ',26);
+               if(cut<12) cut=26;
+               return [s.slice(0,cut), s.slice(cut).trim()];
+             }},
+           afterFit:function(sc){ sc.width=Math.min(sc.width,190); },
+           grid:{display:false},border:{display:false}}}}}));
 }
 function sfChartLine(id, labels, data, label, color){
   var el = document.getElementById(id); if(!el) return;
