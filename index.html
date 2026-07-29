@@ -697,24 +697,212 @@ body {
 .sf-heat .hl { font-size:10px; font-weight:700; color:#64748b; display:flex;
   align-items:center; justify-content:center; }
 .sf-heat .hc.z { color:#cbd5e1; background:#f8fafc !important; }
-/* HIRA list */
-.sf-filterbar { display:flex; gap:6px; flex-wrap:wrap; padding:10px 0; }
-.sf-filterbar select, .sf-filterbar input { font-size:12px; padding:6px 8px;
-  border:1px solid #cbd5e1; border-radius:7px; }
-.sf-row { background:#fff; border-radius:9px; padding:10px; margin-bottom:7px;
-  border-left:4px solid #94a3b8; box-shadow:0 1px 2px rgba(0,0,0,.04); }
-.sf-row .top { display:flex; justify-content:space-between; gap:8px; }
-.sf-row .act { font-size:12px; font-weight:700; color:#0f172a; }
-.sf-row .haz { font-size:11px; color:#475569; margin-top:3px; }
-.sf-row .meta { font-size:10px; color:#64748b; margin-top:5px; display:flex;
-  gap:8px; flex-wrap:wrap; }
+/* ═══ SAFETY REGISTERS — dense-data system ═══════════════════════════════
+   Rows are divider-grouped, not carded: card chrome (padding + gap + shadow)
+   was eating ~24px of a 74px row, forcing 10-11px text. Removing it buys the
+   type scale below at the SAME row height. Status is never colour alone —
+   always colour + glyph + text, so it survives greyscale and colour-blindness. */
+.sf-filterbar { display:flex; gap:6px; padding:8px 0; align-items:center;
+  flex-wrap:wrap; }
+.sf-filterbar select, .sf-filterbar input { font-size:13px; padding:9px 10px;
+  border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#0f172a;
+  min-height:44px; font-family:inherit; }
+.sf-filterbar input.sf-q { flex:1 1 120px; min-width:0; }
+.sf-filterbar select { cursor:pointer; }
+/* MOBILE: search + a "Filters (n)" toggle stay on ONE row; the selects collapse
+   into a panel. Five controls wrapping to four ragged rows pushed the register
+   itself below the fold. */
+.sf-fmore { display:none; }
+@media (max-width:700px){
+  .sf-filterbar { flex-wrap:nowrap; }
+  .sf-filterbar select { display:none; }
+  .sf-fmore { display:inline-flex; align-items:center; gap:6px; background:#fff;
+    border:1px solid #cbd5e1; border-radius:8px; min-height:44px; padding:0 11px;
+    font:inherit; font-size:13px; font-weight:600; color:#334155; cursor:pointer;
+    white-space:nowrap; flex:none; }
+  .sf-fmore .n { background:#0f766e; color:#fff; border-radius:20px;
+    padding:0 6px; font-size:11px; font-weight:800; }
+  .sf-fpanel.open { display:grid; grid-template-columns:1fr 1fr; gap:7px;
+    padding:0 0 10px; }
+  .sf-fpanel.open select { display:block; width:100%; }
+  .sf-fpanel.open select:first-child { grid-column:1/-1; }
+}
+.sf-fpanel { display:contents; }
+@media (max-width:700px){ .sf-fpanel:not(.open) { display:none; } }
+
+/* Sectioned list: NEEDS ACTION above, archive collapsed below. */
+.sf-sect { display:flex; align-items:center; gap:8px; margin:14px 0 0;
+  font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+  color:#475569; }
+.sf-sect .n { background:#e2e8f0; color:#334155; border-radius:20px;
+  padding:1px 8px; font-size:11px; }
+.sf-sect.urgent { color:#b91c1c; }
+.sf-sect.urgent .n { background:#fee2e2; color:#b91c1c; }
+.sf-sect .sp { flex:1; }
+.sf-disc { background:none; border:none; font:inherit; color:#0f766e;
+  cursor:pointer; padding:6px 12px; min-height:44px; min-width:56px;
+  letter-spacing:.04em; font-weight:700; }
+.sf-disc:hover { text-decoration:underline; }
+
+.sf-list { border-top:1px solid #e2e8f0; margin-top:6px; }
+.sf-row { position:relative; background:#fff; padding:11px 12px 11px 16px;
+  border-bottom:1px solid #e2e8f0; cursor:pointer; min-height:44px;
+  transition:background .15s ease; }
+.sf-row:hover { background:#f8fafc; }
+.sf-row:active { background:#f1f5f9; }
+.sf-row:focus-visible { outline:2px solid #0f766e; outline-offset:-2px; }
+/* Left rule carries the band colour; set per-row via --bar. */
+.sf-row::before { content:''; position:absolute; left:0; top:0; bottom:0;
+  width:4px; background:var(--bar,#94a3b8); }
+/* Harm-bearing records (Accident / First Aid) get a heavier double rule. */
+.sf-row.harm { padding-left:19px; }
+.sf-row.harm::before { width:7px;
+  background:linear-gradient(90deg,var(--bar) 0 4px,#fff 4px 5px,var(--bar) 5px 7px); }
+
+.sf-row .top { display:flex; align-items:baseline; gap:8px; }
+/* The score/ID is the scan anchor — largest thing in the row. */
+.sf-row .score { font-size:17px; font-weight:700; color:#0f172a; line-height:1.1;
+  font-variant-numeric:tabular-nums; min-width:26px; }
+.sf-row .act { font-size:15px; font-weight:600; color:#0f172a; flex:1;
+  line-height:1.25; }
+.sf-row .haz { font-size:13px; color:#475569; margin-top:3px; line-height:1.4;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+  overflow:hidden; }
+.sf-row .meta { font-size:13px; color:#475569; margin-top:6px; display:flex;
+  gap:6px 12px; flex-wrap:wrap; align-items:center; }
+.sf-row .meta .sr { color:#94a3b8; font-size:12px; font-variant-numeric:tabular-nums; }
+
+/* Status chip: tinted bg + glyph + label. */
+.sf-st { display:inline-flex; align-items:center; gap:5px; font-size:11px;
+  font-weight:700; padding:3px 9px; border-radius:6px; white-space:nowrap;
+  letter-spacing:.02em; }
+.sf-st .g { font-size:11px; line-height:1; }
+/* Owner initials — avoids the "generic avatar" tell while staying legible. */
+.sf-av { display:inline-flex; align-items:center; justify-content:center;
+  width:22px; height:22px; border-radius:50%; background:#0f766e; color:#fff;
+  font-size:10px; font-weight:800; letter-spacing:.02em; flex:none; }
+.sf-own { display:inline-flex; align-items:center; gap:6px; }
+.sf-type { display:inline-flex; align-items:center; gap:5px; font-size:11px;
+  font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:#475569; }
+.sf-type svg { width:13px; height:13px; flex:none; }
+
 .sf-pill { font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; }
 .sf-pill.risk { color:#fff; }
-.sf-badge-ovd { background:#fee2e2; color:#b91c1c; font-size:9px; font-weight:800;
-  padding:2px 6px; border-radius:8px; }
-.sf-fab { position:fixed; right:16px; bottom:74px; width:52px; height:52px;
+.sf-badge-ovd { background:#fee2e2; color:#b91c1c; font-size:12px; font-weight:800;
+  padding:2px 7px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;
+  white-space:nowrap; }
+/* Inline SVG has no intrinsic size: inside a flex line it stretches to fill the
+   container (icons rendered ~130px tall before this). Constrain every safety-module
+   icon once, here, rather than per-context. */
+.sf-st svg, .sf-badge-ovd svg, .sf-type svg, .sf-vsw svg, .sf-empty svg,
+.sf-kc svg, .sf-row svg { width:13px; height:13px; flex:none; }
+.sf-bhead svg { width:15px; height:15px; flex:none; }
+
+/* Skeleton + empty states (both design skills require these explicitly). */
+.sf-skel { padding:11px 12px 11px 16px; border-bottom:1px solid #e2e8f0; }
+.sf-skel i { display:block; height:11px; border-radius:5px; background:#e9eef4;
+  animation:sfsh 1.3s ease-in-out infinite; }
+.sf-skel i + i { margin-top:7px; }
+@keyframes sfsh { 0%,100%{opacity:1} 50%{opacity:.45} }
+.sf-empty { text-align:center; padding:34px 20px; color:#64748b; font-size:13px;
+  line-height:1.6; }
+.sf-empty b { display:block; font-size:15px; color:#334155; margin-bottom:4px; }
+
+/* TABLET — the meta line becomes columns. */
+@media (min-width:601px){
+  .sf-row { display:grid; grid-template-columns:34px 1fr 150px; gap:4px 12px;
+    align-items:center; }
+  .sf-row .top { grid-column:2; }
+  .sf-row .score { grid-column:1; grid-row:1/span 2; font-size:19px; text-align:center; }
+  .sf-row .haz { grid-column:2; margin-top:0; }
+  .sf-row .meta { grid-column:3; grid-row:1/span 2; margin-top:0;
+    justify-content:flex-end; }
+}
+/* DESKTOP — true table layout, 1400px cap so lines stay readable. */
+@media (min-width:1025px){
+  .sf-wrap { max-width:1400px; margin:0 auto; }
+  .sf-thead { display:grid; grid-template-columns:56px 1fr 92px 132px 128px 96px 62px;
+    gap:12px; padding:8px 12px; font-size:11px; font-weight:800; color:#64748b;
+    letter-spacing:.06em; text-transform:uppercase; border-bottom:2px solid #cbd5e1; }
+  .sf-thead span { cursor:pointer; user-select:none; }
+  .sf-thead span:hover { color:#0f172a; }
+  .sf-row { grid-template-columns:56px 1fr 92px 132px 128px 96px 62px;
+    align-items:center; gap:12px; padding:10px 12px 10px 16px; }
+  .sf-row .top { grid-column:2; grid-row:1; }
+  .sf-row .score { grid-row:1; }
+  .sf-row .haz { grid-column:2; grid-row:2; -webkit-line-clamp:1; }
+  /* On desktop the meta line is replaced by real .cell columns; the inline #sr
+     would otherwise overlap the Section cell that occupies the same track. */
+  .sf-row .meta { display:none; }
+  .sf-row .top .sr { position:absolute; width:1px; height:1px; overflow:hidden;
+    clip-path:inset(50%); }
+  .sf-row .cell { font-size:13px; color:#475569; grid-row:1/span 2;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sf-row .cell.num { font-variant-numeric:tabular-nums; }
+}
+@media (max-width:1024px){ .sf-thead, .sf-row .cell { display:none; } }
+
+/* KANBAN — column colour is a top rule, not a filled header bar. */
+.sf-board { display:grid; gap:10px; grid-auto-flow:column;
+  grid-auto-columns:86vw; overflow-x:auto; scroll-snap-type:x mandatory;
+  padding-bottom:8px; }
+.sf-board > * { scroll-snap-align:start; }
+@media (min-width:601px){ .sf-board { grid-auto-columns:300px; } }
+@media (min-width:1025px){
+  .sf-board { grid-auto-flow:row; grid-auto-columns:none;
+    grid-template-columns:repeat(var(--cols,5),minmax(0,1fr)); overflow-x:visible; }
+}
+.sf-bcol { background:#f1f5f9; border-radius:10px; border-top:3px solid var(--bar,#94a3b8);
+  display:flex; flex-direction:column; min-height:110px; }
+.sf-bhead { display:flex; align-items:center; gap:7px; padding:9px 11px;
+  font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase;
+  color:#334155; }
+.sf-bhead .n { margin-left:auto; background:#fff; color:#334155; border-radius:20px;
+  padding:1px 8px; font-size:12px; font-variant-numeric:tabular-nums; }
+.sf-bbody { padding:0 7px 7px; display:flex; flex-direction:column; gap:7px; }
+.sf-kc { background:#fff; border-radius:8px; padding:9px 10px; cursor:pointer;
+  border-left:3px solid var(--bar,#94a3b8); transition:background .15s ease; }
+.sf-kc:hover { background:#f8fafc; }
+.sf-kc .t { font-size:14px; font-weight:600; color:#0f172a; line-height:1.3; }
+.sf-kc .m { font-size:12px; color:#475569; margin-top:5px; display:flex;
+  gap:5px 9px; flex-wrap:wrap; align-items:center; }
+.sf-bdots { display:flex; gap:6px; justify-content:center; padding:8px 0 2px; }
+.sf-bdots i { width:7px; height:7px; border-radius:50%; background:#cbd5e1; }
+.sf-bdots i.on { background:#0f766e; }
+@media (min-width:1025px){ .sf-bdots { display:none; } }
+
+/* View switch (list / board). */
+.sf-vsw { display:inline-flex; border:1px solid #cbd5e1; border-radius:8px;
+  overflow:hidden; margin-left:auto; flex:none; }
+.sf-vsw button { background:#fff; border:none; padding:0 11px; min-height:44px;
+  min-width:44px; font:inherit; font-size:12px; font-weight:700; color:#64748b;
+  cursor:pointer; display:inline-flex; align-items:center; gap:5px;
+  transition:background .15s ease,color .15s ease; }
+.sf-vsw button + button { border-left:1px solid #cbd5e1; }
+.sf-vsw button.on { background:#0f766e; color:#fff; }
+.sf-vsw svg { width:15px; height:15px; }
+
+/* Active-filter chips: state visible, not hidden inside a <select>. */
+.sf-chips { display:flex; flex-wrap:wrap; gap:6px; padding:0 0 8px; }
+.sf-fchip { display:inline-flex; align-items:center; gap:6px; background:#e6f2f1;
+  color:#0f766e; border:1px solid #b9dedb; border-radius:20px; padding:5px 6px 5px 11px;
+  font-size:12px; font-weight:600; }
+.sf-fchip button { background:none; border:none; color:#0f766e; cursor:pointer;
+  font-size:14px; line-height:1; padding:3px 5px; border-radius:50%; min-width:26px;
+  min-height:26px; }
+.sf-fchip button:hover { background:#cfe8e6; }
+.sf-clr { background:none; border:none; color:#64748b; font:inherit; font-size:12px;
+  text-decoration:underline; cursor:pointer; padding:6px 4px; min-height:34px; }
+@media (prefers-reduced-motion:reduce){
+  .sf-row, .sf-kc, .sf-vsw button { transition:none; }
+  .sf-skel i { animation:none; }
+}
+.sf-fab { position:fixed; right:16px; bottom:82px; width:52px; height:52px;
   border-radius:50%; background:#0f766e; color:#fff; font-size:26px; border:none;
-  box-shadow:0 4px 12px rgba(15,118,110,.4); cursor:pointer; z-index:20; }
+  box-shadow:0 4px 12px rgba(15,118,110,.32); cursor:pointer; z-index:20;
+  line-height:1; }
+/* Keep the last row clear of the floating button. */
+.sf-wrap { padding-bottom:76px; }
 .sf-kpitable { width:100%; font-size:11px; border-collapse:collapse; }
 .sf-kpitable td, .sf-kpitable th { padding:5px 6px; border-bottom:1px solid #f1f5f9; text-align:left; }
 .sf-kpitable .bar { height:9px; border-radius:4px; background:#0f766e; }
@@ -5151,17 +5339,25 @@ function sfRenderHira(){
   var box=document.getElementById('safety-content');
   box.innerHTML='<div class="sf-wrap">'+
     '<div class="sf-filterbar">'+
-      '<input id="sf-hira-search" placeholder="Search hazard / activity" oninput="sfHiraFilter()">'+
-      '<select id="sf-hira-class" onchange="sfHiraFilter()"><option value="">All classes</option>'+
-        '<option>Negligible</option><option>Tolerable</option><option>Substantial</option>'+
-        '<option>Intolerable</option><option>Critical</option></select>'+
-      '<select id="sf-hira-status" onchange="sfHiraFilter()"><option value="">All status</option>'+
-        '<option>Open</option><option>In Progress</option>'+
-        '<option>Completed</option><option>Verified</option></select>'+
+      '<input class="sf-q" id="sf-hira-search" placeholder="Search hazards" '+
+        'aria-label="Search hazards" oninput="sfHiraFilter()">'+
+      '<button class="sf-fmore" onclick="sfTogglePanel(\'sf-hira-fpanel\')" '+
+        'aria-label="More filters">Filters<span class="n" id="sf-hira-fn">0</span></button>'+
+      sfViewSwitch('hira')+
+      '<span class="sf-fpanel" id="sf-hira-fpanel">'+
+        '<select id="sf-hira-class" aria-label="Filter by risk class" onchange="sfHiraFilter()">'+
+          '<option value="">All classes</option>'+
+          '<option>Critical</option><option>Intolerable</option><option>Substantial</option>'+
+          '<option>Tolerable</option><option>Negligible</option></select>'+
+        '<select id="sf-hira-status" aria-label="Filter by status" onchange="sfHiraFilter()">'+
+          '<option value="">All status</option>'+
+          '<option>Open</option><option>In Progress</option>'+
+          '<option>Completed</option><option>Verified</option></select>'+
+      '</span>'+
     '</div>'+
-    '<div id="sf-hira-list"><div class="loading-spinner" style="padding:30px">'+
-      '<div class="spinner-ring"></div>Loading&hellip;</div></div></div>'+
-    '<button class="sf-fab" onclick="sfHazardDetail(null)">+</button>';
+    '<div class="sf-chips" id="sf-hira-chips"></div>'+
+    '<div id="sf-hira-list">'+sfSkeleton(6)+'</div></div>'+
+    '<button class="sf-fab" onclick="sfHazardDetail(null)" aria-label="Add hazard">+</button>';
   if(!SF.hira){
     google.script.run.withSuccessHandler(function(r){
       SF.hira = r && r.success ? r.rows : [];
@@ -5193,21 +5389,117 @@ function sfHiraFilter(opt){
     return true;
   });
   var listEl=document.getElementById('sf-hira-list'); if(!listEl) return;
-  var head = (opt&&opt.label?'<div class="sf-banner">Filter: '+sfEsc(opt.label)+
-    ' &nbsp;<a href="javascript:sfRenderHira()" style="color:#0f766e">clear</a></div>':'')+
-    '<div class="sf-banner">'+filtered.length+' of '+rows.length+' hazards</div>';
-  listEl.innerHTML = head + filtered.map(function(r){
-    return '<div class="sf-row" style="border-left-color:'+sfRiskColor(r.risk)+'" '+
-      'onclick="sfHazardDetail('+r.sr+')">'+
-      '<div class="top"><span class="act">#'+r.sr+' &middot; '+sfEsc(r.activity)+'</span>'+
-        '<span class="sf-pill risk" style="background:'+sfRiskColor(r.risk)+'">'+r.risk+'</span></div>'+
-      '<div class="haz">'+sfEsc(r.hazard)+'</div>'+
-      '<div class="meta"><span>'+sfEsc(r.section)+'</span>'+
-        '<span>'+sfEsc(r.classification)+'</span>'+
-        '<span>'+sfEsc(r.status)+'</span>'+
-        '<span>'+sfEsc(r.responsible)+'</span>'+
-        (r.overdue?'<span class="sf-badge-ovd">OVERDUE</span>':'')+'</div></div>';
-  }).join('') || '<div class="sf-card">No matching hazards.</div>';
+
+  // Active-filter chips (mirrors the incidents register).
+  var act=[];
+  if(q) act.push({id:'sf-hira-search', label:'"'+q+'"'});
+  if(cl) act.push({id:'sf-hira-class',  label:cl});
+  if(st) act.push({id:'sf-hira-status', label:st});
+  sfSetFilterCount('sf-hira-fn', (cl?1:0)+(st?1:0));
+  var chipEl=document.getElementById('sf-hira-chips');
+  if(chipEl) chipEl.innerHTML = (act.length || (opt&&opt.label))
+    ? (opt&&opt.label?'<span class="sf-fchip">'+sfEsc(opt.label)+
+        '<button onclick="sfRenderHira()" aria-label="Clear heatmap filter">&times;</button></span>':'')+
+      act.map(function(f){ return '<span class="sf-fchip">'+sfEsc(f.label)+
+        '<button onclick="sfHiraClearOne(\''+f.id+'\')" aria-label="Remove filter">&times;</button></span>';
+      }).join('')+'<button class="sf-clr" onclick="sfHiraClearAll()">Clear all</button>'
+    : '';
+
+  if(!filtered.length){
+    listEl.innerHTML=sfEmpty('No hazards match these filters',
+      act.length?'Active: '+act.map(function(f){return f.label;}).join(', ')
+                :'The register has '+rows.length+' hazards.',
+      act.length?'sfHiraClearAll()':'');
+    return;
+  }
+  listEl.innerHTML = SF_VIEW.hira==='board'
+    ? sfHiraBoard(filtered)
+    : sfHiraList(filtered, rows.length);
+}
+function sfHiraClearOne(id){
+  var e=document.getElementById(id); if(e) e.value=''; sfHiraFilter();
+}
+function sfHiraClearAll(){
+  ['sf-hira-search','sf-hira-class','sf-hira-status'].forEach(function(id){
+    var e=document.getElementById(id); if(e) e.value=''; });
+  sfHiraFilter();
+}
+/* LIST: overdue open items first — they are the ones with a deadline breached. */
+function sfHiraList(rows, total){
+  var due=rows.filter(function(r){return r.overdue && r.status!=='Verified';});
+  var rest=rows.filter(function(r){return due.indexOf(r)===-1;});
+  var out='';
+  if(due.length) out+='<div class="sf-sect urgent">Overdue<span class="n">'+due.length+
+    '</span></div>'+sfHiraTable()+'<div class="sf-list">'+due.map(sfHiraRow).join('')+'</div>';
+  out+='<div class="sf-sect">'+(due.length?'All other hazards':'Hazards')+
+    '<span class="n">'+rest.length+'</span><span class="sp"></span>'+
+    '<span style="font-weight:600;text-transform:none;letter-spacing:0;color:#94a3b8">'+
+    rows.length+' of '+total+'</span></div>'+
+    sfHiraTable()+'<div class="sf-list">'+rest.map(sfHiraRow).join('')+'</div>';
+  return out;
+}
+function sfHiraTable(){
+  return '<div class="sf-thead"><span>Risk</span><span>Activity / hazard</span>'+
+    '<span>Section</span><span>Status</span><span>Owner</span><span>Target</span>'+
+    '<span>Age</span></div>';
+}
+function sfHiraRow(r){
+  var band=sfBandColor(r.classification), sm=sfHiraStatusMeta(r.status);
+  return '<div class="sf-row" style="--bar:'+band+'" tabindex="0" role="button" '+
+    'onclick="sfHazardDetail('+r.sr+')" '+
+    'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();this.click();}">'+
+    '<span class="score" style="color:'+band+'" title="L x C = '+r.risk+'">'+r.risk+'</span>'+
+    '<div class="top"><span class="act">'+sfEsc(r.activity)+'</span>'+
+      '<span class="sr">#'+r.sr+'</span></div>'+
+    '<div class="haz">'+sfEsc(r.hazard)+'</div>'+
+    '<div class="meta">'+sfChip(sm,r.status)+
+      '<span>'+sfEsc(r.classification)+'</span>'+
+      (r.responsible?sfOwner(r.responsible):'')+
+      (r.overdue&&r.status!=='Verified'
+        ?'<span class="sf-badge-ovd">'+sfIcon('clock')+'Overdue</span>':'')+'</div>'+
+    '<span class="cell">'+sfEsc(r.section||'—')+'</span>'+
+    '<span class="cell">'+sfChip(sm,r.status)+'</span>'+
+    '<span class="cell">'+(r.responsible?sfOwner(r.responsible):'—')+'</span>'+
+    '<span class="cell num">'+sfEsc(r.target||'—')+'</span>'+
+    '<span class="cell num">'+(r.overdue&&r.status!=='Verified'
+      ?'<span class="sf-badge-ovd">'+sfIcon('clock')+'Due</span>':'—')+'</span>'+
+    '</div>';
+}
+/* BOARD: grouped by RISK BAND, deliberately not by status — an Actions kanban
+   already boards the four statuses, so a status board here would duplicate it.
+   Risk band answers a question nothing else in the app answers. */
+function sfHiraBoard(rows){
+  var cols=SF_BANDS.map(function(b){
+    var sub=rows.filter(function(r){return r.classification===b.key;})
+                .sort(function(a,c){return c.risk-a.risk;});
+    return '<div class="sf-bcol" style="--bar:'+b.color+'">'+
+      '<div class="sf-bhead" style="color:'+b.color+'">'+sfEsc(b.key)+
+        '<span class="n">'+sub.length+'</span></div>'+
+      '<div class="sf-bbody">'+(sub.length?sub.map(function(r){
+        var sm=sfHiraStatusMeta(r.status);
+        return '<div class="sf-kc" style="--bar:'+b.color+'" tabindex="0" role="button" '+
+          'onclick="sfHazardDetail('+r.sr+')" '+
+          'onkeydown="if(event.key===\'Enter\'){this.click();}">'+
+          '<div class="t">'+sfEsc(r.activity)+'</div>'+
+          '<div class="m"><b style="color:'+b.color+';font-size:14px">'+r.risk+'</b>'+
+            sfChip(sm,r.status)+
+            (r.responsible?'<span class="sf-av">'+sfEsc(sfInitials(r.responsible))+'</span>':'')+
+            (r.overdue&&r.status!=='Verified'
+              ?'<span class="sf-badge-ovd">'+sfIcon('clock')+'</span>':'')+
+            '</div></div>';
+      }).join(''):'<div style="padding:8px 4px;font-size:12px;color:#94a3b8">None</div>')+
+      '</div></div>';
+  }).join('');
+  var crit=rows.filter(function(r){
+    return r.classification==='Critical'||r.classification==='Intolerable';}).length;
+  return '<div class="sf-banner">'+rows.length+' hazards &middot; <b>'+crit+
+      '</b> at Critical or Intolerable</div>'+
+    '<div class="sf-board" style="--cols:5">'+cols+'</div>'+
+    '<div class="sf-bdots"><i class="on"></i><i></i><i></i><i></i><i></i></div>';
+}
+function sfInitials(n){
+  var p=String(n||'').replace(/[^A-Za-z .]/g,'').split(/[ .]+/).filter(Boolean);
+  return (p.length>1?p[0][0]+p[p.length-1][0]:String(n||'').slice(0,2)).toUpperCase();
 }
 /* ---------- FULL HAZARD EDIT FORM ---------- */
 function sfPersonOptions(sel){
@@ -5230,6 +5522,126 @@ function sfFindHazard(sr){
 }
 /* Allowed Action Status values — Kanban-aligned, no Pending/Ongoing/N.A. */
 var SF_STATUSES=['Open','In Progress','Completed','Verified'];
+
+/* ═══ SAFETY REGISTER SHARED PRESENTATION ══════════════════════════════════
+   Inline SVG only — no emoji as UI icons, and no external icon font (the app
+   must load with zero third-party requests). 16px viewBox, currentColor. */
+function sfIcon(name, cls){
+  var d = {
+    bolt:   'M7 1 2.5 9H6l-1 6 5.5-8.5H7L8.5 1z',
+    cross:  'M6.5 1h3v4.5H14v3H9.5V14h-3V8.5H2v-3h4.5z',
+    diamond:'M8 1.2 14.8 8 8 14.8 1.2 8z',
+    alert:  'M8 1.3 15 14H1zM7.2 5.6h1.6v4H7.2zm0 5.2h1.6v1.6H7.2z',
+    hex:    'M4.6 1.6h6.8L14.8 8l-3.4 6.4H4.6L1.2 8z',
+    list:   'M1 3h14v2H1zm0 4h14v2H1zm0 4h14v2H1z',
+    board:  'M1 2h4v12H1zm5 0h4v8H6zm5 0h4v10h-4z',
+    search: 'M6.5 1a5.5 5.5 0 1 1-3.2 9.96l-2 2-1.4-1.42 2-2A5.5 5.5 0 0 1 6.5 1m0 2a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7',
+    clock:  'M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1m.9 3v3.7l2.6 1.6-.8 1.3-3.3-2V4z'
+  }[name] || '';
+  return '<svg class="'+(cls||'')+'" viewBox="0 0 16 16" aria-hidden="true" '+
+    'fill="currentColor"><path d="'+d+'"/></svg>';
+}
+
+/* Incident types split into two families that safety practice treats oppositely:
+   HARM = lagging indicators (something happened to a person — regulatory weight).
+   PRECURSOR = leading indicators (caught before harm — a healthy programme
+   reports MANY of these per harm event). Same sheet, two different jobs. */
+var SF_HARM_TYPES = ['Accident','First Aid'];
+function sfIsHarm(type){ return SF_HARM_TYPES.indexOf(String(type||'').trim()) !== -1; }
+function sfTypeMeta(type){
+  var t = String(type||'').trim();
+  var m = {
+    'Accident':        {icon:'bolt',    color:'#b91c1c', harm:true },
+    'First Aid':       {icon:'cross',   color:'#dc2626', harm:true },
+    'Near Miss':       {icon:'diamond', color:'#ea580c', harm:false},
+    'Unsafe Act':      {icon:'alert',   color:'#ca8a04', harm:false},
+    'Unsafe Condition':{icon:'hex',     color:'#a16207', harm:false}
+  }[t];
+  return m || {icon:'hex', color:'#64748b', harm:false};
+}
+
+/* CAPA status → tinted chip + fill-ring glyph. The glyph fills as the record
+   progresses, so the state reads without relying on hue. */
+function sfCapaMeta(s){
+  return {
+    'Open - Under Investigation':   {g:'○', fg:'#b91c1c', bg:'#fee2e2', short:'Investigating'},
+    'Pending Verification':         {g:'◔', fg:'#6d28d9', bg:'#ede9fe', short:'Pending verif.'},
+    'Completed':                    {g:'◑', fg:'#0369a1', bg:'#e0f2fe', short:'Completed'},
+    'Closed - Effective':           {g:'●', fg:'#15803d', bg:'#dcfce7', short:'Effective'},
+    'Closed - Partially Effective': {g:'◕', fg:'#a16207', bg:'#fef9c3', short:'Partial'}
+  }[String(s||'').trim()] || {g:'○', fg:'#475569', bg:'#f1f5f9', short:(s||'—')};
+}
+/* HIRA action status → same chip vocabulary, four states. */
+function sfHiraStatusMeta(s){
+  return {
+    'Open':       {g:'○', fg:'#b91c1c', bg:'#fee2e2'},
+    'In Progress':{g:'◔', fg:'#0369a1', bg:'#e0f2fe'},
+    'Completed':  {g:'◑', fg:'#15803d', bg:'#dcfce7'},
+    'Verified':   {g:'●', fg:'#15803d', bg:'#dcfce7'}
+  }[String(s||'').trim()] || {g:'○', fg:'#475569', bg:'#f1f5f9'};
+}
+function sfChip(meta, label){
+  return '<span class="sf-st" style="background:'+meta.bg+';color:'+meta.fg+'">'+
+    '<span class="g" aria-hidden="true">'+meta.g+'</span>'+sfEsc(label)+'</span>';
+}
+/* Owner initials. Falls back to a dash rather than a generic avatar glyph. */
+function sfOwner(name){
+  var n = String(name||'').trim();
+  if(!n) return '<span style="color:#94a3b8">Unassigned</span>';
+  var parts = n.replace(/[^A-Za-z .]/g,'').split(/[ .]+/).filter(Boolean);
+  var ini = (parts.length>1 ? parts[0][0]+parts[parts.length-1][0] : n.slice(0,2))
+              .toUpperCase();
+  return '<span class="sf-own"><span class="sf-av">'+sfEsc(ini)+'</span>'+
+    sfEsc(n)+'</span>';
+}
+/* HIRA risk bands — the five classifications, ordered worst-first. */
+var SF_BANDS = [
+  {key:'Critical',    color:'#b91c1c'},
+  {key:'Intolerable', color:'#dc2626'},
+  {key:'Substantial', color:'#ea580c'},
+  {key:'Tolerable',   color:'#ca8a04'},
+  {key:'Negligible',  color:'#15803d'}
+];
+function sfBandColor(cls){
+  for(var i=0;i<SF_BANDS.length;i++) if(SF_BANDS[i].key===cls) return SF_BANDS[i].color;
+  return '#94a3b8';
+}
+function sfSkeleton(n){
+  var out='<div class="sf-list">';
+  for(var i=0;i<(n||5);i++) out+='<div class="sf-skel"><i style="width:'+
+    (58+((i*13)%30))+'%"></i><i style="width:'+(78-((i*11)%28))+'%"></i></div>';
+  return out+'</div>';
+}
+function sfEmpty(title, hint, onClear){
+  return '<div class="sf-empty"><b>'+sfEsc(title)+'</b>'+sfEsc(hint||'')+
+    (onClear?'<div style="margin-top:12px"><button class="sf-clr" onclick="'+onClear+
+      '">Clear all filters</button></div>':'')+'</div>';
+}
+/* View mode per tab, remembered for the session. */
+var SF_VIEW = { hira:'list', incidents:'list' };
+function sfViewSwitch(tab){
+  var v = SF_VIEW[tab];
+  return '<div class="sf-vsw" role="group" aria-label="View mode">'+
+    '<button class="'+(v==='list'?'on':'')+'" aria-pressed="'+(v==='list')+'" '+
+      'onclick="sfSetView(\''+tab+'\',\'list\')" title="List view">'+
+      sfIcon('list')+'List</button>'+
+    '<button class="'+(v==='board'?'on':'')+'" aria-pressed="'+(v==='board')+'" '+
+      'onclick="sfSetView(\''+tab+'\',\'board\')" title="Board view">'+
+      sfIcon('board')+'Board</button></div>';
+}
+function sfSetView(tab, v){
+  SF_VIEW[tab]=v;
+  if(tab==='hira') sfRenderHira(); else sfRenderIncidents();
+}
+function sfTogglePanel(id){
+  var el=document.getElementById(id); if(el) el.classList.toggle('open');
+}
+/* Badge on the mobile "Filters" button so a hidden active filter is never
+   invisible — the count is the only cue once the selects are collapsed. */
+function sfSetFilterCount(id, n){
+  var el=document.getElementById(id); if(!el) return;
+  el.textContent=n; el.style.display = n ? '' : 'none';
+}
 
 /* Build a segmented click-control. Stores value in a hidden input #<id>. */
 function sfSeg(id,opts,sel,extraClass,onpick){
@@ -5555,21 +5967,31 @@ function sfMoveCard(sr,status,opt){
 /* ---------- INCIDENTS TAB ---------- */
 function sfRenderIncidents(){
   var box=document.getElementById('safety-content');
+  // Register FIRST, charts after. Two canvases at the top pushed the actual
+  // records ~600px down the page — the data you came for was below the fold.
   box.innerHTML='<div class="sf-wrap">'+
+    '<div class="sf-filterbar">'+
+      '<input class="sf-q" id="sf-inc-search" placeholder="Search incidents" '+
+        'aria-label="Search incidents" oninput="sfIncFilter()">'+
+      '<button class="sf-fmore" onclick="sfTogglePanel(\'sf-inc-fpanel\')" '+
+        'aria-label="More filters">Filters<span class="n" id="sf-inc-fn">0</span></button>'+
+      sfViewSwitch('incidents')+
+      '<span class="sf-fpanel" id="sf-inc-fpanel">'+
+        '<select id="sf-inc-type"   aria-label="Filter by type"   onchange="sfIncFilter()"><option value="">All types</option></select>'+
+        '<select id="sf-inc-status" aria-label="Filter by status" onchange="sfIncFilter()"><option value="">All status</option></select>'+
+        '<select id="sf-inc-zone"   aria-label="Filter by zone"   onchange="sfIncFilter()"><option value="">All zones</option></select>'+
+        '<select id="sf-inc-shift"  aria-label="Filter by shift"  onchange="sfIncFilter()"><option value="">All shifts</option></select>'+
+      '</span>'+
+    '</div>'+
+    '<div class="sf-chips" id="sf-inc-chips"></div>'+
+    '<div id="sf-inc-list">'+sfSkeleton(5)+'</div>'+
+    '<div class="sf-sect" style="margin-top:20px">Trends</div>'+
     '<div class="sf-card"><h4>Incidents by Type</h4>'+
       '<div class="sf-canvas-box"><canvas id="sfi-type"></canvas></div></div>'+
     '<div class="sf-card"><h4>Incidents by Zone</h4>'+
       '<div class="sf-canvas-box"><canvas id="sfi-zone"></canvas></div></div>'+
-    '<div class="sf-filterbar">'+
-      '<input id="sf-inc-search" placeholder="Search description / cause / action" oninput="sfIncFilter()">'+
-      '<select id="sf-inc-type"   onchange="sfIncFilter()"><option value="">All types</option></select>'+
-      '<select id="sf-inc-status" onchange="sfIncFilter()"><option value="">All status</option></select>'+
-      '<select id="sf-inc-zone"   onchange="sfIncFilter()"><option value="">All zones</option></select>'+
-      '<select id="sf-inc-shift"  onchange="sfIncFilter()"><option value="">All shifts</option></select>'+
     '</div>'+
-    '<div id="sf-inc-list"><div class="loading-spinner" style="padding:30px">'+
-      '<div class="spinner-ring"></div>Loading&hellip;</div></div></div>'+
-    '<button class="sf-fab" onclick="sfNewIncident()">+</button>';
+    '<button class="sf-fab" onclick="sfNewIncident()" aria-label="Log new incident">+</button>';
   sfChartDoughnut('sfi-type', (SF.charts||{}).incidentType, null);
   sfChartHBar('sfi-zone', (SF.charts||{}).incidentZone, '#0ea5e9');
   google.script.run.withSuccessHandler(function(res){
@@ -5601,23 +6023,36 @@ function sfIncFillFilters(){
   fill('sf-inc-zone',   f.zone,  'All zones');
   fill('sf-inc-shift',  f.shift, 'All shifts');
 }
-function sfIncColor(type){
-  return /accident/i.test(type||'') ? '#dc2626' : '#f59e0b'; // accident red, near-miss amber
-}
-// CAPA lifecycle → pill colour. Closed/effective reads green, partially-effective
-// amber, still-open red, so the register scans by state at a glance.
-function sfIncStatusColor(s){
-  s=String(s||'');
-  if(s==='Closed - Effective')           return '#16a34a';
-  if(s==='Closed - Partially Effective') return '#ca8a04';
-  if(s==='Completed')                    return '#0ea5e9';
-  if(s==='Pending Verification')         return '#7c3aed';
-  return '#dc2626'; // Open - Under Investigation / blank
-}
+// Type colour + CAPA status colour now come from sfTypeMeta()/sfCapaMeta(), which
+// pair every colour with a glyph and a label so state never rests on hue alone.
 function sfIncDate(iso){
   if(!iso) return '';
   var d=new Date(iso); if(isNaN(d)) return sfEsc(String(iso).substr(0,10));
   return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+}
+/* An incident still needs work while its CAPA is not closed. Only ~4 of 35 are
+   open, so surfacing them above the archive is the whole point of the layout. */
+function sfIncOpen(r){
+  var s=String(r.capaStatus||'');
+  return s.indexOf('Closed')!==0;
+}
+function sfIncActiveFilters(){
+  function v(id){var e=document.getElementById(id);return e?e.value:'';}
+  return [
+    {id:'sf-inc-search', label:v('sf-inc-search')?'"'+v('sf-inc-search')+'"':''},
+    {id:'sf-inc-type',   label:v('sf-inc-type')},
+    {id:'sf-inc-status', label:v('sf-inc-status')},
+    {id:'sf-inc-zone',   label:v('sf-inc-zone')},
+    {id:'sf-inc-shift',  label:v('sf-inc-shift')?'Shift '+v('sf-inc-shift'):''}
+  ].filter(function(f){return f.label;});
+}
+function sfIncClearOne(id){
+  var e=document.getElementById(id); if(e){ e.value=''; } sfIncFilter();
+}
+function sfIncClearAll(){
+  ['sf-inc-search','sf-inc-type','sf-inc-status','sf-inc-zone','sf-inc-shift']
+    .forEach(function(id){var e=document.getElementById(id); if(e) e.value='';});
+  sfIncFilter();
 }
 function sfIncFilter(){
   var rows=SF.incidents||[];
@@ -5633,29 +6068,117 @@ function sfIncFilter(){
               .toLowerCase().indexOf(q)===-1) return false;
     return true;
   });
+
+  // Active filters shown as removable chips rather than buried in the selects.
+  var act=sfIncActiveFilters();
+  sfSetFilterCount('sf-inc-fn', act.filter(function(f){return f.id!=='sf-inc-search';}).length);
+  var chipEl=document.getElementById('sf-inc-chips');
+  if(chipEl) chipEl.innerHTML = act.length
+    ? act.map(function(f){ return '<span class="sf-fchip">'+sfEsc(f.label)+
+        '<button onclick="sfIncClearOne(\''+f.id+'\')" aria-label="Remove filter '+
+        sfEsc(f.label)+'">&times;</button></span>'; }).join('')+
+        '<button class="sf-clr" onclick="sfIncClearAll()">Clear all</button>'
+    : '';
+
   var el=document.getElementById('sf-inc-list'); if(!el) return;
-  el.innerHTML='<div class="sf-banner">'+filtered.length+' of '+rows.length+
-    ' record'+(rows.length===1?'':'s')+' &middot; tap a record to act on it</div>'+
-    sfIncidentsHtml(filtered);
+  if(!filtered.length){
+    el.innerHTML=sfEmpty('No incidents match these filters',
+      act.length?'Active: '+act.map(function(f){return f.label;}).join(', ')
+                :'The register has '+rows.length+' records.',
+      act.length?'sfIncClearAll()':'');
+    return;
+  }
+  el.innerHTML = SF_VIEW.incidents==='board'
+    ? sfIncBoard(filtered)
+    : sfIncSections(filtered, rows.length);
 }
-function sfIncidentsHtml(rows){
-  if(!rows||!rows.length) return '<div class="sf-card">No matching incidents.</div>';
-  return rows.map(function(r){
-    return '<div class="sf-row" style="border-left-color:'+sfIncColor(r.type)+'" '+
-      'onclick="sfIncidentDetail(\''+sfEsc(String(r.sr))+'\')">'+
-      '<div class="top"><span class="act">#'+sfEsc(r.sr)+' &middot; '+sfEsc(r.type)+'</span>'+
-        '<span class="sf-pill risk" style="background:'+sfIncStatusColor(r.capaStatus)+'">'+
-          sfEsc(r.capaStatus||'—')+'</span></div>'+
-      '<div class="haz">'+sfEsc(r.description)+'</div>'+
-      '<div class="meta"><span>'+sfIncDate(r.date)+(r.time?' '+sfEsc(r.time):'')+'</span>'+
-        (r.zone?'<span>'+sfEsc(r.zone)+'</span>':'')+
-        (r.location?'<span>'+sfEsc(r.location)+'</span>':'')+
-        (r.persons?'<span>'+sfEsc(r.persons)+' person(s)</span>':'')+
-        (r.shift?'<span>Shift '+sfEsc(r.shift)+'</span>':'')+'</div>'+
-      (r.rootCause?'<div class="meta"><span><b>Root cause:</b> '+sfEsc(r.rootCause)+'</span></div>':'')+
-      (r.capa?'<div class="meta"><span><b>CAPA:</b> '+sfEsc(r.capa)+'</span></div>':'')+
-      '</div>';
+/* LIST: needs-action first, closed archive collapsed behind a disclosure. */
+var SF_INC_ARCHIVE_OPEN=false;
+function sfIncToggleArchive(){ SF_INC_ARCHIVE_OPEN=!SF_INC_ARCHIVE_OPEN; sfIncFilter(); }
+function sfIncSections(rows, total){
+  var open=rows.filter(sfIncOpen), closed=rows.filter(function(r){return !sfIncOpen(r);});
+  var out='';
+  if(open.length){
+    out+='<div class="sf-sect urgent">Needs action<span class="n">'+open.length+'</span></div>'+
+      sfIncTable()+'<div class="sf-list">'+open.map(sfIncRow).join('')+'</div>';
+  }
+  if(closed.length){
+    out+='<div class="sf-sect">Closed<span class="n">'+closed.length+'</span>'+
+      '<span class="sp"></span><button class="sf-disc" onclick="sfIncToggleArchive()" '+
+      'aria-expanded="'+SF_INC_ARCHIVE_OPEN+'">'+
+      (SF_INC_ARCHIVE_OPEN?'Hide':'Show')+'</button></div>';
+    if(SF_INC_ARCHIVE_OPEN) out+=sfIncTable()+'<div class="sf-list">'+
+      closed.map(sfIncRow).join('')+'</div>';
+  }
+  if(!open.length && !closed.length) out=sfEmpty('Nothing to show','');
+  return out;
+}
+function sfIncTable(){
+  return '<div class="sf-thead"><span>Type</span><span>What happened</span>'+
+    '<span>Shift</span><span>Status</span><span>Zone</span><span>Date</span>'+
+    '<span>Ppl</span></div>';
+}
+function sfIncRow(r){
+  var tm=sfTypeMeta(r.type), cm=sfCapaMeta(r.capaStatus);
+  // "injured/treated" for harm records, "exposed" for precursors: `persons` is an
+  // exposure count (it is recorded on near misses too), so the wording must differ.
+  var ppl = r.persons ? (sfIsHarm(r.type)? r.persons+' injured' : r.persons+' exposed') : '';
+  return '<div class="sf-row'+(tm.harm?' harm':'')+'" style="--bar:'+tm.color+'" '+
+    'tabindex="0" role="button" onclick="sfIncidentDetail(\''+sfEsc(String(r.sr))+'\')" '+
+    'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();this.click();}">'+
+    '<div class="top">'+
+      '<span class="sf-type" style="color:'+tm.color+'">'+sfIcon(tm.icon)+
+        sfEsc(r.type)+'</span>'+
+      '<span class="act">'+sfEsc(r.description)+'</span>'+
+      '<span class="sr">#'+sfEsc(r.sr)+'</span></div>'+
+    '<div class="haz">'+(r.rootCause?sfEsc(r.rootCause):'<i style="color:#94a3b8">'+
+      'Root cause not recorded</i>')+'</div>'+
+    '<div class="meta">'+sfChip(cm,cm.short)+
+      (r.zone?'<span>'+sfEsc(r.zone.replace(/^[A-Z]: /,''))+'</span>':'')+
+      '<span>'+sfIncDate(r.date)+'</span>'+
+      (ppl?'<span>'+sfEsc(ppl)+'</span>':'')+'</div>'+
+    // Desktop-only cells (hidden ≤1024px by CSS).
+    '<span class="cell">'+(r.shift?'Shift '+sfEsc(r.shift):'—')+'</span>'+
+    '<span class="cell">'+sfChip(cm,cm.short)+'</span>'+
+    '<span class="cell">'+sfEsc((r.zone||'—').replace(/^[A-Z]: /,''))+'</span>'+
+    '<span class="cell num">'+sfIncDate(r.date)+'</span>'+
+    '<span class="cell num">'+(r.persons||'—')+'</span>'+
+    '</div>';
+}
+/* BOARD: harm vs precursor — the ratio between the two families IS the safety
+   metric an ISO 45001 auditor asks for, so the board makes it the structure. */
+function sfIncBoard(rows){
+  var groups=[
+    {key:'Accident',         color:'#b91c1c'},
+    {key:'First Aid',        color:'#dc2626'},
+    {key:'Near Miss',        color:'#ea580c'},
+    {key:'Unsafe Act',       color:'#ca8a04'},
+    {key:'Unsafe Condition', color:'#a16207'}
+  ];
+  var harm=rows.filter(function(r){return sfIsHarm(r.type);}).length;
+  var pre=rows.length-harm;
+  var ratio = harm ? (pre/harm).toFixed(1)+' : 1' : (pre?'all precursors':'—');
+  var cols=groups.map(function(g){
+    var sub=rows.filter(function(r){return r.type===g.key;});
+    var tm=sfTypeMeta(g.key);
+    return '<div class="sf-bcol" style="--bar:'+g.color+'">'+
+      '<div class="sf-bhead" style="color:'+g.color+'">'+sfIcon(tm.icon)+
+        sfEsc(g.key)+'<span class="n">'+sub.length+'</span></div>'+
+      '<div class="sf-bbody">'+(sub.length?sub.map(function(r){
+        var cm=sfCapaMeta(r.capaStatus);
+        return '<div class="sf-kc" style="--bar:'+g.color+'" tabindex="0" role="button" '+
+          'onclick="sfIncidentDetail(\''+sfEsc(String(r.sr))+'\')" '+
+          'onkeydown="if(event.key===\'Enter\'){this.click();}">'+
+          '<div class="t">'+sfEsc(r.description)+'</div>'+
+          '<div class="m">'+sfChip(cm,cm.short)+'<span>'+sfIncDate(r.date)+'</span>'+
+            '<span class="sr">#'+sfEsc(r.sr)+'</span></div></div>';
+      }).join(''):'<div style="padding:8px 4px;font-size:12px;color:#94a3b8">None</div>')+
+      '</div></div>';
   }).join('');
+  return '<div class="sf-banner">Precursors reported per harm event: <b>'+ratio+
+      '</b> &middot; '+pre+' leading, '+harm+' lagging</div>'+
+    '<div class="sf-board" style="--cols:5">'+cols+'</div>'+
+    '<div class="sf-bdots"><i class="on"></i><i></i><i></i><i></i><i></i></div>';
 }
 
 /* ---------- INCIDENT DETAIL / TAKE ACTION ---------- */
