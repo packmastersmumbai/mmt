@@ -821,9 +821,11 @@ body {
 /* DESKTOP — true table layout, 1400px cap so lines stay readable. */
 @media (min-width:1025px){
   .sf-wrap { max-width:1400px; margin:0 auto; }
+  /* The real register runs to ~150 rows, so the header must stay put. */
   .sf-thead { display:grid; grid-template-columns:56px 1fr 92px 132px 128px 96px 62px;
     gap:12px; padding:8px 12px; font-size:11px; font-weight:800; color:#64748b;
-    letter-spacing:.06em; text-transform:uppercase; border-bottom:2px solid #cbd5e1; }
+    letter-spacing:.06em; text-transform:uppercase; border-bottom:2px solid #cbd5e1;
+    position:sticky; top:0; background:#f8fafc; z-index:5; }
   .sf-thead span { cursor:pointer; user-select:none; }
   .sf-thead span:hover { color:#0f172a; }
   .sf-row { grid-template-columns:56px 1fr 92px 132px 128px 96px 62px;
