@@ -854,15 +854,27 @@ body {
 .sf-kpi { background:#fff; border-radius:10px; padding:12px 10px; border-left:4px solid #94a3b8;
   cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.05); transition:transform .1s; }
 .sf-kpi:active { transform:scale(.97); }
-.sf-kpi .v { font-size:26px; font-weight:800; color:#0f172a; line-height:1; }
-.sf-kpi .l { font-size:11px; color:#64748b; font-weight:600; margin-top:4px; }
+/* Tabular numerals + tight tracking: these are figures, and proportional
+   digits made the six tiles read as ragged. */
+.sf-kpi .v { font-size:27px; font-weight:800; color:#0f172a; line-height:1;
+  font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
+.sf-kpi .l { font-size:11.5px; color:#475569; font-weight:600; margin-top:5px;
+  letter-spacing:-.005em; }
 .sf-kpi.green { border-left-color:#16a34a; } .sf-kpi.amber { border-left-color:#d97706; }
 .sf-kpi.red { border-left-color:#dc2626; } .sf-kpi.teal { border-left-color:#0f766e; }
 /* chart cards */
 .sf-card { background:#fff; border-radius:10px; padding:12px; margin-top:12px;
   box-shadow:0 1px 2px rgba(0,0,0,.05); }
-.sf-card h4 { font-size:13px; font-weight:800; color:#0f172a; margin-bottom:8px;
-  display:flex; justify-content:space-between; align-items:center; }
+/* 700, not 800, at a slightly larger size: a card title is a label, not a
+   headline. At 800 it competed with the KPI numerals for first read.
+   Hierarchy comes from weight and colour, not from shouting. */
+.sf-card h4 { font-size:13.5px; font-weight:700; color:#0f172a; margin-bottom:10px;
+  letter-spacing:-.01em; display:flex; justify-content:space-between;
+  align-items:baseline; gap:10px; }
+/* Affordance hint — tells the reader the chart is a way in, in the recessive
+   register so it never competes with the title. */
+.sf-card h4 .sf-hint { font-size:10.5px; font-weight:600; color:#94a3b8;
+  letter-spacing:0; flex:none; }
 .sf-card .ctype { font-size:10px; font-weight:700; color:#0f766e; background:#f0fdfa;
   border:1px solid #99f6e4; border-radius:6px; padding:2px 8px; cursor:pointer; }
 .sf-canvas-box { position:relative; height:240px; }
@@ -872,7 +884,27 @@ body {
    empty margins either side. Capping the box keeps the ring at a sensible
    diameter and pulls the card back to the height it actually needs. */
 @media (min-width:1025px){
-  .sf-grid2 .sf-canvas-box { height:210px; max-width:340px; margin:0 auto; }
+  /* Only the doughnut is capped and centred; the section bars set their own
+     height from the row count and must not be squeezed by a shared row
+     height — align-items:start lets each card be as tall as it needs. */
+  .sf-row-work > .sf-card:first-child .sf-canvas-box { height:210px; max-width:300px; margin:0 auto; }
+  /* Paired rows. The matrix + its readout is a fixed-width object, so the
+     risk row gives the remaining width to the classification bars. */
+  .sf-row-risk { grid-template-columns:minmax(0,auto) minmax(0,1fr); align-items:start; }
+  .sf-row-work { grid-template-columns:minmax(0,340px) minmax(0,1fr); align-items:start; }
+  .sf-grid2 > .sf-card { margin-top:0; }
+  .sf-row-risk .sf-canvas-box { height:300px; }
+  /* The readout sits beside the matrix; without a cap it stretched to fill
+     the card and stranded whitespace between the two. */
+  .sf-row-risk .sf-heatinfo { max-width:250px; }
+}
+/* Kanban column brought into view from an Action Status click. The ring fades
+   after a moment so it marks the arrival without becoming permanent chrome. */
+.sf-kcol-hi { outline:2px solid #0f766e; outline-offset:2px; border-radius:10px;
+  animation:sfkhi 2.4s ease-out forwards; }
+@keyframes sfkhi { 0%,60%{ outline-color:#0f766e; } 100%{ outline-color:transparent; } }
+@media (prefers-reduced-motion:reduce){
+  .sf-kcol-hi { animation:none; outline-color:#0f766e; }
 }
 /* heatmap */
 /* A 5x5 matrix of two-digit counts is a fixed-size object, not a fluid one.
@@ -5846,19 +5878,69 @@ function sfRenderDashboard(){
       kpi(k.completedActions,'Completed Actions','green','actions')+
       kpi(k.totalIncidents,'Total Incidents','teal','incidents')+
     '</div>'+
-    '<div class="sf-grid2">'+
-      '<div class="sf-card"><h4>Action Status</h4><div class="sf-canvas-box"><canvas id="sfc-status"></canvas></div></div>'+
-      '<div class="sf-card"><h4>Risk Classification</h4><div class="sf-canvas-box"><canvas id="sfc-class"></canvas></div></div>'+
+    /* Row 1 — the two risk views side by side: the matrix says WHERE risk
+       sits on the L×C grid, the bars say HOW MUCH sits in each band. Reading
+       them together is the point; stacked, you had to scroll between them. */
+    '<div class="sf-grid2 sf-row-risk">'+
+      '<div class="sf-card"><h4>Risk Heatmap '+
+        '<span class="sf-hint">hover a cell &middot; click to open</span></h4>'+
+        sfHeatmapHtml()+'</div>'+
+      '<div class="sf-card"><h4>Risk Classification '+
+        '<span class="sf-hint">click a bar</span></h4>'+
+        '<div class="sf-canvas-box"><canvas id="sfc-class"></canvas></div></div>'+
     '</div>'+
-    /* No inline height — sfChartHBar sizes the box from the row count. */
-    '<div class="sf-card"><h4>Hazards by Section</h4><div class="sf-canvas-box"><canvas id="sfc-section"></canvas></div></div>'+
-    '<div class="sf-card"><h4>Risk Heatmap <span style="font-size:10px;color:#64748b">tap a cell</span></h4>'+
-      sfHeatmapHtml()+'</div>'+
+    /* Row 2 — action state beside where the hazards are. */
+    '<div class="sf-grid2 sf-row-work">'+
+      '<div class="sf-card"><h4>Action Status '+
+        '<span class="sf-hint">click a segment</span></h4>'+
+        '<div class="sf-canvas-box"><canvas id="sfc-status"></canvas></div></div>'+
+      '<div class="sf-card"><h4>Hazards by Section '+
+        '<span class="sf-hint">click a bar</span></h4>'+
+        '<div class="sf-canvas-box"><canvas id="sfc-section"></canvas></div></div>'+
+    '</div>'+
     '</div>';
   box.innerHTML = html;
-  sfChartDoughnut('sfc-status', SF.charts.actionStatus, SF_STATUS_COLORS);
-  sfChartBarClass('sfc-class', SF.charts.classification);
-  sfChartHBar('sfc-section', SF.charts.bySection, '#0f766e');
+  // Each chart is a way in to the records behind it, not a picture of them.
+  sfChartDoughnut('sfc-status', SF.charts.actionStatus, SF_STATUS_COLORS,
+    function(label){ sfOpenRecords('actions', {status:label}); });
+  sfChartBarClass('sfc-class', SF.charts.classification,
+    function(label){ sfOpenRecords('hira', {classification:label}); });
+  sfChartHBar('sfc-section', SF.charts.bySection, '#0f766e',
+    function(label){ sfOpenRecords('hira', {section:label}); });
+}
+
+/* ── Chart → records ──────────────────────────────────────────────────────
+   One entry point so every chart drills the same way: switch to the owning
+   tab, then apply the filter once that tab's DOM exists. sfHiraFilter reads
+   its own dropdowns, so setting them IS the filter — no parallel filter state
+   to drift out of sync. */
+function sfOpenRecords(tab, filter){
+  sfGoTab(tab);
+  setTimeout(function(){
+    if(tab==='hira'){
+      var cl=document.getElementById('sf-hira-class');
+      var st=document.getElementById('sf-hira-status');
+      var q =document.getElementById('sf-hira-search');
+      if(cl) cl.value = filter.classification || '';
+      if(st) st.value = '';
+      // Section isn't a dropdown; the search box already matches on section.
+      if(q)  q.value  = filter.section ? String(filter.section).replace(/ — unlabelled$/,'') : '';
+      sfHiraFilter();
+    } else if(tab==='actions' && filter.status){
+      // Actions is a kanban, not a filtered list — there is no status
+      // dropdown to set. Bring the matching column into view and mark it
+      // instead. The board renders async, so wait for the column to exist.
+      var tries=0;
+      (function findCol(){
+        var col=document.querySelector('.sf-kcol[data-kcol="'+filter.status+'"]');
+        if(!col){ if(++tries<40) return setTimeout(findCol,80); return; }
+        document.querySelectorAll('.sf-kcol').forEach(function(c){
+          c.classList.toggle('sf-kcol-hi', c===col); });
+        col.scrollIntoView({block:'nearest', inline:'center',
+          behavior: matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'});
+      })();
+    }
+  },60);
 }
 
 function sfGoTab(t){
@@ -5940,30 +6022,38 @@ function sfHeatDrill(l,c){
 }
 
 /* ---------- CHART BUILDERS ---------- */
-function sfChartDoughnut(id, obj, colorMap){
+function sfChartDoughnut(id, obj, colorMap, onPick){
   var el = document.getElementById(id); if(!el||!obj) return;
   var labels = Object.keys(obj).filter(function(k){return obj[k]>0;});
   var data = labels.map(function(k){return obj[k];});
   var colors = labels.map(function(k){return (colorMap&&colorMap[k])||'#64748b';});
   var total = data.reduce(function(a,b){return a+b;},0);
+  if(onPick) el.style.cursor='pointer';
   SF.chartObjs.push(new Chart(el,{type:'doughnut',
-    data:{labels:labels,datasets:[{data:data,backgroundColor:colors,borderWidth:2,borderColor:'#fff'}]},
+    data:{labels:labels,datasets:[{data:data,backgroundColor:colors,
+      borderWidth:2,borderColor:'#fff',hoverOffset:6}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:'62%',
-      plugins:{legend:{position:'bottom',labels:{boxWidth:11,font:{size:10}}},
-        tooltip:{callbacks:{label:function(c){return c.label+': '+c.parsed+
-          ' ('+Math.round(c.parsed/total*100)+'%)';}}}}}}));
+      onClick:function(ev,els){ if(onPick&&els.length) onPick(labels[els[0].index]); },
+      plugins:{legend:{position:'bottom',
+          labels:{boxWidth:10,boxHeight:10,usePointStyle:true,pointStyle:'circle',
+            font:{size:11,family:'Archivo'},color:'#475569',padding:14}},
+        tooltip:{displayColors:false,callbacks:{label:function(c){return c.label+': '+c.parsed+
+          ' ('+Math.round(c.parsed/total*100)+'%)'+(onPick?'  ·  click to open':'');}}}}}}));
 }
-function sfChartBarClass(id, obj){
+function sfChartBarClass(id, obj, onPick){
   var el = document.getElementById(id); if(!el||!obj) return;
   var labels = Object.keys(obj);
+  if(onPick) el.style.cursor='pointer';
   SF.chartObjs.push(new Chart(el,{type:'bar',
     data:{labels:labels,datasets:[{label:'Hazards',data:labels.map(function(k){return obj[k];}),
       backgroundColor:labels.map(function(k){return SF_RISK_COLORS[k]||'#64748b';}),
       borderRadius:4, borderSkipped:'start', barPercentage:.66, categoryPercentage:.8}]},
     options:{responsive:true,maintainAspectRatio:false,
+      onClick:function(ev,els){ if(onPick&&els.length) onPick(labels[els[0].index]); },
       plugins:{legend:{display:false},
         tooltip:{displayColors:false,callbacks:{label:function(c){
-          return c.parsed.y + (c.parsed.y===1?' hazard':' hazards');}}}},
+          return c.parsed.y + (c.parsed.y===1?' hazard':' hazards')+
+            (onPick?'  ·  click to open':'');}}}},
       // Recessive grid: the old default drew a full dark box around the plot,
       // which competed with the bars for attention.
       scales:{
@@ -5972,8 +6062,9 @@ function sfChartBarClass(id, obj){
         x:{ticks:{color:'#334155',font:{size:11}},
            grid:{display:false},border:{display:false}}}}}));
 }
-function sfChartHBar(id, obj, color){
+function sfChartHBar(id, obj, color, onPick){
   var el = document.getElementById(id); if(!el||!obj) return;
+  if(onPick) el.style.cursor='pointer';
   var ent = Object.keys(obj).map(function(k){return [k,obj[k]];})
     .sort(function(a,b){return b[1]-a[1];});
   // A truncated section code (e.g. "I" instead of "I: Maintenance, Electrical
@@ -5989,8 +6080,10 @@ function sfChartHBar(id, obj, color){
   var box = el.parentElement;
   if(box && box.classList.contains('sf-canvas-box')){
     // 34px/row: long section names wrap to two lines on narrow viewports, and
-    // 28px clipped the second line.
-    box.style.height = Math.max(150, ent.length*34 + 36) + 'px';
+    // 28px clipped the second line. flex:none stops a stretched card row from
+    // squeezing the box below the height the rows actually need.
+    box.style.height = Math.max(150, ent.length*34 + 40) + 'px';
+    box.style.flex = 'none';
   }
   SF.chartObjs.push(new Chart(el,{type:'bar',
     data:{labels:ent.map(function(e){return e[0];}),
@@ -5998,10 +6091,13 @@ function sfChartHBar(id, obj, color){
         backgroundColor:color, borderRadius:4, borderSkipped:'start',
         barPercentage:.72, categoryPercentage:.86}]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      // ent is re-sorted, so the clicked index maps to ent, not to obj's keys.
+      onClick:function(ev,els){ if(onPick&&els.length) onPick(ent[els[0].index][0]); },
       // Values are direct-labelled by the tooltip; the axis stays recessive.
       plugins:{legend:{display:false},
         tooltip:{displayColors:false,callbacks:{label:function(c){
-          return c.parsed.x + (c.parsed.x===1?' hazard':' hazards');}}}},
+          return c.parsed.x + (c.parsed.x===1?' hazard':' hazards')+
+            (onPick?'  ·  click to open':'');}}}},
       scales:{
         x:{beginAtZero:true,ticks:{precision:0,color:'#64748b',font:{size:11}},
            grid:{color:'#eef2f6',drawTicks:false},border:{display:false}},
