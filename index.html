@@ -724,6 +724,15 @@ body {
 .sf-form label { font-weight:700; color:#475569; margin-top:6px; font-size:11px; }
 .sf-form input, .sf-form select, .sf-form textarea { font-size:12px; padding:7px 8px;
   border:1px solid #cbd5e1; border-radius:7px; width:100%; font-family:inherit; }
+/* Incident detail — read-only facts panel above the editable fields. */
+.if-facts { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;
+  padding:9px 10px; margin-bottom:4px; }
+.if-chips { display:flex; flex-wrap:wrap; gap:6px 10px; font-size:11px; color:#475569; }
+.if-line { font-size:11px; color:#475569; margin-top:4px; line-height:1.35; }
+.if-chips span { white-space:nowrap; }
+/* Separator BEFORE each chip except the first. A trailing ::after would leave a
+   dangling dot whenever the row wraps and the last chip moves to a new line. */
+.if-chips span + span::before { content:'·'; margin-right:10px; color:#94a3b8; }
 .sf-form .hf-2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .sf-form .hf-3 { display:grid; grid-template-columns:1fr 1fr auto; gap:8px; align-items:end; }
 .hf-risk { font-size:18px; font-weight:800; color:#fff; background:#16a34a;
@@ -5661,25 +5670,37 @@ function sfIncidentDetail(sr){
   // The factual record of what happened (date/time/shift/type/persons) is shown
   // read-only — it is not the app's business to rewrite history. Only the
   // investigation and corrective-action fields are editable.
-  var facts='<div class="sf-card" style="margin-bottom:10px">'+
-    '<div class="meta"><span><b>'+sfIncDate(r.date)+(r.time?' '+sfEsc(r.time):'')+'</b></span>'+
-      (r.shift?'<span>Shift '+sfEsc(r.shift)+'</span>':'')+
-      '<span>'+sfEsc(r.type)+'</span>'+
-      (r.persons?'<span>'+sfEsc(r.persons)+' person(s)</span>':'')+'</div>'+
-    '<div class="meta"><span>'+sfEsc(r.zone||'')+'</span>'+
-      (r.location?'<span>'+sfEsc(r.location)+'</span>':'')+'</div></div>';
-  var body=facts+
+  // Facts block: chips need their own flex container. `.sf-row .meta` supplies the
+  // gap/wrap but is scoped to .sf-row, so reuse the dedicated .if-facts styles.
+  var chip = function(t){ return '<span>'+t+'</span>'; };
+  var facts='<div class="if-facts">'+
+    '<div class="if-chips">'+
+      chip('<b>'+sfIncDate(r.date)+(r.time?' '+sfEsc(r.time):'')+'</b>')+
+      (r.shift?chip('Shift '+sfEsc(r.shift)):'')+
+      chip(sfEsc(r.type))+
+      (r.persons?chip(sfEsc(r.persons)+' person(s)'):'')+
+    '</div>'+
+    // Zone and location are long free-text values that wrap. A dot separator
+    // between them strands itself on a line break, so give each its own line.
+    (r.zone?'<div class="if-line">'+sfEsc(r.zone)+'</div>':'')+
+    (r.location?'<div class="if-line">'+sfEsc(r.location)+'</div>':'')+
+    '</div>';
+  // Wrapped in .sf-form — that class is what stacks labels above full-width
+  // fields and sets font-family:inherit. Without it labels sit beside the inputs
+  // and textareas render tiny and monospace.
+  var body='<div class="sf-form">'+facts+
     '<label>What happened</label>'+
-    '<textarea id="if-desc" rows="3">'+sfEsc(r.description||'')+'</textarea>'+
+    '<textarea id="if-desc" rows="5">'+sfEsc(r.description||'')+'</textarea>'+
     '<label>Root cause</label>'+
-    '<textarea id="if-rc" rows="3" placeholder="Why did it happen?">'+sfEsc(r.rootCause||'')+'</textarea>'+
+    '<textarea id="if-rc" rows="4" placeholder="Why did it happen?">'+sfEsc(r.rootCause||'')+'</textarea>'+
     '<label>Corrective / preventive action (CAPA)</label>'+
-    '<textarea id="if-capa" rows="3" placeholder="What will stop it recurring?">'+sfEsc(r.capa||'')+'</textarea>'+
+    '<textarea id="if-capa" rows="4" placeholder="What will stop it recurring?">'+sfEsc(r.capa||'')+'</textarea>'+
     '<label>Status</label>'+
     '<select id="if-status">'+statuses.map(function(s){
       return '<option'+(s===r.capaStatus?' selected':'')+'>'+sfEsc(s)+'</option>';}).join('')+'</select>'+
     '<button class="sf-btn-primary" onclick="sfSaveIncident(\''+sfEsc(String(r.sr))+'\')">'+
-      'Save Changes</button>';
+      'Save Changes</button>'+
+    '</div>';
   sfModal('Incident #'+r.sr+' — '+r.type, body);
 }
 function sfSaveIncident(sr){
