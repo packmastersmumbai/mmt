@@ -879,34 +879,49 @@ body {
    With 1fr columns + aspect-ratio:1.4 each cell grew with the container, so at
    1400px the cells hit ~250x180px and one matrix ran past a full screen. Cells
    are capped and the grid centres; the row labels keep their auto column. */
-.sf-heat { display:grid; grid-template-columns:auto repeat(5,minmax(0,64px));
+/* Square cells, sized to the number they hold — not to the container. A 5x5 of
+   two-digit counts needs ~44px; the matrix reads as one object at a glance
+   instead of a wall. */
+.sf-heat { display:grid; grid-template-columns:auto repeat(5,44px);
   gap:3px; justify-content:start; }
-.sf-heat .hc { aspect-ratio:1.4; display:flex; align-items:center; justify-content:center;
+.sf-heat .hc { aspect-ratio:1; display:flex; align-items:center; justify-content:center;
   font-size:13px; font-weight:800; border-radius:5px; cursor:pointer;
-  font-variant-numeric:tabular-nums; }
+  font-variant-numeric:tabular-nums; transition:transform .1s, box-shadow .1s; }
+.sf-heat .hc:hover, .sf-heat .hc:focus-visible {
+  transform:scale(1.08); box-shadow:0 2px 8px rgba(15,23,42,.28); z-index:2; }
 .sf-heat .hl { font-size:11px; font-weight:700; color:#475569; display:flex;
   align-items:center; justify-content:center; padding:0 6px; }
 /* Empty cells: no fill, muted ink — they must not read as a risk band. */
 .sf-heat .hc.z { color:#94a3b8; background:#f8fafc !important; }
+@media (prefers-reduced-motion:reduce){ .sf-heat .hc { transition:none; }
+  .sf-heat .hc:hover, .sf-heat .hc:focus-visible { transform:none; } }
 @media (min-width:1025px){
-  .sf-heat { grid-template-columns:auto repeat(5,minmax(0,84px)); }
-  .sf-heat .hc { font-size:15px; }
-  /* The matrix is a fixed-size object; on a wide card it must not huddle in
-     the left corner. Sit it beside its own legend instead of stranding ~1000px
-     of empty card to its right. align-items:start would clip the legend to the
-     first grid row, so the legend column is its own flow. */
-  .sf-heatwrap { display:flex; align-items:flex-start; gap:32px; }
+  .sf-heat { grid-template-columns:auto repeat(5,52px); }
+  /* The matrix is a fixed-size object; the space beside it is where the
+     hovered cell explains itself, rather than dead card. */
+  .sf-heatwrap { display:flex; align-items:flex-start; gap:28px; }
   .sf-heatwrap > div:first-child { flex:none; }
 }
-/* Legend: the bands are ordinal, so they are listed in severity order and
-   carry their own swatch + label — never colour alone. */
-.sf-heatkey { display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:10px;
-  font-size:11px; font-weight:600; color:#475569; }
-.sf-heatkey span { display:inline-flex; align-items:center; gap:6px; }
-.sf-heatkey i { width:11px; height:11px; border-radius:3px; flex:none; }
-@media (min-width:1025px){
-  .sf-heatkey { flex-direction:column; gap:8px; margin-top:0; }
-}
+/* ── Hover/focus readout ──────────────────────────────────────────────────
+   A static legend only names the colours. What an operator needs from a cell
+   is what the rating MEANS and what to do about it — the ISO 45001 action for
+   that band. SF_RISK_GUIDE already carried that text; it was only being shown
+   on the HIRA entry form, never on this matrix. */
+.sf-heatinfo { border-left:3px solid var(--rc,#cbd5e1); padding:2px 0 2px 12px;
+  min-height:112px; max-width:340px; }
+.sf-heatinfo .ri-band { font-size:14px; font-weight:800; color:var(--rc,#334155);
+  display:flex; align-items:baseline; gap:8px; }
+.sf-heatinfo .ri-score { font-size:11px; font-weight:700; color:#64748b;
+  font-variant-numeric:tabular-nums; }
+.sf-heatinfo .ri-lc { font-size:11.5px; color:#475569; margin-top:6px; line-height:1.5; }
+.sf-heatinfo .ri-lc b { color:#0f172a; font-weight:700; }
+.sf-heatinfo .ri-guide { font-size:11.5px; color:#334155; margin-top:8px;
+  line-height:1.5; }
+.sf-heatinfo .ri-count { font-size:11.5px; font-weight:700; margin-top:8px;
+  color:#0f766e; }
+.sf-heatinfo .ri-idle { font-size:11.5px; color:#64748b; line-height:1.5; }
+/* Below the matrix on phones, beside it on desktop. */
+@media (max-width:1024px){ .sf-heatinfo { margin-top:12px; max-width:none; } }
 /* ═══ SAFETY REGISTERS — dense-data system ═══════════════════════════════
    Rows are divider-grouped, not carded: card chrome (padding + gap + shadow)
    was eating ~24px of a 74px row, forcing 10-11px text. Removing it buys the
@@ -5730,6 +5745,11 @@ var SF_RISK_INK = { Negligible:'#ffffff', Tolerable:'#3b1206',
   Substantial:'#3b1206', Intolerable:'#ffffff', Critical:'#ffffff' };
 var SF_STATUS_COLORS = { Open:'#f59e0b', 'In Progress':'#0ea5e9',
   Completed:'#16a34a', Verified:'#7c3aed' };
+/* The 5x5 scale wording. These were previously inline strings on the HIRA form
+   ("1 Rare · 5 Almost certain"), so the dashboard matrix could only show L3/C4
+   and not what L3 or C4 actually mean. */
+var SF_L_SCALE = { 1:'Rare', 2:'Unlikely', 3:'Possible', 4:'Likely', 5:'Almost certain' };
+var SF_C_SCALE = { 1:'Minor', 2:'Moderate', 3:'Serious', 4:'Major', 5:'Catastrophic' };
 
 function sfRiskColor(score){
   if(score>=25) return '#dc2626'; if(score>=16) return '#ea580c';
@@ -5863,24 +5883,52 @@ function sfHeatmapHtml(){
       var col = sfRiskColor(l*c2);
       // Ink is chosen per band; a blanket white was 1.9:1 on the yellow cells.
       // role=button + tabindex so the drill-down is keyboard-reachable.
+      // Hover AND focus feed the readout, so keyboard users get the same
+      // explanation a mouse user gets.
+      var band = sfRiskClass(l*c2);
       h += '<div class="hc'+(n===0?' z':'')+'" role="button" tabindex="0"'+
-        ' aria-label="Likelihood '+l+', consequence '+c2+': '+n+' hazards"'+
+        ' aria-label="Likelihood '+l+' '+SF_L_SCALE[l]+', consequence '+c2+' '+
+          SF_C_SCALE[c2]+'. Risk '+(l*c2)+' '+band+'. '+n+' hazards."'+
         ' style="background:'+col+';color:'+sfRiskInk(l*c2)+'" '+
-        'onclick="sfHeatDrill('+l+','+c2+')">'+n+'</div>';
+        ' onmouseenter="sfHeatInfo('+l+','+c2+','+n+')"'+
+        ' onfocus="sfHeatInfo('+l+','+c2+','+n+')"'+
+        ' onmouseleave="sfHeatInfo()"'+
+        ' onclick="sfHeatDrill('+l+','+c2+')">'+n+'</div>';
     }
   }
   h += '</div>';
   // Axis captions: L/C alone are meaningless to anyone not fluent in the matrix.
-  h += '<div style="display:flex;justify-content:space-between;font-size:10.5px;'+
-       'color:#64748b;font-weight:600;margin-top:6px;padding-left:26px">'+
-       '<span>Likelihood (L1-L5) &uarr; &middot; Consequence (C1-C5) &rarr;</span></div>';
+  h += '<div style="font-size:10.5px;color:#64748b;font-weight:600;'+
+       'margin-top:8px;padding-left:26px">'+
+       'Likelihood (L1-L5) &uarr; &middot; Consequence (C1-C5) &rarr;</div>';
   h += '</div>';
-  h += '<div class="sf-heatkey">' +
-    ['Negligible','Tolerable','Substantial','Intolerable','Critical'].map(function(b){
-      return '<span><i style="background:'+SF_RISK_COLORS[b]+'"></i>'+b+'</span>';
-    }).join('') + '</div>';
+  // Live readout, not a static colour key: hovering a cell explains the rating.
+  h += '<div class="sf-heatinfo" id="sf-heatinfo" aria-live="polite">'+
+       sfHeatInfoHtml()+'</div>';
   h += '</div>';
   return h;
+}
+/* Builds the readout body. No args = the idle prompt. */
+function sfHeatInfoHtml(l,c,n){
+  if(!l||!c){
+    return '<div class="ri-idle"><b style="color:#334155">Risk rating</b><br>'+
+      'Hover or focus a cell to see what that likelihood &times; consequence '+
+      'score means and the action it requires.</div>';
+  }
+  var risk = l*c, band = sfRiskClass(risk), col = SF_RISK_COLORS[band];
+  return '<div class="ri-band" style="--rc:'+col+'">'+band+
+      '<span class="ri-score">risk '+risk+'</span></div>'+
+    '<div class="ri-lc">Likelihood <b>L'+l+' '+SF_L_SCALE[l]+'</b><br>'+
+      'Consequence <b>C'+c+' '+SF_C_SCALE[c]+'</b></div>'+
+    '<div class="ri-guide">'+SF_RISK_GUIDE[band]+'</div>'+
+    (n>0 ? '<div class="ri-count">'+n+(n===1?' hazard':' hazards')+
+             ' &middot; tap to open</div>'
+         : '<div class="ri-count" style="color:#94a3b8">No hazards at this rating</div>');
+}
+function sfHeatInfo(l,c,n){
+  var el = document.getElementById('sf-heatinfo'); if(!el) return;
+  el.innerHTML = sfHeatInfoHtml(l,c,n);
+  el.style.setProperty('--rc', (l&&c) ? SF_RISK_COLORS[sfRiskClass(l*c)] : '#cbd5e1');
 }
 function sfHeatDrill(l,c){
   var cell = SF.heatmap.cells[l-1][c-1];
