@@ -270,6 +270,14 @@ body {
 }
 .gnav-btn.active .pmi { stroke-width:2; }
 @media (prefers-reduced-motion:reduce){ .gnav-btn { transition:none; } }
+/* Desktop: stop each button stretching to fill the bar. flex:1 across a 2000px
+   viewport gave every tab a 333px hit area with a 24px icon marooned in the
+   middle. Centre the group and cap each button instead — the bar stays where
+   floor staff expect it, it just stops behaving like a stretched phone. */
+@media (min-width:1025px){
+  .nav-global { justify-content:center; gap:2px; }
+  .gnav-btn { flex:0 1 120px; max-width:120px; padding:6px 10px; }
+}
 
 /* ── MACHINE SUB-NAV (above global nav, machine context) ── */
 .nav-machine {
@@ -388,7 +396,29 @@ body {
 .mcard-act-label { font-size:11px; color:#64748b; font-weight:600; line-height:1; margin-top:1px; letter-spacing:0.2px; }
 
 /* ════════ DENSE DASHBOARD ════════ */
+/* Mobile-first: full-bleed column. The desktop rules below cap and centre it —
+   without them .dash-wrap tracked the viewport 1:1, so at 1400px a KPI tile
+   holding "52" was 455px wide and the whole page read as a stretched phone. */
 .dash-wrap { padding:10px 10px 90px; }
+@media (min-width:1025px){
+  /* 76px bottom padding, not 90px: the 90px is sized to clear the mobile nav
+     plus a comfortable thumb margin, which is dead space on a desktop where
+     the pointer is precise and the nav is only 58px tall. */
+  .dash-wrap { max-width:1280px; margin:0 auto; padding:18px 20px 76px; }
+  /* Six KPIs in one row instead of two rows of three — at this width the
+     numbers are small and the tiles were mostly empty space. */
+  .dash-wrap .dk-grid { grid-template-columns:repeat(6,1fr); gap:10px; }
+  .dash-wrap .dk-num { font-size:26px; }
+  .dash-wrap .dk-lbl, .dash-wrap .dk-sub { font-size:10.5px; }
+  .dash-wrap .dash-card { padding:14px 16px; }
+  .dash-wrap .dash-2col { gap:12px; margin-top:12px; }
+  .dash-wrap .dash-card, .dash-wrap .dash-2col { margin-top:12px; }
+  /* Trend chart earns more height once it has real width to breathe into. */
+  .dash-wrap .dc-bars { height:96px; }
+}
+@media (min-width:1601px){
+  .dash-wrap { max-width:1440px; }
+}
 .dash-hd { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px; }
 .dash-hd h2 { font-size:17px; font-weight:800; color:#0f172a; }
 .dash-hd .dash-date { font-size:11px; color:#64748b; font-weight:600; }
