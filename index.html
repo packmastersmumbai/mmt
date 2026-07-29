@@ -5471,10 +5471,13 @@ function sfSaveHazard(sr){
  *  JSONP callback so chained calls don't collide (fixes "Unexpected end of input"). */
 function sfReloadAfterWrite(){
   SF.dash=null; SF.charts=null; SF.hira=null; SF.heatmap=null;
-  SF.kanban=null; SF.lists=SF.lists; // keep lists cache
+  SF.kanban=null; SF.incidents=null; SF.lists=SF.lists; // keep lists cache
   setTimeout(function(){
     if(SF.tab==='actions') sfRenderActions();
     else if(SF.tab==='hira'){ SF.hira=null; sfRenderHira(); }
+    // Without this branch an incident save fell through to loadSafety(), which
+    // re-rendered the dashboard instead of the register the user was working in.
+    else if(SF.tab==='incidents'){ SF.incidents=null; sfRenderIncidents(); }
     else loadSafety();
   }, 350);
 }
@@ -5548,8 +5551,15 @@ function sfRenderIncidents(){
       '<div class="sf-canvas-box"><canvas id="sfi-type"></canvas></div></div>'+
     '<div class="sf-card"><h4>Incidents by Zone</h4>'+
       '<div class="sf-canvas-box"><canvas id="sfi-zone"></canvas></div></div>'+
-    '<div class="sf-banner">Use the + button to log a new incident.</div>'+
-    '<div id="sf-inc-list"><div class="sf-card">Loading records…</div></div></div>'+
+    '<div class="sf-filterbar">'+
+      '<input id="sf-inc-search" placeholder="Search description / cause / action" oninput="sfIncFilter()">'+
+      '<select id="sf-inc-type"   onchange="sfIncFilter()"><option value="">All types</option></select>'+
+      '<select id="sf-inc-status" onchange="sfIncFilter()"><option value="">All status</option></select>'+
+      '<select id="sf-inc-zone"   onchange="sfIncFilter()"><option value="">All zones</option></select>'+
+      '<select id="sf-inc-shift"  onchange="sfIncFilter()"><option value="">All shifts</option></select>'+
+    '</div>'+
+    '<div id="sf-inc-list"><div class="loading-spinner" style="padding:30px">'+
+      '<div class="spinner-ring"></div>Loading&hellip;</div></div></div>'+
     '<button class="sf-fab" onclick="sfNewIncident()">+</button>';
   sfChartDoughnut('sfi-type', (SF.charts||{}).incidentType, null);
   sfChartHBar('sfi-zone', (SF.charts||{}).incidentZone, '#0ea5e9');
@@ -5558,27 +5568,74 @@ function sfRenderIncidents(){
     if(!res||!res.success){ el.innerHTML='<div class="sf-card">Could not load records: '+
       sfEsc(res&&res.message||'unknown')+'</div>'; return; }
     SF.incidents=res.rows;
-    el.innerHTML=sfIncidentsHtml(res.rows);
+    // Dropdowns are built from the values actually present in the register
+    // (server-supplied facets), not a hardcoded list — zone naming is
+    // inconsistent in the sheet and a fixed list would silently hide rows.
+    SF.incFacets=res.facets||{};
+    SF.incStatuses=res.statuses||[];
+    sfIncFillFilters();
+    sfIncFilter();
   }).withFailureHandler(function(err){
     var el=document.getElementById('sf-inc-list'); if(el) el.innerHTML=
       '<div class="sf-card">Could not load records: '+sfEsc(err&&err.message||err)+'</div>';
   }).getIncidents();
 }
+function sfIncFillFilters(){
+  var f=SF.incFacets||{};
+  function fill(id, vals, label){
+    var el=document.getElementById(id); if(!el) return;
+    el.innerHTML='<option value="">'+label+'</option>'+(vals||[]).map(function(v){
+      return '<option>'+sfEsc(v)+'</option>'; }).join('');
+  }
+  fill('sf-inc-type',   f.type,  'All types');
+  fill('sf-inc-status', (SF.incStatuses&&SF.incStatuses.length)?SF.incStatuses:f.capaStatus, 'All status');
+  fill('sf-inc-zone',   f.zone,  'All zones');
+  fill('sf-inc-shift',  f.shift, 'All shifts');
+}
 function sfIncColor(type){
   return /accident/i.test(type||'') ? '#dc2626' : '#f59e0b'; // accident red, near-miss amber
+}
+// CAPA lifecycle → pill colour. Closed/effective reads green, partially-effective
+// amber, still-open red, so the register scans by state at a glance.
+function sfIncStatusColor(s){
+  s=String(s||'');
+  if(s==='Closed - Effective')           return '#16a34a';
+  if(s==='Closed - Partially Effective') return '#ca8a04';
+  if(s==='Completed')                    return '#0ea5e9';
+  if(s==='Pending Verification')         return '#7c3aed';
+  return '#dc2626'; // Open - Under Investigation / blank
 }
 function sfIncDate(iso){
   if(!iso) return '';
   var d=new Date(iso); if(isNaN(d)) return sfEsc(String(iso).substr(0,10));
   return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
 }
+function sfIncFilter(){
+  var rows=SF.incidents||[];
+  function v(id){var e=document.getElementById(id);return e?e.value:'';}
+  var q=v('sf-inc-search').toLowerCase(), ty=v('sf-inc-type'),
+      st=v('sf-inc-status'), zo=v('sf-inc-zone'), sh=v('sf-inc-shift');
+  var filtered=rows.filter(function(r){
+    if(ty && r.type!==ty) return false;
+    if(st && r.capaStatus!==st) return false;
+    if(zo && r.zone!==zo) return false;
+    if(sh && r.shift!==sh) return false;
+    if(q && (r.description+' '+r.rootCause+' '+r.capa+' '+r.location)
+              .toLowerCase().indexOf(q)===-1) return false;
+    return true;
+  });
+  var el=document.getElementById('sf-inc-list'); if(!el) return;
+  el.innerHTML='<div class="sf-banner">'+filtered.length+' of '+rows.length+
+    ' record'+(rows.length===1?'':'s')+' &middot; tap a record to act on it</div>'+
+    sfIncidentsHtml(filtered);
+}
 function sfIncidentsHtml(rows){
-  if(!rows||!rows.length) return '<div class="sf-card">No incident records yet.</div>';
-  return '<div class="sf-banner">'+rows.length+' record'+(rows.length>1?'s':'')+
-    ' (newest first)</div>'+rows.map(function(r){
-    return '<div class="sf-row" style="border-left-color:'+sfIncColor(r.type)+'">'+
+  if(!rows||!rows.length) return '<div class="sf-card">No matching incidents.</div>';
+  return rows.map(function(r){
+    return '<div class="sf-row" style="border-left-color:'+sfIncColor(r.type)+'" '+
+      'onclick="sfIncidentDetail(\''+sfEsc(String(r.sr))+'\')">'+
       '<div class="top"><span class="act">#'+sfEsc(r.sr)+' &middot; '+sfEsc(r.type)+'</span>'+
-        '<span class="sf-pill risk" style="background:'+sfIncColor(r.type)+'">'+
+        '<span class="sf-pill risk" style="background:'+sfIncStatusColor(r.capaStatus)+'">'+
           sfEsc(r.capaStatus||'—')+'</span></div>'+
       '<div class="haz">'+sfEsc(r.description)+'</div>'+
       '<div class="meta"><span>'+sfIncDate(r.date)+(r.time?' '+sfEsc(r.time):'')+'</span>'+
@@ -5590,6 +5647,62 @@ function sfIncidentsHtml(rows){
       (r.capa?'<div class="meta"><span><b>CAPA:</b> '+sfEsc(r.capa)+'</span></div>':'')+
       '</div>';
   }).join('');
+}
+
+/* ---------- INCIDENT DETAIL / TAKE ACTION ---------- */
+function sfFindIncident(sr){
+  return (SF.incidents||[]).filter(function(r){
+    return String(r.sr)===String(sr); })[0] || null;
+}
+function sfIncidentDetail(sr){
+  var r=sfFindIncident(sr);
+  if(!r){ showStatus('Incident #'+sr+' not found','error',3000); return; }
+  var statuses=(SF.incStatuses&&SF.incStatuses.length)?SF.incStatuses:[r.capaStatus];
+  // The factual record of what happened (date/time/shift/type/persons) is shown
+  // read-only — it is not the app's business to rewrite history. Only the
+  // investigation and corrective-action fields are editable.
+  var facts='<div class="sf-card" style="margin-bottom:10px">'+
+    '<div class="meta"><span><b>'+sfIncDate(r.date)+(r.time?' '+sfEsc(r.time):'')+'</b></span>'+
+      (r.shift?'<span>Shift '+sfEsc(r.shift)+'</span>':'')+
+      '<span>'+sfEsc(r.type)+'</span>'+
+      (r.persons?'<span>'+sfEsc(r.persons)+' person(s)</span>':'')+'</div>'+
+    '<div class="meta"><span>'+sfEsc(r.zone||'')+'</span>'+
+      (r.location?'<span>'+sfEsc(r.location)+'</span>':'')+'</div></div>';
+  var body=facts+
+    '<label>What happened</label>'+
+    '<textarea id="if-desc" rows="3">'+sfEsc(r.description||'')+'</textarea>'+
+    '<label>Root cause</label>'+
+    '<textarea id="if-rc" rows="3" placeholder="Why did it happen?">'+sfEsc(r.rootCause||'')+'</textarea>'+
+    '<label>Corrective / preventive action (CAPA)</label>'+
+    '<textarea id="if-capa" rows="3" placeholder="What will stop it recurring?">'+sfEsc(r.capa||'')+'</textarea>'+
+    '<label>Status</label>'+
+    '<select id="if-status">'+statuses.map(function(s){
+      return '<option'+(s===r.capaStatus?' selected':'')+'>'+sfEsc(s)+'</option>';}).join('')+'</select>'+
+    '<button class="sf-btn-primary" onclick="sfSaveIncident(\''+sfEsc(String(r.sr))+'\')">'+
+      'Save Changes</button>';
+  sfModal('Incident #'+r.sr+' — '+r.type, body);
+}
+function sfSaveIncident(sr){
+  function v(id){var e=document.getElementById(id);return e?e.value:'';}
+  var d={ sr:sr, description:v('if-desc'), rootCause:v('if-rc'),
+          capa:v('if-capa'), capaStatus:v('if-status') };
+  if(!d.rootCause.trim()){ showStatus('Root cause is required to act on an incident','error',3500); return; }
+  if(!d.capa.trim()){ showStatus('Corrective action is required','error',3500); return; }
+  showStatus('Saving incident…','info',0);
+  google.script.run.withSuccessHandler(function(res){
+    if(res&&res.success){
+      sfCloseModal();
+      var msg='Incident #'+res.sr+' saved — '+res.capaStatus;
+      // Surface the partial-failure warnings the backend reports rather than
+      // showing an unqualified success when the audit trail or alert failed.
+      if(res.auditWarning)  msg+=' (audit entry failed)';
+      if(res.notifyWarning) msg+=' (alert not sent)';
+      showStatus(msg, (res.auditWarning||res.notifyWarning)?'info':'success', 3200);
+      sfReloadAfterWrite();
+    } else showStatus('Save failed: '+(res&&res.message||''),'error',4500);
+  }).withFailureHandler(function(err){
+    showStatus('Save failed: '+(err&&err.message||err),'error',5000);
+  }).updateIncident(d);
 }
 
 /* ---------- ENTRY FORMS ---------- */
