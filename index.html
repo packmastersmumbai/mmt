@@ -5160,6 +5160,24 @@ function loadSafety(){
       sfRender();
     });
   }
+  // Safety config (vocabularies + shared display prefs) loads INDEPENDENTLY of the
+  // dashboard chain: that chain is skipped entirely once SF.dash is cached, and it
+  // is already ~18s of serial calls. Fired once, re-renders when it lands.
+  if(!SF.cfg && !SF._cfgPending){
+    SF._cfgPending = true;
+    google.script.run.withSuccessHandler(function(cfg){
+      SF._cfgPending = false;
+      if(cfg && cfg.success){
+        SF.cfg = cfg;
+        if(cfg.prefs) SF_PREFS = cfg.prefs;
+        if(cfg.harmTypes && cfg.harmTypes.length) SF_HARM_TYPES = cfg.harmTypes;
+        SF_HEALTH = cfg.health || null;
+        if(!SF.viewInit){ SF.viewInit = true;
+          SF_VIEW.hira = SF_VIEW.incidents = (SF_PREFS.defaultView || 'list'); }
+        if(SF.tab==='incidents' || SF.tab==='hira') sfRender();
+      }
+    }).withFailureHandler(function(){ SF._cfgPending = false; }).getSafetyConfig();
+  }
   // fetch core data once, then render
   if(SF.dash){ sfRender(); return; }
   var box = document.getElementById('safety-content');
@@ -5171,19 +5189,7 @@ function loadSafety(){
         SF.heatmap = h && h.success ? h : {cells:[],total:0};
         google.script.run.withSuccessHandler(function(ls){
           SF.lists = ls && ls.success ? ls.lists : {};
-          // Vocabularies + display prefs come from OHS_LISTS / script properties,
-          // so the registers reflect configuration rather than hardcoded arrays.
-          google.script.run.withSuccessHandler(function(cfg){
-            if(cfg && cfg.success){
-              SF.cfg = cfg;
-              if(cfg.prefs) SF_PREFS = cfg.prefs;
-              if(cfg.harmTypes && cfg.harmTypes.length) SF_HARM_TYPES = cfg.harmTypes;
-              SF_HEALTH = cfg.health || null;
-              if(!SF.viewInit){ SF.viewInit=true;
-                SF_VIEW.hira = SF_VIEW.incidents = (SF_PREFS.defaultView||'list'); }
-            }
-            sfRender();
-          }).withFailureHandler(function(){ sfRender(); }).getSafetyConfig();
+          sfRender();
         }).getSafetyLists();
       }).getHeatmap();
     }).getOhsChartData();
