@@ -895,8 +895,50 @@ body {
 .sf-fchip button:hover { background:#cfe8e6; }
 .sf-clr { background:none; border:none; color:#64748b; font:inherit; font-size:12px;
   text-decoration:underline; cursor:pointer; padding:6px 4px; min-height:34px; }
+/* Settings entry point — a dot appears when live data has drifted from config. */
+.sf-gear { position:relative; background:#fff; border:1px solid #cbd5e1;
+  border-radius:8px; min-height:44px; min-width:44px; cursor:pointer; color:#475569;
+  display:inline-flex; align-items:center; justify-content:center; flex:none;
+  transition:background .15s ease; }
+.sf-gear:hover { background:#f1f5f9; }
+.sf-gear .dot { position:absolute; top:6px; right:6px; width:8px; height:8px;
+  border-radius:50%; background:#ea580c; border:1.5px solid #fff; }
+.sf-gear svg { width:17px; height:17px; flex:none; }
+/* Settings panel */
+.sf-prefs { font-size:13px; color:#334155; }
+.sf-pnote { font-size:12px; color:#64748b; line-height:1.5; margin:0 0 12px; }
+.sf-prow { display:flex; align-items:center; gap:12px; padding:11px 0;
+  border-bottom:1px solid #e2e8f0; }
+.sf-prow > div:first-child { flex:1; min-width:0; }
+.sf-prow b { display:block; font-size:13px; color:#0f172a; font-weight:600; }
+.sf-prow span { display:block; font-size:12px; color:#64748b; margin-top:2px;
+  line-height:1.4; }
+.sf-segrow { display:inline-flex; border:1px solid #cbd5e1; border-radius:8px;
+  overflow:hidden; flex:none; }
+.sf-segb { background:#fff; border:none; font:inherit; font-size:12px; font-weight:600;
+  color:#64748b; padding:0 12px; min-height:44px; min-width:48px; cursor:pointer;
+  transition:background .15s ease,color .15s ease; }
+.sf-segb + .sf-segb { border-left:1px solid #cbd5e1; }
+.sf-segb.on { background:#0f766e; color:#fff; }
+.sf-vocab { border-top:1px solid #e2e8f0; }
+.sf-vrow { display:flex; gap:12px; padding:9px 0; border-bottom:1px solid #f1f5f9;
+  align-items:flex-start; }
+.sf-vrow .k { flex:0 0 40%; font-size:12px; font-weight:600; color:#334155; }
+.sf-vrow .k code { display:block; font-size:10px; color:#94a3b8; font-weight:400;
+  margin-top:2px; }
+.sf-vrow .v { flex:1; display:flex; flex-wrap:wrap; gap:4px; }
+.sf-vrow .v span { background:#f1f5f9; border-radius:5px; padding:2px 7px;
+  font-size:11px; color:#475569; }
+.sf-vrow .v i { font-size:11px; color:#94a3b8; }
+.sf-health { background:#fffbeb; border:1px solid #fde68a; border-radius:8px;
+  padding:11px 13px; font-size:12px; color:#78350f; line-height:1.5; }
+.sf-health.ok { background:#f0fdf4; border-color:#bbf7d0; color:#14532d; }
+.sf-health p { margin:0 0 6px; }
+.sf-health ul { margin:0 0 8px; padding-left:18px; }
+.sf-health li { margin:2px 0; font-family:ui-monospace,monospace; font-size:11px; }
+.sf-hnote { font-size:11px; color:#92400e; margin-top:8px !important; }
 @media (prefers-reduced-motion:reduce){
-  .sf-row, .sf-kc, .sf-vsw button { transition:none; }
+  .sf-row, .sf-kc, .sf-vsw button, .sf-segb { transition:none; }
   .sf-skel i { animation:none; }
 }
 .sf-fab { position:fixed; right:16px; bottom:82px; width:52px; height:52px;
@@ -5129,7 +5171,19 @@ function loadSafety(){
         SF.heatmap = h && h.success ? h : {cells:[],total:0};
         google.script.run.withSuccessHandler(function(ls){
           SF.lists = ls && ls.success ? ls.lists : {};
-          sfRender();
+          // Vocabularies + display prefs come from OHS_LISTS / script properties,
+          // so the registers reflect configuration rather than hardcoded arrays.
+          google.script.run.withSuccessHandler(function(cfg){
+            if(cfg && cfg.success){
+              SF.cfg = cfg;
+              if(cfg.prefs) SF_PREFS = cfg.prefs;
+              if(cfg.harmTypes && cfg.harmTypes.length) SF_HARM_TYPES = cfg.harmTypes;
+              SF_HEALTH = cfg.health || null;
+              if(!SF.viewInit){ SF.viewInit=true;
+                SF_VIEW.hira = SF_VIEW.incidents = (SF_PREFS.defaultView||'list'); }
+            }
+            sfRender();
+          }).withFailureHandler(function(){ sfRender(); }).getSafetyConfig();
         }).getSafetyLists();
       }).getHeatmap();
     }).getOhsChartData();
@@ -5538,7 +5592,8 @@ function sfIcon(name, cls){
     list:   'M1 3h14v2H1zm0 4h14v2H1zm0 4h14v2H1z',
     board:  'M1 2h4v12H1zm5 0h4v8H6zm5 0h4v10h-4z',
     search: 'M6.5 1a5.5 5.5 0 1 1-3.2 9.96l-2 2-1.4-1.42 2-2A5.5 5.5 0 0 1 6.5 1m0 2a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7',
-    clock:  'M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1m.9 3v3.7l2.6 1.6-.8 1.3-3.3-2V4z'
+    clock:  'M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1m.9 3v3.7l2.6 1.6-.8 1.3-3.3-2V4z',
+    gear:   'M8 5.4A2.6 2.6 0 1 0 8 10.6 2.6 2.6 0 0 0 8 5.4m6.4 3.3.02-1.4-1.7-.5a4.9 4.9 0 0 0-.5-1.2l.9-1.5-1-1-1.5.9a4.9 4.9 0 0 0-1.2-.5L8.9 1.6H7.1l-.5 1.7a4.9 4.9 0 0 0-1.2.5l-1.5-.9-1 1 .9 1.5a4.9 4.9 0 0 0-.5 1.2l-1.7.5v1.8l1.7.5c.12.42.29.82.5 1.2l-.9 1.5 1 1 1.5-.9c.38.21.78.38 1.2.5l.5 1.7h1.8l.5-1.7a4.9 4.9 0 0 0 1.2-.5l1.5.9 1-1-.9-1.5c.21-.38.38-.78.5-1.2z'
   }[name] || '';
   return '<svg class="'+(cls||'')+'" viewBox="0 0 16 16" aria-hidden="true" '+
     'fill="currentColor"><path d="'+d+'"/></svg>';
@@ -5548,8 +5603,18 @@ function sfIcon(name, cls){
    HARM = lagging indicators (something happened to a person — regulatory weight).
    PRECURSOR = leading indicators (caught before harm — a healthy programme
    reports MANY of these per harm event). Same sheet, two different jobs. */
+/* Defaults only — overwritten by getSafetyConfig() (OHS_LISTS.HARM_TYPES) so the
+   classification is configurable in the sheet rather than baked into the app. */
 var SF_HARM_TYPES = ['Accident','First Aid'];
-function sfIsHarm(type){ return SF_HARM_TYPES.indexOf(String(type||'').trim()) !== -1; }
+/* Display preferences, shared plant-wide. Replaced by the server's values on load;
+   these are the fallbacks if the config call fails. */
+var SF_PREFS = { showRatioBanner:true, chartPosition:'below', harmEmphasis:true,
+                 defaultView:'list', collapseClosed:true };
+var SF_HEALTH = null;   // data-health report from the server
+function sfIsHarm(type){
+  if(!SF_PREFS.harmEmphasis) return false;
+  return SF_HARM_TYPES.indexOf(String(type||'').trim()) !== -1;
+}
 function sfTypeMeta(type){
   var t = String(type||'').trim();
   var m = {
@@ -5623,13 +5688,19 @@ function sfEmpty(title, hint, onClear){
 var SF_VIEW = { hira:'list', incidents:'list' };
 function sfViewSwitch(tab){
   var v = SF_VIEW[tab];
+  var drift = SF_HEALTH ? ((SF_HEALTH.zoneDrift||[]).length +
+    (SF_HEALTH.statusDrift||[]).length + (SF_HEALTH.typeDrift||[]).length) : 0;
   return '<div class="sf-vsw" role="group" aria-label="View mode">'+
     '<button class="'+(v==='list'?'on':'')+'" aria-pressed="'+(v==='list')+'" '+
       'onclick="sfSetView(\''+tab+'\',\'list\')" title="List view">'+
       sfIcon('list')+'List</button>'+
     '<button class="'+(v==='board'?'on':'')+'" aria-pressed="'+(v==='board')+'" '+
       'onclick="sfSetView(\''+tab+'\',\'board\')" title="Board view">'+
-      sfIcon('board')+'Board</button></div>';
+      sfIcon('board')+'Board</button></div>'+
+    '<button class="sf-gear" onclick="sfSettings()" title="Safety settings" '+
+      'aria-label="Safety settings">'+sfIcon('gear')+
+      (drift?'<span class="dot" aria-label="'+drift+' data issues"></span>':'')+
+      '</button>';
 }
 function sfSetView(tab, v){
   SF_VIEW[tab]=v;
@@ -5637,6 +5708,86 @@ function sfSetView(tab, v){
 }
 function sfTogglePanel(id){
   var el=document.getElementById(id); if(el) el.classList.toggle('open');
+}
+
+/* ── SAFETY SETTINGS (shared, sheet/property backed) ───────────────────────── */
+function sfSettings(){
+  var p=SF_PREFS;
+  function seg(key,opts,cur){
+    return '<div class="sf-segrow">'+opts.map(function(o){
+      return '<button class="sf-segb'+(String(cur)===String(o.v)?' on':'')+'" '+
+        'onclick="sfPrefSet(\''+key+'\',\''+o.v+'\')">'+sfEsc(o.l)+'</button>';
+    }).join('')+'</div>';
+  }
+  function tog(key,label,hint){
+    return '<div class="sf-prow"><div><b>'+sfEsc(label)+'</b>'+
+      (hint?'<span>'+sfEsc(hint)+'</span>':'')+'</div>'+
+      seg(key,[{v:'1',l:'On'},{v:'0',l:'Off'}], p[key]?'1':'0')+'</div>';
+  }
+  var health='';
+  if(SF_HEALTH){
+    var z=SF_HEALTH.zoneDrift||[], s=SF_HEALTH.statusDrift||[], t=SF_HEALTH.typeDrift||[];
+    var n=z.length+s.length+t.length;
+    health='<div class="sf-sect" style="margin-top:18px">Data health</div>'+
+      (n?'<div class="sf-health">'+
+        (z.length?'<p><b>'+z.length+' zone value'+(z.length>1?'s':'')+
+          '</b> not in the configured ZONES list:</p><ul>'+
+          z.map(function(v){return '<li>'+sfEsc(v)+'</li>';}).join('')+'</ul>':'')+
+        (s.length?'<p><b>'+s.length+' status value(s)</b> not in CAPA_STAT:</p><ul>'+
+          s.map(function(v){return '<li>'+sfEsc(v)+'</li>';}).join('')+'</ul>':'')+
+        (t.length?'<p><b>'+t.length+' type value(s)</b> not in INC_TYPES:</p><ul>'+
+          t.map(function(v){return '<li>'+sfEsc(v)+'</li>';}).join('')+'</ul>':'')+
+        '<p class="sf-hnote">Records using these are still listed and filterable. '+
+        'Fix them in the sheet, or add the value to OHS_LISTS to make it official — '+
+        'nothing is rewritten automatically.</p></div>'
+       :'<div class="sf-health ok"><p>Every record matches the configured lists.</p></div>');
+  }
+  var body='<div class="sf-prefs">'+
+    '<p class="sf-pnote">These settings are shared &mdash; they apply to everyone '+
+      'using the app, not just this device.</p>'+
+    tog('showRatioBanner','Precursor ratio banner','Leading-vs-lagging line on the incidents board')+
+    tog('harmEmphasis','Emphasise harm events','Heavier rule + "injured" wording on Accident / First Aid')+
+    tog('collapseClosed','Collapse closed records','Show open items first, closed behind a toggle')+
+    '<div class="sf-prow"><div><b>Charts</b><span>Position on the incidents tab</span></div>'+
+      seg('chartPosition',[{v:'top',l:'Top'},{v:'below',l:'Below'},{v:'off',l:'Off'}],p.chartPosition)+'</div>'+
+    '<div class="sf-prow"><div><b>Default view</b><span>List or board on open</span></div>'+
+      seg('defaultView',[{v:'list',l:'List'},{v:'board',l:'Board'}],p.defaultView)+'</div>'+
+    '<div class="sf-sect" style="margin-top:18px">Vocabularies</div>'+
+    '<p class="sf-pnote">Edit these in the <b>OHS_LISTS</b> sheet &mdash; the app '+
+      'follows whatever is there.</p>'+
+    '<div class="sf-vocab">'+
+      sfVocabRow('Incident types', (SF.cfg&&SF.cfg.incidentTypes)||[], 'INC_TYPES')+
+      sfVocabRow('Harm-bearing types', SF_HARM_TYPES, 'HARM_TYPES')+
+      sfVocabRow('CAPA statuses', (SF.cfg&&SF.cfg.capaStatuses)||[], 'CAPA_STAT')+
+      sfVocabRow('Zones', (SF.cfg&&SF.cfg.zones)||[], 'ZONES')+
+    '</div>'+
+    health+'</div>';
+  sfModal('Safety settings', body);
+}
+function sfVocabRow(label, vals, col){
+  return '<div class="sf-vrow"><div class="k">'+sfEsc(label)+
+    '<code>'+sfEsc(col)+'</code></div><div class="v">'+
+    (vals.length?vals.map(function(v){return '<span>'+sfEsc(v)+'</span>';}).join('')
+                :'<i>not configured</i>')+'</div></div>';
+}
+function sfPrefSet(key, val){
+  var v = (val==='1') ? true : (val==='0') ? false : val;
+  SF_PREFS[key]=v;
+  var payload={}; Object.keys(SF_PREFS).forEach(function(k){ payload[k]=SF_PREFS[k]; });
+  sfSettings();                                  // instant feedback
+  showStatus('Saving settings…','info',0);
+  google.script.run.withSuccessHandler(function(r){
+    if(r&&r.success){
+      SF_PREFS=r.prefs;
+      showStatus('Settings saved for everyone','success',2200);
+      // Re-render the register behind the modal so the change is visible at once.
+      if(SF.tab==='incidents') sfRenderIncidents();
+      else if(SF.tab==='hira') sfRenderHira();
+      sfSettings();
+    } else showStatus('Could not save: '+(r&&r.message||''),'error',4000);
+  }).withFailureHandler(function(e){
+    showStatus('Could not save: '+(e&&e.message||e),'error',4000);
+  }).setSafetyPrefs(payload);
 }
 /* Badge on the mobile "Filters" button so a hidden active filter is never
    invisible — the count is the only cue once the selects are collapsed. */
@@ -5986,16 +6137,15 @@ function sfRenderIncidents(){
       '</span>'+
     '</div>'+
     '<div class="sf-chips" id="sf-inc-chips"></div>'+
+    (SF_PREFS.chartPosition==='top'?sfIncCharts():'')+
     '<div id="sf-inc-list">'+sfSkeleton(5)+'</div>'+
-    '<div class="sf-sect" style="margin-top:20px">Trends</div>'+
-    '<div class="sf-card"><h4>Incidents by Type</h4>'+
-      '<div class="sf-canvas-box"><canvas id="sfi-type"></canvas></div></div>'+
-    '<div class="sf-card"><h4>Incidents by Zone</h4>'+
-      '<div class="sf-canvas-box"><canvas id="sfi-zone"></canvas></div></div>'+
+    (SF_PREFS.chartPosition==='below'?sfIncCharts():'')+
     '</div>'+
     '<button class="sf-fab" onclick="sfNewIncident()" aria-label="Log new incident">+</button>';
-  sfChartDoughnut('sfi-type', (SF.charts||{}).incidentType, null);
-  sfChartHBar('sfi-zone', (SF.charts||{}).incidentZone, '#0ea5e9');
+  if(SF_PREFS.chartPosition!=='off'){
+    sfChartDoughnut('sfi-type', (SF.charts||{}).incidentType, null);
+    sfChartHBar('sfi-zone', (SF.charts||{}).incidentZone, '#0ea5e9');
+  }
   google.script.run.withSuccessHandler(function(res){
     var el=document.getElementById('sf-inc-list'); if(!el) return;
     if(!res||!res.success){ el.innerHTML='<div class="sf-card">Could not load records: '+
@@ -6031,6 +6181,13 @@ function sfIncDate(iso){
   if(!iso) return '';
   var d=new Date(iso); if(isNaN(d)) return sfEsc(String(iso).substr(0,10));
   return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+}
+function sfIncCharts(){
+  return '<div class="sf-sect" style="margin-top:18px">Trends</div>'+
+    '<div class="sf-card"><h4>Incidents by Type</h4>'+
+      '<div class="sf-canvas-box"><canvas id="sfi-type"></canvas></div></div>'+
+    '<div class="sf-card"><h4>Incidents by Zone</h4>'+
+      '<div class="sf-canvas-box"><canvas id="sfi-zone"></canvas></div></div>';
 }
 /* An incident still needs work while its CAPA is not closed. Only ~4 of 35 are
    open, so surfacing them above the archive is the whole point of the layout. */
@@ -6098,6 +6255,13 @@ function sfIncFilter(){
 var SF_INC_ARCHIVE_OPEN=false;
 function sfIncToggleArchive(){ SF_INC_ARCHIVE_OPEN=!SF_INC_ARCHIVE_OPEN; sfIncFilter(); }
 function sfIncSections(rows, total){
+  // With the collapse pref off, render one flat list — no sections, no disclosure.
+  if(!SF_PREFS.collapseClosed){
+    return '<div class="sf-sect">Incidents<span class="n">'+rows.length+'</span>'+
+      '<span class="sp"></span><span style="font-weight:600;text-transform:none;'+
+      'letter-spacing:0;color:#94a3b8">'+rows.length+' of '+total+'</span></div>'+
+      sfIncTable()+'<div class="sf-list">'+rows.map(sfIncRow).join('')+'</div>';
+  }
   var open=rows.filter(sfIncOpen), closed=rows.filter(function(r){return !sfIncOpen(r);});
   var out='';
   if(open.length){
@@ -6177,8 +6341,9 @@ function sfIncBoard(rows){
       }).join(''):'<div style="padding:8px 4px;font-size:12px;color:#94a3b8">None</div>')+
       '</div></div>';
   }).join('');
-  return '<div class="sf-banner">Precursors reported per harm event: <b>'+ratio+
-      '</b> &middot; '+pre+' leading, '+harm+' lagging</div>'+
+  return (SF_PREFS.showRatioBanner
+      ?'<div class="sf-banner">Precursors reported per harm event: <b>'+ratio+
+        '</b> &middot; '+pre+' leading, '+harm+' lagging</div>':'')+
     '<div class="sf-board" style="--cols:5">'+cols+'</div>'+
     '<div class="sf-bdots"><i class="on"></i><i></i><i></i><i></i><i></i></div>';
 }
