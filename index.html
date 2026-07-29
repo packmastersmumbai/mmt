@@ -5915,7 +5915,11 @@ function sfRenderDashboard(){
    its own dropdowns, so setting them IS the filter — no parallel filter state
    to drift out of sync. */
 function sfOpenRecords(tab, filter){
-  sfGoTab(tab);
+  // Defer the tab switch out of the Chart.js click handler. Switching inline
+  // calls sfDestroyCharts() while Chart.js is still inside its own event
+  // dispatch, and it then throws "Cannot read properties of undefined
+  // (reading 'handleEvent')" on the chart it is midway through handling.
+  setTimeout(function(){ sfGoTab(tab); }, 0);
   setTimeout(function(){
     if(tab==='hira'){
       var cl=document.getElementById('sf-hira-class');
@@ -5940,7 +5944,7 @@ function sfOpenRecords(tab, filter){
           behavior: matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'});
       })();
     }
-  },60);
+  },90);   // > the 0ms tab-switch tick, so the target tab's DOM exists
 }
 
 function sfGoTab(t){
