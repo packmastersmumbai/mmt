@@ -90,6 +90,19 @@ body {
 
 /* App title — "Pack Masters" carries the weight, "MMS" recedes. Hierarchy by
    weight and colour rather than by size (the skill's rule). */
+/* Skip link — off-screen until focused, then pinned over the header. Uses a
+   real offset position rather than display:none, which would remove it from
+   the tab order entirely and defeat the purpose. */
+.skip-link { position:fixed; top:-60px; left:50%; transform:translateX(-50%);
+  z-index:1000; background:#0f766e; color:#fff; padding:10px 18px;
+  border-radius:0 0 8px 8px; font-size:13px; font-weight:700;
+  text-decoration:none; box-shadow:0 2px 10px rgba(15,23,42,.28);
+  transition:top .16s cubic-bezier(.16,1,.3,1); }
+/* Drops just below the 56px header rather than over it — landing on top of the
+   logo and wordmark made both unreadable while focused. */
+.skip-link:focus { top:56px; }
+@media (prefers-reduced-motion:reduce){ .skip-link { transition:none; } }
+
 .header-title {
   font-size: 14.5px;
   font-weight: 600;
@@ -232,7 +245,10 @@ body {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 4px;
   background: none; border: none; color: #64748b;
-  font-size: 10.5px; font-weight: 600; letter-spacing: -0.01em;
+  /* 11px, was 10.5px — the global nav is permanent, always-visible chrome and
+     was below the functional-text floor. The tighter tracking below keeps the
+     six labels on one line each at the new size. */
+  font-size: 11px; font-weight: 600; letter-spacing: -0.015em;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
   padding: 6px 2px; min-width: 0; min-height: 44px;
   transition: color .16s cubic-bezier(.16,1,.3,1);
@@ -306,7 +322,9 @@ body {
 /* Board tab bar */
 .board-tabs { display:flex; background:#f1f5f9; border-bottom:2px solid #e2e8f0; padding:6px 8px; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
 .board-tabs::-webkit-scrollbar { display:none; }
-.board-tab { flex:1; padding:10px 8px; font-size:15px; font-weight:700; color:#64748b; cursor:pointer; text-align:center;
+/* #475569, not #64748b: these sit on the #f1f5f9 tab bar where #64748b is
+   4.3:1. Inactive tabs are still navigation and must be readable. */
+.board-tab { flex:1; padding:10px 8px; font-size:15px; font-weight:700; color:#475569; cursor:pointer; text-align:center;
   border-radius:8px; border:none; white-space:nowrap; flex-shrink:0; transition:all 0.18s; letter-spacing:0.2px; background:transparent; }
 .board-tab:hover { color:#0f172a; background:rgba(255,255,255,0.7); }
 .board-tab.active { color:#0f172a; background:white; box-shadow:0 1px 4px rgba(0,0,0,0.10); }
@@ -314,7 +332,7 @@ body {
 /* Kanban sub-tabs (inside kanban panel) */
 .board-sub-tabs { display:flex; background:#f8fafc; border-bottom:1px solid #e2e8f0; padding:0 4px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
 .board-sub-tabs::-webkit-scrollbar { display:none; }
-.board-sub-tab { padding:9px 14px; font-size:12px; font-weight:600; color:#64748b; cursor:pointer;
+.board-sub-tab { padding:9px 14px; font-size:12px; font-weight:600; color:#475569; cursor:pointer;
   border-bottom:2px solid transparent; margin-bottom:-1px; white-space:nowrap; flex-shrink:0; flex:1; text-align:center; transition:all 0.2s ease; }
 .board-sub-tab:hover { color:#0f172a; background:#f0f9ff; }
 .board-sub-tab.active { color:#0f172a; border-bottom-color:#0284c7; background:white; }
@@ -331,7 +349,9 @@ body {
 .rec-tag-closed  { background:#dcfce7; color:#16a34a; }
 .rec-tag-done    { background:#dcfce7; color:#16a34a; }
 .rec-tag-partial { background:#fef9c3; color:#a16207; }
-.rec-tag-pending { background:#f1f5f9; color:#64748b; }
+/* #64748b on #f1f5f9 is 4.3:1 — just under AA. #475569 reaches 6.9:1 on the
+   same tint; status tags must be legible, they carry the record's state. */
+.rec-tag-pending { background:#f1f5f9; color:#475569; }
 
 /* Machine card — with QR thumbnail */
 .mcard {
@@ -354,7 +374,7 @@ body {
 .mcard-right { display:flex; align-items:center; gap:5px; flex-shrink:0; }
 .badge-cl-done    { background:#dcfce7; color:#16a34a; }
 .badge-cl-partial { background:#fef9c3; color:#a16207; }
-.badge-cl-pending { background:#f1f5f9; color:#64748b; }
+.badge-cl-pending { background:#f1f5f9; color:#475569; }
 .badge-bd-open    { background:#fee2e2; color:#dc2626; }
 .mbadge { font-size:10px; font-weight:700; padding:3px 8px; border-radius:8px; text-transform:uppercase; letter-spacing:0.3px; }
 
@@ -369,7 +389,7 @@ body {
 .dash-wrap { padding:10px 10px 90px; }
 .dash-hd { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px; }
 .dash-hd h2 { font-size:17px; font-weight:800; color:#0f172a; }
-.dash-hd .dash-date { font-size:11px; color:#94a3b8; font-weight:600; }
+.dash-hd .dash-date { font-size:11px; color:#64748b; font-weight:600; }
 /* KPI grid — 3 per row, 2 rows */
 .dk-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
 .dk-cell { background:#fff; border:1px solid #e2e8f0; border-radius:11px;
@@ -378,7 +398,7 @@ body {
 .dk-num { font-size:23px; font-weight:900; line-height:1.05; }
 .dk-lbl { font-size:9.5px; font-weight:800; color:#475569; text-transform:uppercase;
   letter-spacing:.4px; margin-top:2px; }
-.dk-sub { font-size:9.5px; color:#94a3b8; font-weight:600; margin-top:1px; }
+.dk-sub { font-size:9.5px; color:#64748b; font-weight:600; margin-top:1px; }
 /* cards + 2-col layout */
 .dash-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px;
   padding:11px 12px; margin-top:8px; box-shadow:0 1px 2px rgba(0,0,0,.03); }
@@ -399,7 +419,14 @@ body {
 .hb-lbl { flex:0 0 38px; font-size:10px; font-weight:700; color:#475569;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .hb-track { flex:1; height:13px; background:#f1f5f9; border-radius:7px; overflow:hidden; }
-.hb-fill { height:100%; border-radius:7px; min-width:3px; transition:width .5s ease; }
+/* Animates transform, not width: width triggers layout on every frame of the
+   transition, transform is composited. The element is laid out at full width
+   and scaled down via --p (0..1), so the bar still reads as a proportion.
+   transform-origin:left keeps it growing from the left edge. */
+.hb-fill { height:100%; border-radius:7px; width:100%;
+  transform:scaleX(var(--p,0)); transform-origin:left center;
+  transition:transform .5s ease; }
+@media (prefers-reduced-motion:reduce){ .hb-fill { transition:none; } }
 .hb-val { flex:0 0 auto; font-size:11px; font-weight:800; color:#0f172a; min-width:16px;
   text-align:right; }
 /* donut + legend */
@@ -413,7 +440,7 @@ body {
 .dc-rel { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .dc-rel-stat { background:#f8fafc; border-radius:9px; padding:8px 6px; text-align:center; }
 .drs-n { font-size:18px; font-weight:900; line-height:1; }
-.drs-l { font-size:8.5px; font-weight:800; color:#94a3b8; text-transform:uppercase;
+.drs-l { font-size:8.5px; font-weight:800; color:#64748b; text-transform:uppercase;
   letter-spacing:.4px; margin-top:3px; }
 /* ════════ COMPACT MACHINE BOARD ════════ */
 .mb-toolbar { display:flex; gap:8px; padding:8px 10px; background:#fff;
@@ -422,9 +449,9 @@ body {
   border:1px solid #e2e8f0; border-radius:9px; padding:6px 10px; }
 .mb-search input { flex:1; border:none; background:transparent; font-size:13px;
   outline:none; font-family:inherit; }
-.mb-search .mbs-clear { font-size:14px; color:#94a3b8; cursor:pointer; display:none; }
+.mb-search .mbs-clear { font-size:14px; color:#64748b; cursor:pointer; display:none; }
 .mb-section { padding:6px 10px; background:#fff; border-bottom:1px solid #f6f7f9; }
-.mb-section-lbl { font-size:9px; font-weight:800; color:#94a3b8;
+.mb-section-lbl { font-size:9px; font-weight:800; color:#64748b;
   text-transform:uppercase; letter-spacing:.6px; margin-bottom:5px;
   display:flex; align-items:center; justify-content:space-between; }
 /* category chips — wrap into 2+ rows */
@@ -452,7 +479,7 @@ body {
 .mb-tile-name { font-size:9.5px; font-weight:700; color:#0f172a; line-height:1.15;
   max-height:23px; overflow:hidden; }
 .mb-tile-id { font-family:'Courier New',monospace; font-size:8.5px; font-weight:700;
-  color:#94a3b8; }
+  color:#64748b; }
 .mb-tile-bd { position:absolute; top:4px; right:4px; width:8px; height:8px;
   border-radius:50%; background:#dc2626; border:1.5px solid #fff; }
 /* fixed action bar */
@@ -486,7 +513,7 @@ body {
   display:flex; align-items:center; justify-content:space-between; cursor:pointer;
   user-select:none; -webkit-user-select:none; border:1px solid #e2e8f0;
 }
-.cat-toggle { font-size:11px; color:#94a3b8; transition:transform 0.2s; display:inline-block; }
+.cat-toggle { font-size:11px; color:#64748b; transition:transform 0.2s; display:inline-block; }
 .cat-group.collapsed .cat-toggle { transform:rotate(-90deg); }
 .cat-machines { overflow:hidden; }
 .cat-group.collapsed .cat-machines { display:none; }
@@ -541,12 +568,22 @@ body {
 
 /* Tab bar */
 .view-cl .tab-bar { display:flex; align-items:center; background:white; padding:8px 10px; border-radius:6px; margin-bottom:6px; overflow-x:auto; gap:2px; }
-.view-cl .tab { padding:6px 10px; border-radius:5px; font-size:11px; font-weight:bold; cursor:pointer; white-space:nowrap; border:2px solid transparent; flex-shrink:0; transition:0.15s; }
+/* Now a <button>: it must declare font-family and the flex alignment that a
+   <div> inherited for free, or it falls back to the UA default face. */
+.view-cl .tab { display:inline-flex; align-items:center; gap:5px;
+  font-family:inherit; padding:6px 10px; border-radius:5px; font-size:11px;
+  font-weight:bold; cursor:pointer; white-space:nowrap;
+  border:2px solid transparent; flex-shrink:0; transition:0.15s; }
 .view-cl .tab:hover { filter:brightness(0.93); }
 .view-cl .tab.done { text-decoration:line-through; opacity:0.5; }
-.view-cl .tab-arrow { color:#bbb; font-size:13px; flex-shrink:0; padding:0 2px; }
+/* Was #bbb — 1.9:1 on white, the worst contrast failure in the file. These
+   arrows are decorative (aria-hidden) but still need to be seen. #64748b
+   reaches 4.8:1. */
+.view-cl .tab-arrow { color:#64748b; font-size:13px; flex-shrink:0; padding:0 2px; }
 .view-cl .tab-before       { background:#e3f2fd; color:#1565c0; border-color:#90caf9; }
-.view-cl .tab-during       { background:#fff3e0; color:#e65100; border-color:#ffcc80; }
+/* #e65100 on #fff3e0 was 3.5:1. #9a3412 keeps the same burnt-orange family
+   and reaches 6.7:1 — the tint stays, only the ink darkens. */
+.view-cl .tab-during       { background:#fff3e0; color:#9a3412; border-color:#ffcc80; }
 .view-cl .tab-powerfailure { background:#f3e5f5; color:#4a148c; border-color:#ce93d8; }
 .view-cl .tab-after        { background:#ffebee; color:#b71c1c; border-color:#ef9a9a; }
 
@@ -564,7 +601,25 @@ body {
 .view-cl .task-en   { font-weight:600; font-size:12px; color:#222; line-height:1.2; }
 .view-cl .task-hi   { font-size:11px; color:#777; line-height:1.2; margin-top:1px; }
 .view-cl .task-meta { font-size:10px; color:#aaa; margin-top:2px; }
-.view-cl .task-controls { display:flex; gap:5px; align-items:center; flex-shrink:0; }
+/* gap 18px, was 5px: the smallest control is 22px wide, so a full 44px hit
+   area needs at least 22px of separation between centres to avoid neighbouring
+   targets overlapping. 18px is the first value where all three clear. */
+.view-cl .task-controls { display:flex; gap:18px; align-items:center; flex-shrink:0; }
+/* ── TOUCH TARGETS ────────────────────────────────────────────────────────
+   The painted boxes stay small so the task row keeps its density, but each
+   control's *hit* area is extended to 44px via an invisible centred ::after.
+   The row gap widens to 18px so those hit areas do not overlap: at the old
+   5px gap the 44px regions collided by 9-12px and a tap near a boundary would
+   have activated the neighbouring control — worse than the small target it
+   was meant to fix. Height is capped at 40px to stay inside the 44px row
+   without pushing it taller. (The gap itself is set on .task-controls above.) */
+.view-cl .btn-expand, .view-cl .btn-toggle, .view-cl .btn-photo,
+.cl-photo-box .btn-close { position:relative; }
+.view-cl .btn-expand::after, .view-cl .btn-toggle::after,
+.view-cl .btn-photo::after, .cl-photo-box .btn-close::after {
+  content:''; position:absolute; left:50%; top:50%;
+  transform:translate(-50%,-50%); width:44px; height:40px;
+}
 .view-cl .btn-expand { width:22px; height:22px; background:#e3f2fd; border:none; border-radius:3px; cursor:pointer; font-size:11px; color:#1565c0; flex-shrink:0; }
 .view-cl .btn-toggle { width:32px; height:32px; border:none; border-radius:50%; font-size:14px; cursor:pointer; transition:0.2s; font-weight:bold; padding:0; flex-shrink:0; }
 .view-cl .btn-start  { background:#4caf50; color:white; }
@@ -572,7 +627,7 @@ body {
 .view-cl .btn-photo  { width:28px; height:28px; background:#fff3e0; border:1px solid #ff9800; border-radius:4px; cursor:pointer; font-size:14px; display:none; padding:0; flex-shrink:0; }
 .view-cl .btn-photo.show { display:flex; align-items:center; justify-content:center; }
 .view-cl .result { min-width:52px; text-align:center; font-size:10px; font-weight:bold; padding:2px 4px; border-radius:3px; display:none; white-space:nowrap; }
-.view-cl .r-green  { background:#c8e6c9; color:#2e7d32; display:block!important; }
+.view-cl .r-green  { background:#c8e6c9; color:#1b5e20; display:block!important; }
 .view-cl .r-yellow { background:#fff9c4; color:#f57f17; display:block!important; }
 .view-cl .r-red    { background:#ffcdd2; color:#c62828; display:block!important; }
 .view-cl .task-desc { display:none; padding:8px 10px; background:#f9fbff; border-left:3px solid #4caf50; font-size:11px; }
@@ -598,8 +653,11 @@ body {
 .view-cl .btn-submit-sec:disabled { opacity:0.6; cursor:not-allowed; }
 .view-cl .btn-skip-sec { width:100%; padding:8px; border:1px solid #9e9e9e; border-radius:5px; font-size:12px; cursor:pointer; background:white; color:#555; margin-top:5px; }
 .view-cl .sec-result { margin-top:6px; font-size:12px; padding:6px 8px; border-radius:4px; display:none; }
-.view-cl .sec-result.ok  { background:#c8e6c9; color:#2e7d32; display:block; }
-.view-cl .sec-result.err { background:#ffcdd2; color:#c62828; display:block; }
+/* 3.8:1 and 4.0:1 — both under AA. Tints kept, ink darkened to 6.4:1 / 6.3:1.
+   These carry submit success/failure, so they are the worst place to be
+   marginal. */
+.view-cl .sec-result.ok  { background:#c8e6c9; color:#1b5e20; display:block; }
+.view-cl .sec-result.err { background:#ffcdd2; color:#8e1616; display:block; }
 
 /* Image viewer */
 #cl-imgViewer { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.88); z-index:1000; align-items:center; justify-content:center; }
@@ -609,14 +667,19 @@ body {
 .cl-photo-modal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.55); z-index:999; align-items:center; justify-content:center; }
 .cl-photo-modal.show { display:flex; }
 .cl-photo-box { background:white; padding:16px; border-radius:8px; width:90%; max-width:360px; position:relative; text-align:center; }
-.cl-photo-box h3 { font-size:13px; color:#333; margin-bottom:10px; }
+/* h2 since the modal title moved up a level; selector follows the tag or the
+   heading silently loses its styling. */
+.cl-photo-box h2 { font-size:13px; color:#333; margin-bottom:10px; }
 .cl-photo-box input { width:100%; padding:8px; border:2px dashed #4caf50; border-radius:4px; font-size:12px; cursor:pointer; }
 .cl-photo-box .btn-close { position:absolute; top:8px; right:8px; width:24px; height:24px; border-radius:50%; border:none; background:#f5f5f5; font-size:15px; cursor:pointer; }
 
 /* ── TAB VIEWS (BD/PM/CLIT) ── */
 .tab-view-header { display:flex; justify-content:space-between; align-items:center; padding:14px 16px 10px; }
 .tab-view-title  { font-size:15px; font-weight:700; color:#0f172a; }
-.tab-action-btn  { padding:8px 16px; background:#ea6c0a; color:#fff8f0; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; }
+/* Brand orange stays (committed decision); the foreground moves instead.
+   #fff8f0 on #ea6c0a was 3.0:1 — near-white can never reach AA on this hue.
+   #1a0d00 is a very dark brown drawn from the orange itself, 6.0:1. */
+.tab-action-btn  { padding:8px 16px; background:#ea6c0a; color:#1a0d00; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; }
 .tab-list-area   { padding:0 12px 80px; }
 .spinner-inline  { text-align:center; padding:30px; color:#64748b; font-size:13px; }
 
@@ -666,7 +729,7 @@ body {
 .lbl-badge-container   { background:#ffedd5; color:#c2410c; }
 .lbl-badge-image       { background:#ffe4e6; color:#be123c; }
 .lbl-badge-calibration { background:#fef9c3; color:#a16207; }
-.lbl-id { font-family:'Courier New',monospace; font-size:10px; font-weight:700; color:#64748b; background:#f1f5f9; padding:2px 6px; border-radius:3px; white-space:nowrap; }
+.lbl-id { font-family:'Courier New',monospace; font-size:10px; font-weight:700; color:#475569; background:#f1f5f9; padding:2px 6px; border-radius:3px; white-space:nowrap; }
 .lbl-title { font-size:14px; font-weight:700; color:#0f172a; line-height:1.3; margin-bottom:4px; }
 .lbl-details { font-size:11px; color:#475569; line-height:1.6; flex:1; }
 .lbl-foot { display:flex; justify-content:space-between; margin-top:5px; padding-top:4px; border-top:1px solid #f1f5f9; font-size:8px; color:#64748b; font-weight:600; letter-spacing:.3px; }
@@ -695,7 +758,7 @@ body {
   background:#0f172a; color:white; padding:14px 16px;
   display:flex; justify-content:space-between; align-items:center;
 }
-.form-sheet-hdr h3 { font-size:15px; font-weight:700; }
+.form-sheet-hdr h2 { font-size:15px; font-weight:700; }
 .form-close-btn {
   background:rgba(255,255,255,0.15); border:none; color:white;
   width:28px; height:28px; border-radius:50%; font-size:16px;
@@ -712,7 +775,9 @@ body {
 .form-row textarea { resize:vertical; min-height:60px; }
 .form-row-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .form-submit-btn {
-  width:100%; padding:12px; background:#f97316; color:white; border:none;
+  /* white on #f97316 was 2.8:1, the worst button pair in the app. Hue kept,
+     foreground darkened to #1a0d00 (6.8:1). */
+  width:100%; padding:12px; background:#f97316; color:#1a0d00; border:none;
   border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; margin-top:4px;
 }
 .form-submit-btn:disabled { background:#94a3b8; }
@@ -741,7 +806,12 @@ body {
 /* ══════ SAFETY / OHS MODULE ══════ */
 .sf-tabs { display:flex; gap:4px; padding:8px 10px; background:#fff; border-bottom:1px solid #e2e8f0;
   overflow-x:auto; position:sticky; top:0; z-index:5; }
-.sf-tab { flex:0 0 auto; padding:7px 14px; border:none; background:#f1f5f9; border-radius:8px;
+/* min-height 44px, was ~28px (7px padding + 12px text). These are the Safety
+   module's primary navigation and were the one genuinely undersized target
+   here — a row of tabs has no adjacent-overlap problem, so the box itself
+   grows rather than needing a pseudo-element. */
+.sf-tab { flex:0 0 auto; padding:7px 14px; min-height:44px; border:none;
+  background:#f1f5f9; border-radius:8px; display:inline-flex; align-items:center;
   font-size:12px; font-weight:700; color:#475569; cursor:pointer; white-space:nowrap; }
 .sf-tab.active { background:#0f766e; color:#fff; }
 .sf-wrap { padding:12px; }
@@ -820,6 +890,31 @@ body {
   letter-spacing:.04em; font-weight:700; }
 .sf-disc:hover { text-decoration:underline; }
 
+/* ── GLOBAL KEYBOARD FOCUS ─────────────────────────────────────────────────
+   PRODUCT.md asserts "all critical actions keyboard accessible"; before this
+   rule exactly one :focus-visible existed against 115 <button> elements, so
+   that claim was untrue. :focus-visible (not :focus) keeps the ring off mouse
+   and touch taps, which matters on the floor where every tap would otherwise
+   leave a ring behind. Teal is the app's interactive accent; on the dark
+   Facility Logs panels it is re-tinted below where it would not carry.
+   Declared once, globally, rather than per-component so new controls inherit
+   it by default instead of opting in. */
+:where(button,a,select,textarea,summary,[tabindex],[role="button"]):focus-visible {
+  outline:2px solid #0f766e; outline-offset:2px; border-radius:4px;
+}
+/* Inputs already carry their own inset focus treatment; give them the same
+   ring but without the offset so it does not collide with adjacent fields. */
+input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
+/* On the dark module the teal loses contrast against #0e1116 — lift it to the
+   lighter accent so the ring stays visible. */
+.fl :where(button,a,select,textarea,input,[tabindex],[role="button"]):focus-visible {
+  outline-color:var(--flacc);
+}
+/* Dark nav bars sit on #0f172a; same problem, same fix. */
+.nav-global :where(button,a,[tabindex]):focus-visible,
+.nav-machine :where(button,a,[tabindex]):focus-visible,
+.app-header :where(button,a,[tabindex]):focus-visible { outline-color:#5eead4; }
+
 .sf-list { border-top:1px solid #e2e8f0; margin-top:6px; }
 .sf-row { position:relative; background:#fff; padding:11px 12px 11px 16px;
   border-bottom:1px solid #e2e8f0; cursor:pointer; min-height:44px;
@@ -846,7 +941,7 @@ body {
   overflow:hidden; }
 .sf-row .meta { font-size:13px; color:#475569; margin-top:6px; display:flex;
   gap:6px 12px; flex-wrap:wrap; align-items:center; }
-.sf-row .meta .sr { color:#94a3b8; font-size:12px; font-variant-numeric:tabular-nums; }
+.sf-row .meta .sr { color:#64748b; font-size:12px; font-variant-numeric:tabular-nums; }
 
 /* Status chip: tinted bg + glyph + label. */
 .sf-st { display:inline-flex; align-items:center; gap:5px; font-size:11px;
@@ -1000,12 +1095,12 @@ body {
 .sf-vrow { display:flex; gap:12px; padding:9px 0; border-bottom:1px solid #f1f5f9;
   align-items:flex-start; }
 .sf-vrow .k { flex:0 0 40%; font-size:12px; font-weight:600; color:#334155; }
-.sf-vrow .k code { display:block; font-size:10px; color:#94a3b8; font-weight:400;
+.sf-vrow .k code { display:block; font-size:10px; color:#64748b; font-weight:400;
   margin-top:2px; }
 .sf-vrow .v { flex:1; display:flex; flex-wrap:wrap; gap:4px; }
 .sf-vrow .v span { background:#f1f5f9; border-radius:5px; padding:2px 7px;
   font-size:11px; color:#475569; }
-.sf-vrow .v i { font-size:11px; color:#94a3b8; }
+.sf-vrow .v i { font-size:11px; color:#64748b; }
 .sf-health { background:#fffbeb; border:1px solid #fde68a; border-radius:8px;
   padding:11px 13px; font-size:12px; color:#78350f; line-height:1.5; }
 .sf-health.ok { background:#f0fdf4; border-color:#bbf7d0; color:#14532d; }
@@ -1040,7 +1135,7 @@ body {
 .if-chips span { white-space:nowrap; }
 /* Separator BEFORE each chip except the first. A trailing ::after would leave a
    dangling dot whenever the row wraps and the last chip moves to a new line. */
-.if-chips span + span::before { content:'·'; margin-right:10px; color:#94a3b8; }
+.if-chips span + span::before { content:'·'; margin-right:10px; color:#64748b; }
 .sf-form .hf-2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .sf-form .hf-3 { display:grid; grid-template-columns:1fr 1fr auto; gap:8px; align-items:end; }
 .hf-risk { font-size:18px; font-weight:800; color:#fff; background:#16a34a;
@@ -1066,10 +1161,13 @@ body {
 .hf-matrix-wrap { margin-top:4px; }
 .hf-matrix { display:grid; grid-template-columns:auto repeat(5,1fr);
   gap:3px; align-items:stretch; }
-.hf-mx-corner { font-size:8px; color:#94a3b8; line-height:1.1;
+/* 11px + darker ink; 8px on #94a3b8 was both undersized and 2.6:1. */
+.hf-mx-corner { font-size:11px; color:#64748b; line-height:1.1;
   display:flex; align-items:flex-end; justify-content:flex-end; padding:2px;
   font-weight:700; }
-.hf-mx-chead, .hf-mx-rhead { font-size:9px; font-weight:800; color:#64748b;
+/* 11px, was 9px. These label the risk-matrix axes — if they cannot be read the
+   matrix cannot be interpreted, so they are functional text, not decoration. */
+.hf-mx-chead, .hf-mx-rhead { font-size:11px; font-weight:800; color:#64748b;
   display:flex; align-items:center; justify-content:center; text-align:center;
   padding:2px; line-height:1.05; }
 .hf-mx-rhead { writing-mode:initial; }
@@ -1081,7 +1179,8 @@ body {
 .hf-mx-cell:active { transform:scale(.96); }
 .hf-mx-cell.sel { outline:3px solid #0f172a; outline-offset:1px;
   box-shadow:0 4px 12px rgba(0,0,0,.35); transform:scale(1.08); z-index:3; }
-.hf-mx-axis { font-size:9px; font-weight:700; color:#94a3b8;
+/* 11px + darker ink: #94a3b8 was 2.6:1 on white, one of the failing pairs. */
+.hf-mx-axis { font-size:11px; font-weight:700; color:#64748b;
   display:flex; justify-content:space-between; padding:3px 2px 0; }
 .hf-mx-axis.vert { flex-direction:column; }
 .hf-riskbar { display:flex; align-items:center; gap:10px; margin-top:8px;
@@ -1111,7 +1210,7 @@ body {
   background:#f8fafc; color:#475569; border-radius:9px; font-size:12px;
   font-weight:700; cursor:pointer; }
 .hf-coc-add:hover { background:#f1f5f9; }
-.hf-coc-hint { font-size:10px; color:#94a3b8; margin:2px 0 6px; }
+.hf-coc-hint { font-size:10px; color:#64748b; margin:2px 0 6px; }
 /* kanban */
 .sf-kanban { display:grid; grid-template-columns:repeat(4,minmax(180px,1fr));
   gap:8px; overflow-x:auto; }
@@ -1462,8 +1561,9 @@ select.fl-ctrl{ font-weight:600; cursor:pointer; }
 .fl-kpi.good .v{ color:var(--flgood); } .fl-kpi.warn .v{ color:var(--flwarn); } .fl-kpi.bad .v{ color:var(--flR); }
 /* generation vs expected — the one graphic that reads at a glance */
 .fl-bar{ height:12px; border-radius:99px; background:#0c1218; border:1px solid var(--fledge); overflow:hidden; margin:14px 0 6px; }
-.fl-bar > i{ display:block; height:100%; border-radius:99px;
-  background:var(--flwarn); transition:width .45s var(--ease); }
+.fl-bar > i{ display:block; height:100%; width:100%; border-radius:99px;
+  background:var(--flwarn); transform:scaleX(var(--p,0));
+  transform-origin:left center; transition:transform .45s var(--ease); }
 .fl-barlbl{ display:flex; justify-content:space-between; font-size:12.5px; color:var(--fldim); font-weight:600; font-variant-numeric:tabular-nums; }
 @media(prefers-reduced-motion:reduce){ .fl-bar > i{ transition:none; } }
 </style>
@@ -1508,10 +1608,17 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 </head>
 <body>
 
+<!-- Keyboard users landed on the header and had to tab through every nav
+     control to reach content. Visually hidden until focused. -->
+<a class="skip-link" href="#app-content">Skip to content</a>
+
 <!-- ══════ FIXED HEADER ══════ -->
 <header class="app-header" id="app-header">
-  <div class="logo-mark">PM</div>
-  <span class="header-title">Pack Masters<span class="ht-sub">MMS</span></span>
+  <div class="logo-mark" aria-hidden="true">PM</div>
+  <!-- The wordmark is the document's h1. There was no h1 at all, so the
+       accessibility tree had no title. .header-title carries every style, so
+       the element swap is visually inert. -->
+  <h1 class="header-title">Pack Masters<span class="ht-sub">MMS</span></h1>
   <div class="header-machine" id="header-machine"></div>
   <div class="header-right">
     <button class="back-btn" id="back-btn" onclick="navigateToBoard()">&#x2190; Board</button>
@@ -1523,7 +1630,10 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 <div class="status-bar" id="status-bar"></div>
 
 <!-- ══════ CONTENT AREA ══════ -->
-<div class="app-content" id="app-content">
+<!-- <main> not <div>: there was no main landmark, so a screen-reader user had
+     no way to skip the header and nav to reach content. Element changed rather
+     than a new one nested, so every .app-content style still applies. -->
+<main class="app-content" id="app-content">
 
   <!-- Dashboard view (home) -->
   <div class="view active" id="view-dashboard" style="padding:0">
@@ -1538,12 +1648,12 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
     <!-- header -->
     <div class="mb-toolbar">
       <div class="mb-search">
-        <span style="color:#94a3b8;display:inline-flex" data-i="search"></span>
+        <span style="color:#64748b;display:inline-flex" data-i="search"></span>
         <input id="mb-search-input" placeholder="Search machine…" oninput="mbOnSearch()">
-        <span class="mbs-clear" id="mb-search-clear" onclick="mbClearSearch()">&times;</span>
+        <span class="mbs-clear" id="mb-search-clear" role="button" tabindex="0" aria-label="Clear search" onclick="mbClearSearch()">&times;</span>
       </div>
-      <span id="mb-count" style="font-size:11px;color:#94a3b8;flex-shrink:0;font-weight:600"></span>
-      <button onclick="showAddMachineForm()" style="flex-shrink:0;background:#f97316;color:#fff;border:none;border-radius:8px;padding:8px 11px;font-size:13px;font-weight:700;cursor:pointer">+</button>
+      <span id="mb-count" style="font-size:11px;color:#64748b;flex-shrink:0;font-weight:600"></span>
+      <button onclick="showAddMachineForm()" style="flex-shrink:0;background:#f97316;color:#1a0d00;border:none;border-radius:8px;padding:8px 11px;font-size:13px;font-weight:700;cursor:pointer">+</button>
     </div>
     <!-- category chips — 2-row wrapped block -->
     <div class="mb-section">
@@ -1616,23 +1726,25 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
       </div>
     </div>
 
-    <!-- Tab bar -->
-    <div class="tab-bar">
-      <div class="tab tab-before"       id="tab-before"       onclick="clJumpTo('before')"><i class="cl-dot" style="background:#3b82f6"></i>Before</div>
-      <div class="tab-arrow">&#x2192;</div>
-      <div class="tab tab-during"       id="tab-during"       onclick="clJumpTo('during')"><i class="cl-dot" style="background:#eab308"></i>During</div>
-      <div class="tab-arrow">&#x2192;</div>
-      <div class="tab tab-powerfailure" id="tab-powerfailure" onclick="clJumpTo('powerfailure')"><i class="cl-dot" style="background:#f97316"></i>Power</div>
-      <div class="tab-arrow">&#x2192;</div>
-      <div class="tab tab-after"        id="tab-after"        onclick="clJumpTo('after')"><i class="cl-dot" style="background:#ef4444"></i>After</div>
+    <!-- Tab bar. These are <button> not <div>: they were unreachable by keyboard
+         and announced as plain text, on the checklist path operators use most.
+         The arrows are decorative and hidden from assistive tech. -->
+    <div class="tab-bar" role="tablist" aria-label="Checklist sections">
+      <button type="button" class="tab tab-before"       id="tab-before"       onclick="clJumpTo('before')"><i class="cl-dot" style="background:#3b82f6"></i>Before</button>
+      <div class="tab-arrow" aria-hidden="true">&#x2192;</div>
+      <button type="button" class="tab tab-during"       id="tab-during"       onclick="clJumpTo('during')"><i class="cl-dot" style="background:#eab308"></i>During</button>
+      <div class="tab-arrow" aria-hidden="true">&#x2192;</div>
+      <button type="button" class="tab tab-powerfailure" id="tab-powerfailure" onclick="clJumpTo('powerfailure')"><i class="cl-dot" style="background:#f97316"></i>Power</button>
+      <div class="tab-arrow" aria-hidden="true">&#x2192;</div>
+      <button type="button" class="tab tab-after"        id="tab-after"        onclick="clJumpTo('after')"><i class="cl-dot" style="background:#ef4444"></i>After</button>
     </div>
 
     <!-- BEFORE PROCESS -->
     <div class="section" id="sec-before" style="border-top:3px solid #1565c0;border-radius:0 0 6px 6px;background:#f8faff">
       <div class="section-body" id="secbody-before" style="display:none">
         <div class="batch-row">
-          <div><label>PM Batch No <span style="color:#c62828">*</span></label><input type="text" id="pmBatch" placeholder="e.g. PM-2024-001"></div>
-          <div><label>Bulk Batch No <span style="color:#c62828">*</span></label><input type="text" id="bulkBatch" placeholder="e.g. BB-2024-001"></div>
+          <div><label for="pmBatch">PM Batch No <span style="color:#c62828">*</span></label><input type="text" id="pmBatch" placeholder="e.g. PM-2024-001"></div>
+          <div><label for="bulkBatch">Bulk Batch No <span style="color:#c62828">*</span></label><input type="text" id="bulkBatch" placeholder="e.g. BB-2024-001"></div>
         </div>
         <script>document.write(_taskHtml('1',  'Previous batch material clearance',           '\u092A\u093F\u091B\u0932\u0947 \u092C\u0948\u091A \u0915\u0940 \u0938\u093E\u092E\u0917\u094D\u0930\u0940 \u0938\u093E\u092B \u0915\u0930\u0928\u093E',            5,  false, 'Empty Charging Vessel completely. Inspect for any leftover material from previous batch. Clean interior walls with compatible acetone primer/brush/cloth. Verify no cross-contamination.', '\u091A\u093E\u0930\u094D\u091C\u093F\u0902\u0917 \u0935\u0947\u0938\u0932 \u0915\u094B \u092A\u0942\u0930\u0940 \u0924\u0930\u0939 \u0916\u093E\u0932\u0940 \u0915\u0930\u0947\u0902\u0964 \u092A\u093F\u091B\u0932\u0947 \u092C\u0948\u091A \u0915\u0940 \u0915\u093F\u0938\u0940 \u092D\u0940 \u092C\u091A\u0940 \u0939\u0941\u0908 \u0938\u093E\u092E\u0917\u094D\u0930\u0940 \u0915\u0940 \u091C\u093E\u0902\u091A \u0915\u0930\u0947\u0902\u0964 \u0938\u0902\u0917\u0924 \u090F\u0938\u0940\u091F\u094B\u0928 \u0938\u0947 \u0938\u093E\u092B \u0915\u0930\u0947\u0902\u0964'))</script>
         <script>document.write(_taskHtml('2',  'Previous batch containers removed',            '\u092A\u093F\u091B\u0932\u0947 \u092C\u0948\u091A \u0915\u0947 \u0915\u0902\u091F\u0947\u0928\u0930 \u0939\u091F\u093E\u090F \u0917\u090F',              3,  false, 'Remove all containers from filling area. Clear all rework drums and unlabeled containers from production zone.', '\u092D\u0930\u0928\u0947 \u0915\u0947 \u0915\u094D\u0937\u0947\u0924\u094D\u0930 \u0938\u0947 \u0938\u092D\u0940 \u0915\u0902\u091F\u0947\u0928\u0930 \u0939\u091F\u093E\u090F\u0902\u0964 \u0909\u0924\u094D\u092A\u093E\u0926\u0928 \u0915\u094D\u0937\u0947\u0924\u094D\u0930 \u0938\u0947 \u0938\u092D\u0940 \u0930\u0940\u0935\u0930\u094D\u0915 \u0921\u094D\u0930\u092E \u0914\u0930 \u0905\u0928\u0932\u0947\u092C\u0932\u094D\u0921 \u0915\u0902\u091F\u0947\u0928\u0930 \u0938\u093E\u092B \u0915\u0930\u0947\u0902\u0964'))</script>
@@ -1666,7 +1778,7 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
         <script>document.write(_taskHtml('18', 'Time Motion Study and Cycle Time done?',       '\u0938\u092E\u092F \u0917\u0924\u093F \u0905\u0927\u094D\u092F\u092F\u0928 \u0914\u0930 \u091A\u0915\u094D\u0930 \u0938\u092E\u092F \u0915\u093F\u092F\u093E?',         5,  false, 'Record fill start time and end time for 10 consecutive cycles. Calculate average cycle time. Compare against expected cycle time for batch size. If slower, investigate and document reason.', '10 \u0932\u0917\u093E\u0924\u093E\u0930 \u091A\u0915\u094D\u0930\u094B\u0902 \u0915\u093E \u0938\u092E\u092F \u0926\u0930\u094D\u091C \u0915\u0930\u0947\u0902\u0964 \u0914\u0938\u0924 \u091A\u0915\u094D\u0930 \u0938\u092E\u092F \u0915\u0940 \u0917\u0923\u0928\u093E \u0915\u0930\u0947\u0902\u0964'))</script>
         <script>document.write(_taskHtml('19', 'No spillage or loss observed',                 '\u0915\u094B\u0908 \u0930\u093F\u0938\u093E\u0935 \u092F\u093E \u0928\u0941\u0915\u0938\u093E\u0928 \u0928\u0939\u0940\u0902 \u0926\u0947\u0916\u093E \u0917\u092F\u093E',       2,  false, 'Continuously monitor fill area during production. Wipe up any spills immediately. Sweep floor around machine every hour. Document any spills in incident log.', '\u0909\u0924\u094D\u092A\u093E\u0926\u0928 \u0915\u0947 \u0926\u094C\u0930\u093E\u0928 \u092D\u0930\u0923 \u0915\u094D\u0937\u0947\u0924\u094D\u0930 \u0915\u0940 \u0928\u093F\u0917\u0930\u093E\u0928\u0940 \u0915\u0930\u0947\u0902\u0964 \u0915\u093F\u0938\u0940 \u092D\u0940 \u0930\u093F\u0938\u093E\u0935 \u0915\u094B \u0924\u0941\u0930\u0902\u0924 \u092A\u094B\u0902\u091B\u0947\u0902\u0964'))</script>
         <div class="section-footer">
-          <button class="btn-submit-sec" id="btn-during" style="background:#e65100" onclick="clSubmitSection('during')">&#x2705; Submit During Process</button>
+          <button class="btn-submit-sec" id="btn-during" style="background:#b23f00" onclick="clSubmitSection('during')">&#x2705; Submit During Process</button>
           <div class="sec-result" id="res-during"></div>
         </div>
       </div>
@@ -1707,7 +1819,12 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
     </div>
 
     <!-- Image Viewer -->
-    <div id="cl-imgViewer"><img id="cl-imgViewerSrc" src=""></div>
+    <!-- src is a 1x1 transparent GIF, not "" and not absent: an empty src
+         resolves to the page URL and fires a real request; a missing src still
+         ships a broken-image box. The data URI costs nothing and renders as
+         nothing until JS swaps in the real photo. -->
+    <div id="cl-imgViewer"><img id="cl-imgViewerSrc" alt="Checklist photo"
+      src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"></div>
 
     </div><!-- /cl-content-wrap -->
 
@@ -1715,7 +1832,9 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
     <div class="cl-photo-modal" id="cl-photoModal">
       <div class="cl-photo-box">
         <button class="btn-close" onclick="clClosePhoto()">&#x2715;</button>
-        <h3 id="cl-photoTitle">Upload Photo</h3>
+        <!-- h2, not h3: this is a modal title sitting directly under the page
+             h1, so h3 skipped a level in the heading outline. -->
+        <h2 id="cl-photoTitle">Upload Photo</h2>
         <input type="file" id="cl-photoInput" accept="image/*" capture="environment" onchange="clHandlePhoto()">
       </div>
     </div>
@@ -1743,7 +1862,7 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
           <span style="font-size:22px;color:#7c3aed">&#x25B6;</span><span style="font-size:12px;font-weight:600;color:#334155">CLIT Video</span>
         </button>
       </div>
-      <div style="font-size:11px;color:#64748b;margin-top:10px;background:#f1f5f9;border-radius:8px;padding:8px 10px;line-height:1.6">
+      <div style="font-size:11px;color:#475569;margin-top:10px;background:#f1f5f9;border-radius:8px;padding:8px 10px;line-height:1.6">
         💡 <b>Tip / सुझाव:</b><br>
         Record video in WhatsApp → share in group → save to device → upload here.<br>
         व्हाट्सऐप में वीडियो रिकॉर्ड करें → ग्रुप में शेयर करें → डिवाइस में सेव करें → यहाँ अपलोड करें।
@@ -1805,7 +1924,7 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
         <option>First Floor</option>
         <option>Second Floor</option>
       </select>
-      <span style="font-size:11px;color:#94a3b8" id="labels-cnt"></span>
+      <span style="font-size:11px;color:#64748b" id="labels-cnt"></span>
     </div>
     <!-- hidden select kept for JS compat -->
     <select id="labels-ft" style="display:none"></select>
@@ -1849,7 +1968,7 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 <div class="form-modal" id="rec-detail-modal">
   <div class="form-sheet">
     <div class="form-sheet-hdr">
-      <h3 id="rec-detail-title">Record Detail</h3>
+      <h2 id="rec-detail-title">Record Detail</h2>
       <button class="form-close-btn" onclick="closeRecDetail()">&#x2715;</button>
     </div>
     <div class="form-body" id="rec-detail-body"></div>
@@ -1859,7 +1978,10 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 <!-- Checklist photo enlarge preview — at app root (outside all view-* panels
      and modals) so display:none on a parent never collapses it to 0×0. -->
 <div id="cl-hoverWrap" class="cl-hover-wrap">
-  <img id="cl-hoverZoom" src="" alt="">
+  <!-- Decorative zoom preview; alt="" is correct (the underlying thumbnail
+       already carries the description). Transparent placeholder until hover. -->
+  <img id="cl-hoverZoom" alt=""
+    src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
   <div id="cl-hoverCap" class="cl-hover-cap"></div>
 </div>
 
@@ -1867,7 +1989,7 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 <div class="form-modal" id="form-modal">
   <div class="form-sheet">
     <div class="form-sheet-hdr">
-      <h3 id="form-modal-title">New Record</h3>
+      <h2 id="form-modal-title">New Record</h2>
       <button class="form-close-btn" onclick="closeFormModal()">&#x2715;</button>
     </div>
     <div class="form-body" id="form-modal-body"></div>
@@ -1957,30 +2079,30 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
     <div id="rd-elec-form" style="display:none">
       <button class="fl-back" onclick="rdBack()">‹ Back</button>
       <div class="fl-selline">
-        <div class="fl-fld"><label>Meter No</label><select class="fl-ctrl" id="el-meter"></select></div>
-        <div class="fl-fld"><label>Time</label><input class="fl-ctrl" id="el-time"></div>
+        <div class="fl-fld"><label for="el-meter">Meter No</label><select class="fl-ctrl" id="el-meter"></select></div>
+        <div class="fl-fld"><label for="el-time">Time</label><input class="fl-ctrl" id="el-time"></div>
       </div>
       <div class="fl-seclbl">Meter Reading</div>
       <div class="fl-g2">
-        <div class="fl-fld num"><label>Units (kWh)</label><input class="fl-ctrl" id="el-kwh" inputmode="decimal" oninput="elLive()"></div>
-        <div class="fl-fld num"><label>Units (kVAr)</label><input class="fl-ctrl" id="el-kvar" inputmode="decimal"></div>
+        <div class="fl-fld num"><label for="el-kwh">Units (kWh)</label><input class="fl-ctrl" id="el-kwh" inputmode="decimal" oninput="elLive()"></div>
+        <div class="fl-fld num"><label for="el-kvar">Units (kVAr)</label><input class="fl-ctrl" id="el-kvar" inputmode="decimal"></div>
       </div>
       <div class="fl-seclbl">Power Factor</div>
       <div class="fl-g2">
-        <div class="fl-fld num"><label>Panel</label><input class="fl-ctrl" id="el-pfp" inputmode="decimal" oninput="elLive()"></div>
-        <div class="fl-fld num"><label>Meter</label><input class="fl-ctrl" id="el-pfm" inputmode="decimal" oninput="elLive()"></div>
+        <div class="fl-fld num"><label for="el-pfp">Panel</label><input class="fl-ctrl" id="el-pfp" inputmode="decimal" oninput="elLive()"></div>
+        <div class="fl-fld num"><label for="el-pfm">Meter</label><input class="fl-ctrl" id="el-pfm" inputmode="decimal" oninput="elLive()"></div>
       </div>
       <div class="fl-seclbl">Voltage <span class="fl-u">(V)</span></div>
       <div class="fl-g3">
-        <div class="fl-fld num ph R"><label><span>●</span>Red</label><input class="fl-ctrl" id="el-vr" inputmode="decimal" oninput="elLive()"></div>
-        <div class="fl-fld num ph Y"><label><span>●</span>Yellow</label><input class="fl-ctrl" id="el-vy" inputmode="decimal" oninput="elLive()"></div>
-        <div class="fl-fld num ph B"><label><span>●</span>Blue</label><input class="fl-ctrl" id="el-vb" inputmode="decimal" oninput="elLive()"></div>
+        <div class="fl-fld num ph R"><label for="el-vr"><span>●</span>Red</label><input class="fl-ctrl" id="el-vr" inputmode="decimal" oninput="elLive()"></div>
+        <div class="fl-fld num ph Y"><label for="el-vy"><span>●</span>Yellow</label><input class="fl-ctrl" id="el-vy" inputmode="decimal" oninput="elLive()"></div>
+        <div class="fl-fld num ph B"><label for="el-vb"><span>●</span>Blue</label><input class="fl-ctrl" id="el-vb" inputmode="decimal" oninput="elLive()"></div>
       </div>
       <div class="fl-seclbl">Current Load <span class="fl-u">(A)</span></div>
       <div class="fl-g3">
-        <div class="fl-fld num ph R"><label><span>●</span>Red</label><input class="fl-ctrl" id="el-ar" inputmode="decimal"></div>
-        <div class="fl-fld num ph Y"><label><span>●</span>Yellow</label><input class="fl-ctrl" id="el-ay" inputmode="decimal"></div>
-        <div class="fl-fld num ph B"><label><span>●</span>Blue</label><input class="fl-ctrl" id="el-ab" inputmode="decimal"></div>
+        <div class="fl-fld num ph R"><label for="el-ar"><span>●</span>Red</label><input class="fl-ctrl" id="el-ar" inputmode="decimal"></div>
+        <div class="fl-fld num ph Y"><label for="el-ay"><span>●</span>Yellow</label><input class="fl-ctrl" id="el-ay" inputmode="decimal"></div>
+        <div class="fl-fld num ph B"><label for="el-ab"><span>●</span>Blue</label><input class="fl-ctrl" id="el-ab" inputmode="decimal"></div>
       </div>
       <div class="fl-chips" id="el-chips"></div>
       <div class="fl-seclbl">Remarks</div>
@@ -1992,12 +2114,12 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
     <div id="rd-water-form" style="display:none">
       <button class="fl-back" onclick="rdBack()">‹ Back</button>
       <div class="fl-selline">
-        <div class="fl-fld"><label>Meter No</label><select class="fl-ctrl" id="wt-meter"></select></div>
-        <div class="fl-fld"><label>Time</label><input class="fl-ctrl" id="wt-time"></div>
+        <div class="fl-fld"><label for="wt-meter">Meter No</label><select class="fl-ctrl" id="wt-meter"></select></div>
+        <div class="fl-fld"><label for="wt-time">Time</label><input class="fl-ctrl" id="wt-time"></div>
       </div>
       <div class="fl-seclbl">Meter Reading</div>
       <div class="fl-g2">
-        <div class="fl-fld num"><label>Reading</label><input class="fl-ctrl" id="wt-read" inputmode="decimal" oninput="wtLive()"></div>
+        <div class="fl-fld num"><label for="wt-read">Reading</label><input class="fl-ctrl" id="wt-read" inputmode="decimal" oninput="wtLive()"></div>
         <div class="fl-fld num"><label>Used (auto)</label><div class="fl-ctrl fl-ro" id="wt-used">—</div></div>
       </div>
       <div class="fl-chips" id="wt-chips"></div>
@@ -2010,12 +2132,12 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
     <div id="rd-solar-form" style="display:none">
       <button class="fl-back" onclick="rdBack()">‹ Back</button>
       <div class="fl-selline">
-        <div class="fl-fld"><label>Plant / Meter</label><select class="fl-ctrl" id="sl-meter"></select></div>
-        <div class="fl-fld"><label>Time</label><input class="fl-ctrl" id="sl-time"></div>
+        <div class="fl-fld"><label for="sl-meter">Plant / Meter</label><select class="fl-ctrl" id="sl-meter"></select></div>
+        <div class="fl-fld"><label for="sl-time">Time</label><input class="fl-ctrl" id="sl-time"></div>
       </div>
       <div class="fl-seclbl">Meter Reading <span class="fl-u">(cumulative kWh)</span></div>
       <div class="fl-g2">
-        <div class="fl-fld num"><label>Reading</label><input class="fl-ctrl" id="sl-read" inputmode="decimal" oninput="slLive()"></div>
+        <div class="fl-fld num"><label for="sl-read">Reading</label><input class="fl-ctrl" id="sl-read" inputmode="decimal" oninput="slLive()"></div>
         <div class="fl-fld num"><label>Generated (auto)</label><div class="fl-ctrl fl-ro" id="sl-gen">—</div></div>
       </div>
       <div class="fl-seclbl">Today's Performance</div>
@@ -2024,7 +2146,7 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
         <div class="fl-kpi"><span class="k">Of Expected</span><span class="v" id="sl-k-pct">—</span></div>
         <div class="fl-kpi"><span class="k">Yield</span><span class="v" id="sl-k-sp">—</span></div>
       </div>
-      <div class="fl-bar"><i id="sl-bar" style="width:0%"></i></div>
+      <div class="fl-bar"><i id="sl-bar" style="--p:0"></i></div>
       <div class="fl-barlbl"><span id="sl-barl">0 kWh</span><span id="sl-barr">expected —</span></div>
       <div class="fl-chips" id="sl-chips"></div>
       <div class="fl-seclbl">Remarks</div>
@@ -2052,7 +2174,7 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
       <div class="fl-gridwrap" id="rd-reptable"><div class="fl-loading">Loading…</div></div>
     </div>
   </div>
-</div>
+</main>
 
 <!-- ══════ MACHINE SUB-NAV ══════ -->
 <nav class="nav-machine" id="nav-machine">
@@ -2158,6 +2280,28 @@ var INIT_TYPE=_p.get('type')||'';
 // ═══════════════════════════════════════════════════════
 // HTML ESCAPE HELPER
 // ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// KEYBOARD ACTIVATION FOR role="button" ELEMENTS
+// ═══════════════════════════════════════════════════════
+// Several clickable rows (record rows, KPI tiles, drill cells) are <div>s that
+// contain nested <div>s, so they cannot become real <button> elements without
+// producing non-conforming HTML. They instead carry role="button" + tabindex,
+// which makes them focusable and correctly announced — but a native button also
+// fires on Enter and Space, and a div does not. One delegated listener supplies
+// that, rather than five inline onkeydown attributes that would drift apart.
+//
+// Space is preventDefault()ed because its default action scrolls the page,
+// which on a long record list would move the row out from under the operator.
+document.addEventListener('keydown', function (ev) {
+  if (ev.key !== 'Enter' && ev.key !== ' ' && ev.key !== 'Spacebar') return;
+  var el = ev.target;
+  if (!el || el.getAttribute?.('role') !== 'button') return;
+  // Real controls handle their own keys; never double-fire on them.
+  if (/^(BUTTON|A|INPUT|SELECT|TEXTAREA)$/.test(el.tagName)) return;
+  ev.preventDefault();
+  el.click();
+});
+
 function esc(s) {
   return String(s == null ? '' : s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
@@ -2253,7 +2397,7 @@ function renderRefCombined(type) {
   var items = LBL_DATA.filter(function(d) { return d.t === type; });
   var meta = REF_META[type] || { color:'#64748b', label: type };
   if (!items.length) {
-    el.innerHTML = '<div style="padding:20px;color:#94a3b8;font-size:13px">No ' + meta.label + ' records.</div>';
+    el.innerHTML = '<div style="padding:20px;color:#64748b;font-size:13px">No ' + meta.label + ' records.</div>';
     return;
   }
   el.innerHTML = items.map(function(d) {
@@ -2410,7 +2554,7 @@ function _renderMacTiles(data) {
       '<div class="mb-tile-id">' + esc(shortId) + '</div></div>';
   }).join('');
   if (!list.length) grid.innerHTML =
-    '<div style="font-size:11px;color:#94a3b8;padding:8px">No machines.</div>';
+    '<div style="font-size:11px;color:#64748b;padding:8px">No machines.</div>';
 }
 
 function mbPickCat(cat) {
@@ -2652,7 +2796,7 @@ function renderDashboard() {
 
   /* ---- small helpers ---- */
   function kpi(num, lbl, sub, color, onclick) {
-    return '<div class="dk-cell"' + (onclick?' onclick="'+onclick+'" style="cursor:pointer"':'') + '>' +
+    return '<div class="dk-cell"' + (onclick?' role="button" tabindex="0" onclick="'+onclick+'" style="cursor:pointer"':'') + '>' +
       '<div class="dk-num" style="color:'+color+'" data-count="'+num+'">'+num+'</div>' +
       '<div class="dk-lbl">'+lbl+'</div>' +
       (sub?'<div class="dk-sub">'+sub+'</div>':'') + '</div>';
@@ -2664,7 +2808,11 @@ function renderDashboard() {
       var w = Math.round((map[k]/max)*100);
       return '<div class="hb-row"><div class="hb-lbl" title="'+esc(k)+'">'+
         esc(fmtKey?fmtKey(k):k)+'</div>' +
-        '<div class="hb-track"><div class="hb-fill" style="width:'+w+'%;background:'+color+'"></div></div>' +
+        /* --p drives a scaleX transform instead of width (composited, no
+           per-frame layout). Floored at .012 so a non-zero value still shows
+           a sliver, which the old min-width:3px used to guarantee. */
+        '<div class="hb-track"><div class="hb-fill" style="--p:'+
+          (w>0?Math.max(0.012,w/100):0)+';background:'+color+'"></div></div>' +
         '<div class="hb-val">'+map[k]+'</div></div>';
     }).join('');
   }
@@ -2747,7 +2895,7 @@ function renderDashboard() {
     '</div>' +
 
     /* ── fleet strip ── */
-    '<div class="dash-card fleet-tile" onclick="navigate(\'board\')" style="display:flex;align-items:center;gap:10px;cursor:pointer">' +
+    '<div class="dash-card fleet-tile" role="button" tabindex="0" aria-label="Open machine board" onclick="navigate(\'board\')" style="display:flex;align-items:center;gap:10px;cursor:pointer">' +
       '<span style="display:inline-flex;color:#0f766e" data-i="machines"></span>' +
       '<div style="flex:1"><div style="font-size:13px;font-weight:800;color:#0f172a">'+total+' Machines &middot; '+Object.keys(catCounts).length+' categories</div>' +
       '<div style="font-size:11px;color:#64748b">tap to open the machine board</div></div>' +
@@ -2852,7 +3000,7 @@ function openRecordDetail(slipNo, type, machineId, machineName) {
   var color = colors[type] || '#374151';
   titleEl.textContent = type.toUpperCase() + ' — ' + (machineName || machineId || '');
   titleEl.style.color = color;
-  bodyEl.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8"><div class="spinner-ring" style="border-top-color:'+color+'"></div><br>Loading record…</div>';
+  bodyEl.innerHTML = '<div style="padding:20px;text-align:center;color:#64748b"><div class="spinner-ring" style="border-top-color:'+color+'"></div><br>Loading record…</div>';
   modal.classList.add('open');
 
   if (type === 'checklist') {
@@ -2910,7 +3058,7 @@ function _renderChecklistDetail(r) {
   function row(label, value) {
     if (!value) return '';
     return '<div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #f1f5f9">'+
-      '<span style="font-size:11px;color:#94a3b8;font-weight:600;min-width:100px;flex-shrink:0">'+label+'</span>'+
+      '<span style="font-size:11px;color:#64748b;font-weight:600;min-width:100px;flex-shrink:0">'+label+'</span>'+
       '<span style="font-size:13px;color:#0f172a;flex:1">'+esc(String(value))+'</span>'+
     '</div>';
   }
@@ -2935,7 +3083,7 @@ function _renderChecklistDetail(r) {
       var thumb  = '';
       if (imgId) {
         var src = 'https://lh3.googleusercontent.com/d/' + imgId + '=w200';
-        thumb = '<img src="'+esc(src)+'" style="'+thumbStyle+';cursor:zoom-in" '+
+        thumb = '<img src="'+esc(src)+'" alt="Task photo" loading="lazy" decoding="async" style="'+thumbStyle+';cursor:zoom-in" '+
           'data-imgid="'+esc(imgId)+'" '+
           'onmouseover="clImgHover(event,this)" onmousemove="clImgHover(event,this)" '+
           'onmouseout="clImgHoverOut()" '+
@@ -2979,7 +3127,7 @@ function _renderChecklistDetail(r) {
     (r.pmBatch   ? row('PM Batch',   r.pmBatch)   : '')+
     (r.bulkBatch ? row('Bulk Batch', r.bulkBatch) : '')+
     '<div style="padding:8px 0;border-bottom:1px solid #f1f5f9">'+
-      '<div style="font-size:11px;color:#94a3b8;font-weight:600;margin-bottom:6px">SECTION STATUS</div>'+
+      '<div style="font-size:11px;color:#64748b;font-weight:600;margin-bottom:6px">SECTION STATUS</div>'+
       sectionBadge('Before Process', r.beforeDone)+
       sectionBadge('During Process', r.duringDone)+
       sectionBadge('Power Failure',  r.pfDone)+
@@ -3002,14 +3150,14 @@ function _renderRecordDetail(r, color) {
   function row(label, value) {
     if (!value && value !== 0) return '';
     return '<div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #f1f5f9">'+
-      '<span style="font-size:11px;color:#94a3b8;font-weight:600;min-width:100px;flex-shrink:0">'+label+'</span>'+
+      '<span style="font-size:11px;color:#64748b;font-weight:600;min-width:100px;flex-shrink:0">'+label+'</span>'+
       '<span style="font-size:13px;color:#0f172a;flex:1">'+esc(String(value))+'</span>'+
     '</div>';
   }
   function biRow(label, enVal, hiVal) {
     if (!enVal) return '';
     return '<div style="padding:7px 0;border-bottom:1px solid #f1f5f9">'+
-      '<div style="font-size:11px;color:#94a3b8;font-weight:600;margin-bottom:3px">'+label+'</div>'+
+      '<div style="font-size:11px;color:#64748b;font-weight:600;margin-bottom:3px">'+label+'</div>'+
       '<div style="font-size:13px;color:#0f172a">'+esc(enVal)+'</div>'+
       (hiVal ? '<div style="font-size:12px;color:#64748b;margin-top:2px">'+esc(hiVal)+'</div>' : '')+
     '</div>';
@@ -3060,7 +3208,7 @@ function _renderRecordDetail(r, color) {
     if (pmItems && pmItems.length) {
       var doneCount = pmItems.filter(function(i){return i.done;}).length;
       body += '<div style="padding:7px 0;border-bottom:1px solid #f1f5f9">'+
-        '<div style="font-size:11px;color:#94a3b8;font-weight:600;margin-bottom:5px">PM CHECKLIST ('+doneCount+'/'+pmItems.length+')</div>'+
+        '<div style="font-size:11px;color:#64748b;font-weight:600;margin-bottom:5px">PM CHECKLIST ('+doneCount+'/'+pmItems.length+')</div>'+
         pmItems.map(function(item) {
           return '<div style="display:flex;align-items:center;gap:7px;padding:4px 0">'+
             '<span style="font-size:14px;color:'+(item.done?'#16a34a':'#dc2626')+';">'+(item.done?'✔':'✘')+'</span>'+
@@ -3080,7 +3228,7 @@ function _renderRecordDetail(r, color) {
       var CLIT_LABELS  = {C:'Cleaning',L:'Lubrication',I:'Inspection',T:'Tightening'};
       var cdone = clitItems.filter(function(i){return i.done;}).length;
       body += '<div style="padding:7px 0;border-bottom:1px solid #f1f5f9">'+
-        '<div style="font-size:11px;color:#94a3b8;font-weight:600;margin-bottom:6px">CLIT CHECKLIST ('+cdone+'/'+clitItems.length+')</div>'+
+        '<div style="font-size:11px;color:#64748b;font-weight:600;margin-bottom:6px">CLIT CHECKLIST ('+cdone+'/'+clitItems.length+')</div>'+
         clitItems.map(function(item) {
           var tc = item.type ? (CLIT_COLORS2[item.type] || '#64748b') : (item.done?'#16a34a':'#dc2626');
           var badge = item.type
@@ -3143,7 +3291,7 @@ function renderBoardRecords(type, d) {
         }
       }
       var ageColor = ageStr ? (d >= 1 ? '#dc2626' : '#ea580c') : '';
-      return '<div class="rec-row" style="cursor:pointer" onclick="openRecordDetail(\''+slip+'\',\'bd\',\''+mid+'\',\''+mn+'\')">'+
+      return '<div class="rec-row" role="button" tabindex="0" style="cursor:pointer" onclick="openRecordDetail(\''+slip+'\',\'bd\',\''+mid+'\',\''+mn+'\')">'+
         '<div class="rec-dot" style="background:'+(isOpen?'#dc2626':'#16a34a')+'"></div>'+
         '<div class="rec-body">'+
           '<div class="rec-title">'+mn+'</div>'+
@@ -3159,7 +3307,7 @@ function renderBoardRecords(type, d) {
     el.innerHTML = items.map(function(item) {
       var mid = esc(item.machineId), mn = esc(item.machineName||item.machineId);
       var slip = esc(String(item.slip||''));
-      return '<div class="rec-row" style="cursor:pointer" onclick="openRecordDetail(\''+slip+'\',\'pm\',\''+mid+'\',\''+mn+'\')">'+
+      return '<div class="rec-row" role="button" tabindex="0" style="cursor:pointer" onclick="openRecordDetail(\''+slip+'\',\'pm\',\''+mid+'\',\''+mn+'\')">'+
         '<div class="rec-dot" style="background:#1b5e20"></div>'+
         '<div class="rec-body">'+
           '<div class="rec-title">'+mn+'</div>'+
@@ -3173,7 +3321,7 @@ function renderBoardRecords(type, d) {
     el.innerHTML = items.map(function(item) {
       var mid = esc(item.machineId), mn = esc(item.machineName||item.machineId);
       var slip = esc(String(item.slip||''));
-      return '<div class="rec-row" style="cursor:pointer" onclick="openRecordDetail(\''+slip+'\',\'clit\',\''+mid+'\',\''+mn+'\')">'+
+      return '<div class="rec-row" role="button" tabindex="0" style="cursor:pointer" onclick="openRecordDetail(\''+slip+'\',\'clit\',\''+mid+'\',\''+mn+'\')">'+
         '<div class="rec-dot" style="background:#0277bd"></div>'+
         '<div class="rec-body">'+
           '<div class="rec-title">'+mn+'</div>'+
@@ -3190,7 +3338,7 @@ function renderBoardRecords(type, d) {
       var dotColor = item.status==='done'?'#16a34a':item.status==='partial'?'#eab308':'#94a3b8';
       var mid = esc(item.machineId), mn = esc(item.machineName||item.machineId);
       var rowNum = item.rowNum || '';
-      return '<div class="rec-row" style="cursor:pointer" onclick="openChecklistRecord('+rowNum+',\''+mid+'\',\''+mn+'\')">'+
+      return '<div class="rec-row" role="button" tabindex="0" style="cursor:pointer" onclick="openChecklistRecord('+rowNum+',\''+mid+'\',\''+mn+'\')">'+
         '<div class="rec-dot" style="background:'+dotColor+'"></div>'+
         '<div class="rec-body">'+
           '<div class="rec-title">'+mn+'</div>'+
@@ -3671,14 +3819,14 @@ function _machineFormHtml(vals) {
   function sel(id, opts, cur) {
     return '<select id="'+id+'">'+opts.map(function(o){return '<option'+(o===cur?' selected':'')+'>'+o+'</option>';}).join('')+'</select>';
   }
-  return '<div class="form-row"><label>Machine Name *</label><input id="f-mn" value="'+esc(v.name||'')+'" placeholder="e.g. Form-Fill-Seal M/C-01"></div>'+
+  return '<div class="form-row"><label for="f-mn">Machine Name *</label><input id="f-mn" value="'+esc(v.name||'')+'" placeholder="e.g. Form-Fill-Seal M/C-01"></div>'+
     '<div class="form-row-2">'+
       '<div class="form-row"><label>Category *</label>'+sel('f-cat',CAT_OPTIONS,v.category||'')+'</div>'+
       '<div class="form-row"><label>Location *</label>'+sel('f-loc',FLOOR_OPTIONS,v.location||'Ground Floor')+'</div>'+
     '</div>'+
     '<div class="form-row-2">'+
-      '<div class="form-row"><label>Make / Brand</label><input id="f-make" value="'+esc(v.make||'')+'" placeholder="e.g. Nichrome"></div>'+
-      '<div class="form-row"><label>Year</label><input id="f-year" type="number" value="'+esc(v.year||'')+'" placeholder="2022"></div>'+
+      '<div class="form-row"><label for="f-make">Make / Brand</label><input id="f-make" value="'+esc(v.make||'')+'" placeholder="e.g. Nichrome"></div>'+
+      '<div class="form-row"><label for="f-year">Year</label><input id="f-year" type="number" value="'+esc(v.year||'')+'" placeholder="2022"></div>'+
     '</div>'+
     '<div class="form-row-2">'+
       '<div class="form-row"><label>PM Frequency</label>'+sel('f-pmfreq',PMFREQ_OPTIONS,v.pmFreq||'Monthly')+'</div>'+
@@ -3695,7 +3843,7 @@ function showAddMachineForm() {
   var bodyEl = document.getElementById('form-modal-body');
   bodyEl.innerHTML =
     _machineFormHtml({}) +
-    '<div style="font-size:11px;color:#94a3b8;padding:4px 0 8px">Machine ID is auto-generated (e.g. PM/FFS/030)</div>'+
+    '<div style="font-size:11px;color:#64748b;padding:4px 0 8px">Machine ID is auto-generated (e.g. PM/FFS/030)</div>'+
     '<button class="form-submit-btn" id="f-submit" style="background:#f97316" onclick="submitAddMachine()">&#x2713; Add Machine</button>'+
     '<div class="form-msg" id="f-msg"></div>';
   document.getElementById('form-modal').classList.add('open');
@@ -4053,7 +4201,7 @@ function clCheckResume(onComplete) {
         var dbg = '';
         if (info && info._debug) {
           var d = info._debug;
-          dbg = '<br><small style="color:#94a3b8;font-size:10px">Searched: ' + esc(d.searchMid||'?') + ' | Date: ' + (d.todayStr||'?') + ' | Rows: ' + (d.totalRows||0) +
+          dbg = '<br><small style="color:#64748b;font-size:10px">Searched: ' + esc(d.searchMid||'?') + ' | Date: ' + (d.todayStr||'?') + ' | Rows: ' + (d.totalRows||0) +
             (d.todayMachines && d.todayMachines.length ? '<br>Today\'s machines: ' + d.todayMachines.map(esc).join(', ') : ' | No rows for today') + '</small>';
         }
         bar.innerHTML = '\u26A0 No existing record found for today' + dbg;
@@ -4197,7 +4345,7 @@ function clSubmitSection(sec) {
     .withFailureHandler(function(e) {
       var errMsg = (e && e.message) ? e.message : (typeof e === 'string' ? e : 'Unknown error');
       resEl.className = 'sec-result err';
-      resEl.innerHTML = '\u274C Error: ' + errMsg + '<br><small style="color:#94a3b8">Section: ' + sec + ' | Machine: ' + _mid + ' | Tasks: ' + Object.keys(taskTimes).length + '</small>';
+      resEl.innerHTML = '\u274C Error: ' + errMsg + '<br><small style="color:#64748b">Section: ' + sec + ' | Machine: ' + _mid + ' | Tasks: ' + Object.keys(taskTimes).length + '</small>';
       btn.disabled = false; btn.textContent = 'Retry Submit';
       console.error('Checklist submit error:', sec, _mid, errMsg, e);
     })
@@ -4471,10 +4619,10 @@ function loadMHCView(machineId) {
       // History table
       if (r.records && r.records.length) {
         var EVENT_COLORS = {BD:'#dc2626',PM:'#16a34a',CLIT:'#0277bd'};
-        html += '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#94a3b8;padding:4px 0 4px">Event History ('+r.records.length+')</div>';
+        html += '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#64748b;padding:4px 0 4px">Event History ('+r.records.length+')</div>';
         html += r.records.map(function(rec) {
           var ec = EVENT_COLORS[rec.event]||'#64748b';
-          return '<div class="rec-row" style="cursor:pointer" onclick="openRecordDetail(\''+esc(rec.slip)+'\',\''+rec.event.toLowerCase()+'\',\''+esc(r.machineId)+'\',\''+esc(r.name)+'\')">'+
+          return '<div class="rec-row" role="button" tabindex="0" style="cursor:pointer" onclick="openRecordDetail(\''+esc(rec.slip)+'\',\''+rec.event.toLowerCase()+'\',\''+esc(r.machineId)+'\',\''+esc(r.name)+'\')">'+
             '<div class="rec-dot" style="background:'+ec+'"></div>'+
             '<div class="rec-body">'+
               '<div class="rec-title" style="font-size:12px">'+
@@ -4501,7 +4649,7 @@ function loadSOPView(machineId) {
   if (!machineId) { el.innerHTML = '<div class="spinner-inline">Select a machine first.</div>'; return; }
   google.script.run
     .withSuccessHandler(function(r) {
-      if (!r || !r.success || !r.sop) { el.innerHTML = '<div style="padding:16px;color:#94a3b8;font-size:13px">'+(r&&r.error||'No SOP data found')+'</div>'; return; }
+      if (!r || !r.success || !r.sop) { el.innerHTML = '<div style="padding:16px;color:#64748b;font-size:13px">'+(r&&r.error||'No SOP data found')+'</div>'; return; }
       var sop = r.sop;
       function section(title, color, items) {
         if (!items || !items.length) return '';
@@ -4589,9 +4737,9 @@ function loadImageView(machineId) {
                 '<div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center">'+
                   '<span style="color:white;font-size:26px;padding-left:4px">&#9660;</span>'+
                 '</div>'+
-                '<span style="color:#94a3b8;font-size:11px">Tap to download</span>'+
+                '<span style="color:#64748b;font-size:11px">Tap to download</span>'+
               '</a>'
-            : '<img class="img-zoomable" src="'+esc(img.thumb)+'" alt="'+esc(img.name)+'" style="width:100%;height:140px;object-fit:cover;display:block" onerror="this.style.background=\'#f1f5f9\';this.style.height=\'40px\'">';
+            : '<img class="img-zoomable" loading="lazy" decoding="async" src="'+esc(img.thumb)+'" alt="'+esc(img.name)+'" style="width:100%;height:140px;object-fit:cover;display:block" onerror="this.style.background=\'#f1f5f9\';this.style.height=\'40px\'">';
           return '<div style="border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;background:#f8fafc">'+
             thumb+
             '<div style="padding:5px 8px">'+
@@ -4679,7 +4827,7 @@ function imgHandlePhoto() {
           if (!grid) { loadImageView(_imgUploadMachineId); return; }
           var div = document.createElement('div');
           div.style.cssText = 'border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;background:#f8fafc';
-          div.innerHTML = '<img class="img-zoomable" src="'+esc(r.thumb)+'" style="width:100%;height:140px;object-fit:cover;display:block">'+
+          div.innerHTML = '<img class="img-zoomable" loading="lazy" decoding="async" alt="" src="'+esc(r.thumb)+'" style="width:100%;height:140px;object-fit:cover;display:block">'+
             '<div style="padding:5px 8px"><div style="font-size:10px;font-weight:700;color:#0284c7">Machine</div>'+
             '<div style="font-size:11px;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.name)+'</div></div>';
           grid.insertBefore(div, grid.firstChild);
@@ -4825,7 +4973,7 @@ function _buildSuccessPanel(type, r, snap) {
 
   // ── Printable record section ──
   var recHtml = '';
-  var fRow = function(lbl,val){ return val ? '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid #f1f5f9"><span style="font-size:11px;color:#94a3b8;font-weight:600;min-width:90px;flex-shrink:0">'+lbl+'</span><span style="font-size:13px;color:#0f172a;flex:1">'+esc(String(val))+'</span></div>' : ''; };
+  var fRow = function(lbl,val){ return val ? '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid #f1f5f9"><span style="font-size:11px;color:#64748b;font-weight:600;min-width:90px;flex-shrink:0">'+lbl+'</span><span style="font-size:13px;color:#0f172a;flex:1">'+esc(String(val))+'</span></div>' : ''; };
 
   if (snap) {
     recHtml += '<div id="print-record" style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;margin-bottom:14px">';
@@ -4847,7 +4995,7 @@ function _buildSuccessPanel(type, r, snap) {
     if (snap.items && snap.items.length) {
       var doneCount = snap.items.filter(function(it){return it.done;}).length;
       recHtml += '<div style="padding:8px 0 4px;border-bottom:1px solid #f1f5f9">';
-      recHtml += '<div style="font-size:11px;color:#94a3b8;font-weight:600;margin-bottom:6px">'+(type==='clit'?'CLIT':'PM')+' CHECKLIST ('+doneCount+'/'+snap.items.length+')</div>';
+      recHtml += '<div style="font-size:11px;color:#64748b;font-weight:600;margin-bottom:6px">'+(type==='clit'?'CLIT':'PM')+' CHECKLIST ('+doneCount+'/'+snap.items.length+')</div>';
       // Group by type for CLIT
       if (type === 'clit') {
         var groups = {};
@@ -4914,7 +5062,7 @@ function _printRecord() {
   w.document.write('<style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:16px;color:#0f172a;}@media print{body{margin:8mm;}}</style>');
   w.document.write('</head><body>');
   w.document.write(rec.outerHTML);
-  w.document.write('<div style="text-align:center;margin-top:16px;font-size:10px;color:#94a3b8">Pack Masters MMS &bull; Printed '+new Date().toLocaleString('en-IN')+'</div>');
+  w.document.write('<div style="text-align:center;margin-top:16px;font-size:10px;color:#64748b">Pack Masters MMS &bull; Printed '+new Date().toLocaleString('en-IN')+'</div>');
   w.document.write('</body></html>');
   w.document.close();
   setTimeout(function(){ w.print(); }, 300);
@@ -4923,7 +5071,7 @@ function _printRecord() {
 function showBDForm(machineId) {
   document.getElementById('form-modal-title').textContent = 'Log Breakdown — ' + machineId;
   var bodyEl = document.getElementById('form-modal-body');
-  bodyEl.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8">Loading machine data…</div>';
+  bodyEl.innerHTML = '<div style="text-align:center;padding:20px;color:#64748b">Loading machine data…</div>';
   document.getElementById('form-modal').classList.add('open');
 
   loadMachineFormData(machineId, function(fd) {
@@ -4941,16 +5089,16 @@ function showBDForm(machineId) {
       '</div>' +
       '<div style="font-size:11px;color:#64748b;margin-bottom:10px;padding:6px 10px;background:#fef9c3;border-radius:6px">Step 1 of 2 — Report the breakdown. Technician will close it after repair.</div>' +
       '<div class="form-row-2">' +
-        '<div class="form-row"><label>Start Date *</label><input type="date" id="f-sd" value="'+td+'"></div>' +
-        '<div class="form-row"><label>Start Time *</label><input type="time" id="f-st" value="'+tn+'"></div>' +
+        '<div class="form-row"><label for="f-sd">Start Date *</label><input type="date" id="f-sd" value="'+td+'"></div>' +
+        '<div class="form-row"><label for="f-st">Start Time *</label><input type="time" id="f-st" value="'+tn+'"></div>' +
       '</div>' +
       '<div class="form-row-2">' +
-        '<div class="form-row"><label>Shift *</label><select id="f-shift"><option value="">Select…</option>'+shOpts+'</select></div>' +
-        '<div class="form-row"><label>Root Cause <span style="font-weight:400;color:#64748b">(best guess)</span></label><select id="f-rc"><option value="">Unknown / पता नहीं</option>'+rcOpts+'</select></div>' +
+        '<div class="form-row"><label for="f-shift">Shift *</label><select id="f-shift"><option value="">Select…</option>'+shOpts+'</select></div>' +
+        '<div class="form-row"><label for="f-rc">Root Cause <span style="font-weight:400;color:#64748b">(best guess)</span></label><select id="f-rc"><option value="">Unknown / पता नहीं</option>'+rcOpts+'</select></div>' +
       '</div>' +
-      '<div class="form-row"><label>Problem Description * <span style="color:#94a3b8;font-weight:400">(समस्या विवरण)</span></label>' +
+      '<div class="form-row"><label>Problem Description * <span style="color:#64748b;font-weight:400">(समस्या विवरण)</span></label>' +
         '<textarea id="f-desc" rows="3" placeholder="Describe the breakdown… / खराबी का विवरण दें…"></textarea></div>' +
-      '<div class="form-row"><label>Remarks <span style="color:#94a3b8;font-weight:400">(टिप्पणी)</span></label><input id="f-rmk" placeholder="Optional"></div>' +
+      '<div class="form-row"><label for="f-rmk">Remarks <span style="color:#64748b;font-weight:400">(टिप्पणी)</span></label><input id="f-rmk" placeholder="Optional"></div>' +
       '<button class="form-submit-btn" id="f-submit" style="background:#b71c1c" onclick="submitBDForm(\''+esc(machineId)+'\')">&#x1F534; Report Breakdown</button>' +
       '<div class="form-msg" id="f-msg"></div>';
   });
@@ -5005,7 +5153,7 @@ function submitBDForm(machineId) {
 function showBDCloseForm(machineId, slipNo, rowNum) {
   document.getElementById('form-modal-title').textContent = 'Close BD — ' + slipNo;
   var bodyEl = document.getElementById('form-modal-body');
-  bodyEl.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8">Loading…</div>';
+  bodyEl.innerHTML = '<div style="text-align:center;padding:20px;color:#64748b">Loading…</div>';
   document.getElementById('form-modal').classList.add('open');
 
   loadMachineFormData(machineId, function(fd) {
@@ -5017,23 +5165,23 @@ function showBDCloseForm(machineId, slipNo, rowNum) {
       '</div>' +
       '<div style="font-size:11px;color:#64748b;margin-bottom:10px;padding:6px 10px;background:#fef9c3;border-radius:6px">Step 2 of 2 — Fill repair details to close this breakdown.</div>' +
       '<div class="form-row-2">' +
-        '<div class="form-row"><label>End Date *</label><input type="date" id="f-ed" value="'+td+'"></div>' +
-        '<div class="form-row"><label>End Time *</label><input type="time" id="f-et" value="'+tn+'"></div>' +
+        '<div class="form-row"><label for="f-ed">End Date *</label><input type="date" id="f-ed" value="'+td+'"></div>' +
+        '<div class="form-row"><label for="f-et">End Time *</label><input type="time" id="f-et" value="'+tn+'"></div>' +
       '</div>' +
-      '<div class="form-row"><label>Root Cause * <span style="color:#94a3b8;font-weight:400">(मूल कारण)</span></label>' +
+      '<div class="form-row"><label>Root Cause * <span style="color:#64748b;font-weight:400">(मूल कारण)</span></label>' +
         '<select id="f-rc2"><option value="">Select…</option>' +
         ['Mechanical Failure','Electrical Failure','Operator Error','Consumable / Wear Part','External Power Failure','No Fault Found','Other'].map(function(o){return '<option>'+o+'</option>';}).join('') +
         '</select></div>' +
-      '<div class="form-row"><label>Action Taken * <span style="color:#94a3b8;font-weight:400">(की गई कार्रवाई)</span></label>' +
+      '<div class="form-row"><label>Action Taken * <span style="color:#64748b;font-weight:400">(की गई कार्रवाई)</span></label>' +
         '<textarea id="f-action" rows="3" placeholder="Steps taken to fix… / ठीक करने के कदम…"></textarea></div>' +
       '<div class="form-row-2">' +
-        '<div class="form-row"><label>Parts Changed</label><input id="f-parts" placeholder="e.g. Bearing, Belt"></div>' +
-        '<div class="form-row"><label>Spare Cost (₹)</label><input type="number" id="f-cost" min="0" step="0.01" placeholder="0"></div>' +
+        '<div class="form-row"><label for="f-parts">Parts Changed</label><input id="f-parts" placeholder="e.g. Bearing, Belt"></div>' +
+        '<div class="form-row"><label for="f-cost">Spare Cost (₹)</label><input type="number" id="f-cost" min="0" step="0.01" placeholder="0"></div>' +
       '</div>' +
-      '<div class="form-row"><label>Rectified By * <span style="color:#94a3b8;font-weight:400">(किसने ठीक किया)</span></label>' +
+      '<div class="form-row"><label>Rectified By * <span style="color:#64748b;font-weight:400">(किसने ठीक किया)</span></label>' +
         '<select id="f-rby"><option value="">Select…</option>'+personnel+'</select></div>' +
-      '<div class="form-row"><label>Remarks <span style="color:#94a3b8;font-weight:400">(टिप्पणी)</span></label><input id="f-rmk" placeholder="Optional"></div>' +
-      '<div class="form-row"><label>Photo <span style="color:#94a3b8;font-weight:400">(after repair / मरम्मत के बाद)</span></label>' +
+      '<div class="form-row"><label for="f-rmk">Remarks <span style="color:#64748b;font-weight:400">(टिप्पणी)</span></label><input id="f-rmk" placeholder="Optional"></div>' +
+      '<div class="form-row"><label>Photo <span style="color:#64748b;font-weight:400">(after repair / मरम्मत के बाद)</span></label>' +
         '<input type="file" id="f-img" accept="image/*" capture="environment" style="padding:6px 0"></div>' +
       '<button class="form-submit-btn" id="f-submit" style="background:#16a34a" onclick="submitBDCloseForm(\''+esc(machineId)+'\',\''+esc(slipNo)+'\','+rowNum+')">&#x2713; Close Breakdown</button>' +
       '<div class="form-msg" id="f-msg"></div>';
@@ -5134,7 +5282,7 @@ function shareBDWhatsApp(slipNo, machineId) {
 function showPMForm(machineId) {
   document.getElementById('form-modal-title').textContent = 'Do PM — ' + machineId;
   var bodyEl = document.getElementById('form-modal-body');
-  bodyEl.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8">Loading PM tasks…</div>';
+  bodyEl.innerHTML = '<div style="text-align:center;padding:20px;color:#64748b">Loading PM tasks…</div>';
   document.getElementById('form-modal').classList.add('open');
 
   loadMachineFormData(machineId, function(fd) {
@@ -5156,7 +5304,7 @@ function showPMForm(machineId) {
         '</div>';
       }).join('');
     } else {
-      taskListHtml = '<div style="padding:12px;color:#94a3b8;font-size:12px">No PM tasks configured for this machine.</div>';
+      taskListHtml = '<div style="padding:12px;color:#64748b;font-size:12px">No PM tasks configured for this machine.</div>';
     }
     // Store items for submit
     var tasksJson = JSON.stringify(pmItems.map(function(it){ return {label:it.en}; }));
@@ -5166,21 +5314,21 @@ function showPMForm(machineId) {
         esc(machineId) + (machineLbl ? ' &nbsp;·&nbsp; ' + machineLbl : '') +
       '</div>' +
       '<div class="form-row-2">' +
-        '<div class="form-row"><label>Start Date *</label><input type="date" id="f-sd" value="'+td+'"></div>' +
-        '<div class="form-row"><label>Start Time *</label><input type="time" id="f-st" value="'+tn+'"></div>' +
+        '<div class="form-row"><label for="f-sd">Start Date *</label><input type="date" id="f-sd" value="'+td+'"></div>' +
+        '<div class="form-row"><label for="f-st">Start Time *</label><input type="time" id="f-st" value="'+tn+'"></div>' +
       '</div>' +
       '<div class="form-row-2">' +
-        '<div class="form-row"><label>End Date *</label><input type="date" id="f-ed" value="'+td+'"></div>' +
-        '<div class="form-row"><label>End Time *</label><input type="time" id="f-et"></div>' +
+        '<div class="form-row"><label for="f-ed">End Date *</label><input type="date" id="f-ed" value="'+td+'"></div>' +
+        '<div class="form-row"><label for="f-et">End Time *</label><input type="time" id="f-et"></div>' +
       '</div>' +
-      '<div class="form-row"><label>Technician * <span style="color:#94a3b8;font-weight:400">(तकनीशियन)</span></label>' +
+      '<div class="form-row"><label>Technician * <span style="color:#64748b;font-weight:400">(तकनीशियन)</span></label>' +
         '<select id="f-tech"><option value="">Select…</option>' + personnel + '</select></div>' +
       '<div class="form-row"><label style="color:#1b5e20">PM Checklist — ' + esc((fd&&fd.category)||'') + ' (' + pmItems.length + ' items)</label>' +
         '<div id="f-pm-tasks" style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;max-height:250px;overflow-y:auto" data-items="' + esc(tasksJson) + '">' +
           taskListHtml +
         '</div>' +
       '</div>' +
-      '<div class="form-row"><label>Remarks <span style="color:#94a3b8;font-weight:400">(टिप्पणी)</span></label>' +
+      '<div class="form-row"><label>Remarks <span style="color:#64748b;font-weight:400">(टिप्पणी)</span></label>' +
         '<textarea id="f-rmk" placeholder="Parts replaced, observations…"></textarea></div>' +
       '<button class="form-submit-btn" id="f-submit" style="background:#1b5e20" onclick="submitPMForm(\''+esc(machineId)+'\')">&#x1F7E2; Submit PM</button>' +
       '<div class="form-msg" id="f-msg"></div>';
@@ -5239,7 +5387,7 @@ function showCLITForm(machineId) {
   var CLIT_LABELS = {C:'Cleaning / सफाई',L:'Lubrication / स्नेहन',I:'Inspection / निरीक्षण',T:'Tightening / कसना'};
 
   var bodyEl = document.getElementById('form-modal-body');
-  bodyEl.innerHTML = '<div style="padding:20px;color:#94a3b8;font-size:13px;text-align:center">Loading CLIT data&hellip;</div>';
+  bodyEl.innerHTML = '<div style="padding:20px;color:#64748b;font-size:13px;text-align:center">Loading CLIT data&hellip;</div>';
   document.getElementById('form-modal-title').textContent = 'CLIT — ' + machineId;
   document.getElementById('form-modal').classList.add('open');
 
@@ -5287,7 +5435,7 @@ function showCLITForm(machineId) {
           '<span style="flex:1;min-width:0">'+
             '<span style="font-size:13px;font-weight:600;color:#0f172a;display:block">'+esc(enLabel)+'</span>'+
             (hiLabel ? '<span style="font-size:12px;color:#64748b;display:block;margin-top:1px">'+esc(hiLabel)+'</span>' : '')+
-            ((freq||tool) ? '<span style="font-size:10px;color:#94a3b8;display:block;margin-top:2px">'+
+            ((freq||tool) ? '<span style="font-size:10px;color:#64748b;display:block;margin-top:2px">'+
               (freq?'&#x23F1; '+esc(freq):'')+(freq&&tool?' &nbsp;·&nbsp; ':'')+
               (tool?esc(tool):'')+
             '</span>' : '')+
@@ -5307,10 +5455,10 @@ function showCLITForm(machineId) {
         '<div style="font-size:16px;font-weight:700">'+esc(machineName)+'</div>'+
       '</div>'+
       '<div class="form-row-2">'+
-        '<div class="form-row"><label>Date *</label><input type="date" id="f-dt" value="'+td+'"></div>'+
-        '<div class="form-row"><label>Time *</label><input type="time" id="f-tm" value="'+tn+'"></div>'+
+        '<div class="form-row"><label for="f-dt">Date *</label><input type="date" id="f-dt" value="'+td+'"></div>'+
+        '<div class="form-row"><label for="f-tm">Time *</label><input type="time" id="f-tm" value="'+tn+'"></div>'+
       '</div>'+
-      '<div class="form-row"><label>Performed By *</label><select id="f-by"><option value="">Select...</option>'+personnel+'</select></div>'+
+      '<div class="form-row"><label for="f-by">Performed By *</label><select id="f-by"><option value="">Select...</option>'+personnel+'</select></div>'+
       '<div class="form-row"><label>CLIT Checklist</label>'+
         '<div id="f-clit-tasks" style="margin-top:6px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden" data-items="'+esc(JSON.stringify(allItems))+'">'+
           taskRows+
@@ -5547,7 +5695,11 @@ function sfRender(){
 /* ---------- DASHBOARD TAB ---------- */
 function sfRenderDashboard(){
   var k = SF.dash||{}, box = document.getElementById('safety-content');
-  function kpi(v,l,cls,tab){ return '<div class="sf-kpi '+cls+'" onclick="sfGoTab(\''+
+  // role="button"+tabindex rather than <button>: the tile wraps two nested
+  // <div>s. aria-label joins the value to its label — a screen reader would
+  // otherwise announce "12" and "Open Hazards" as two unrelated strings.
+  function kpi(v,l,cls,tab){ return '<div class="sf-kpi '+cls+'" role="button" tabindex="0"'+
+    ' aria-label="'+sfEsc(l)+': '+sfEsc(v==null?'none':String(v))+'" onclick="sfGoTab(\''+
     (tab||'')+'\')"><div class="v">'+(v==null?'-':v)+'</div><div class="l">'+l+'</div></div>'; }
   var html = '<div class="sf-wrap">'+
     '<div class="sf-banner">ISO 45001:2018 &middot; ZED-3 &middot; live data, server-computed</div>'+
@@ -5831,7 +5983,7 @@ function sfHiraList(rows, total){
     '</span></div>'+sfHiraTable()+'<div class="sf-list">'+due.map(sfHiraRow).join('')+'</div>';
   out+='<div class="sf-sect">'+(due.length?'All other hazards':'Hazards')+
     '<span class="n">'+rest.length+'</span><span class="sp"></span>'+
-    '<span style="font-weight:600;text-transform:none;letter-spacing:0;color:#94a3b8">'+
+    '<span style="font-weight:600;text-transform:none;letter-spacing:0;color:#64748b">'+
     rows.length+' of '+total+'</span></div>'+
     sfHiraTable()+'<div class="sf-list">'+rest.map(sfHiraRow).join('')+'</div>';
   return out;
@@ -5885,7 +6037,7 @@ function sfHiraBoard(rows){
             (r.overdue&&r.status!=='Verified'
               ?'<span class="sf-badge-ovd">'+sfIcon('clock')+'</span>':'')+
             '</div></div>';
-      }).join(''):'<div style="padding:8px 4px;font-size:12px;color:#94a3b8">None</div>')+
+      }).join(''):'<div style="padding:8px 4px;font-size:12px;color:#64748b">None</div>')+
       '</div></div>';
   }).join('');
   var crit=rows.filter(function(r){
@@ -5996,7 +6148,7 @@ function sfChip(meta, label){
 /* Owner initials. Falls back to a dash rather than a generic avatar glyph. */
 function sfOwner(name){
   var n = String(name||'').trim();
-  if(!n) return '<span style="color:#94a3b8">Unassigned</span>';
+  if(!n) return '<span style="color:#64748b">Unassigned</span>';
   var parts = n.replace(/[^A-Za-z .]/g,'').split(/[ .]+/).filter(Boolean);
   var ini = (parts.length>1 ? parts[0][0]+parts[parts.length-1][0] : n.slice(0,2))
               .toUpperCase();
@@ -6172,11 +6324,11 @@ function sfHazardDetail(sr){
   else if(st==='Ongoing') st='In Progress';
   if(SF_STATUSES.indexOf(st)===-1) st='Open';
   var body='<div class="sf-form">'+
-    '<label>Section</label><input id="hf-section" value="'+sfEsc(r.section)+'">'+
-    '<label>Activity / Job Step</label><input id="hf-activity" value="'+sfEsc(r.activity)+'">'+
+    '<label for="hf-section">Section</label><input id="hf-section" value="'+sfEsc(r.section)+'">'+
+    '<label for="hf-activity">Activity / Job Step</label><input id="hf-activity" value="'+sfEsc(r.activity)+'">'+
     '<div class="hf-2"><div><label>D/I</label>'+sfSeg('hf-di',['D','I'],r.di)+'</div>'+
       '<div><label>R/NR</label>'+sfSeg('hf-rnr',['R','NR','E'],r.rnr)+'</div></div>'+
-    '<label>Hazard Description</label><textarea id="hf-hazard" rows="2">'+sfEsc(r.hazard)+'</textarea>'+
+    '<label for="hf-hazard">Hazard Description</label><textarea id="hf-hazard" rows="2">'+sfEsc(r.hazard)+'</textarea>'+
     '<label>Risk Assessment &mdash; tap a cell</label>'+
     '<input type="hidden" id="hf-l" value="'+(r.L||1)+'">'+
     '<input type="hidden" id="hf-c" value="'+(r.C||1)+'">'+
@@ -6185,11 +6337,11 @@ function sfHazardDetail(sr){
     '<div class="hf-coc-hint">Pick the control type (most&rarr;least effective), then type the actual measure. Add a row for each control.</div>'+
     '<div id="hf-controls-box" class="hf-controls-box"></div>'+
     '<button type="button" class="hf-coc-add" onclick="sfAddControl()">+ Add control measure</button>'+
-    '<label>Responsible Person</label><select id="hf-resp">'+sfPersonOptions(r.responsible)+'</select>'+
-    '<label>Target Date</label><input id="hf-target" type="date" value="'+sfToDateInput(r.target)+'">'+
+    '<label for="hf-resp">Responsible Person</label><select id="hf-resp">'+sfPersonOptions(r.responsible)+'</select>'+
+    '<label for="hf-target">Target Date</label><input id="hf-target" type="date" value="'+sfToDateInput(r.target)+'">'+
     '<label>Action Status</label>'+sfSeg('hf-status',SF_STATUSES,st,'','sfStatusChange')+
     '<div id="hf-signoff-box"></div>'+
-    '<label>Remarks / Evidence</label><textarea id="hf-remarks" rows="2">'+sfEsc(r.remarks)+'</textarea>'+
+    '<label for="hf-remarks">Remarks / Evidence</label><textarea id="hf-remarks" rows="2">'+sfEsc(r.remarks)+'</textarea>'+
     '<button class="sf-btn-primary" onclick="sfSaveHazard('+(isNew?'null':sr)+')">'+
       (isNew?'Add Hazard':'Save Changes')+'</button>'+
     '</div>';
@@ -6601,7 +6753,7 @@ function sfIncSections(rows, total){
   if(!SF_PREFS.collapseClosed){
     return '<div class="sf-sect">Incidents<span class="n">'+rows.length+'</span>'+
       '<span class="sp"></span><span style="font-weight:600;text-transform:none;'+
-      'letter-spacing:0;color:#94a3b8">'+rows.length+' of '+total+'</span></div>'+
+      'letter-spacing:0;color:#64748b">'+rows.length+' of '+total+'</span></div>'+
       sfIncTable()+'<div class="sf-list">'+rows.map(sfIncRow).join('')+'</div>';
   }
   var open=rows.filter(sfIncOpen), closed=rows.filter(function(r){return !sfIncOpen(r);});
@@ -6639,7 +6791,7 @@ function sfIncRow(r){
         sfEsc(r.type)+'</span>'+
       '<span class="act">'+sfEsc(r.description)+'</span>'+
       '<span class="sr">#'+sfEsc(r.sr)+'</span></div>'+
-    '<div class="haz">'+(r.rootCause?sfEsc(r.rootCause):'<i style="color:#94a3b8">'+
+    '<div class="haz">'+(r.rootCause?sfEsc(r.rootCause):'<i style="color:#64748b">'+
       'Root cause not recorded</i>')+'</div>'+
     '<div class="meta">'+sfChip(cm,cm.short)+
       (r.zone?'<span>'+sfEsc(r.zone.replace(/^[A-Z]: /,''))+'</span>':'')+
@@ -6680,7 +6832,7 @@ function sfIncBoard(rows){
           '<div class="t">'+sfEsc(r.description)+'</div>'+
           '<div class="m">'+sfChip(cm,cm.short)+'<span>'+sfIncDate(r.date)+'</span>'+
             '<span class="sr">#'+sfEsc(r.sr)+'</span></div></div>';
-      }).join(''):'<div style="padding:8px 4px;font-size:12px;color:#94a3b8">None</div>')+
+      }).join(''):'<div style="padding:8px 4px;font-size:12px;color:#64748b">None</div>')+
       '</div></div>';
   }).join('');
   return (SF_PREFS.showRatioBanner
@@ -6856,20 +7008,23 @@ function hkRenderForm(){
     FL.hkState[a.en]={ remarks:'', params:{} };
     var chips='';
     a.params.forEach(function(p,pi){
-      chips+='<span class="fl-pchip" data-a="'+ai+'" data-p="'+pi+'" onclick="hkCyc(this)"><span class="mk"></span>'+esc(p.en)+' <small>'+esc(p.hi)+'</small></span>';
+      // Tri-state cycle (unset → OK → not-OK). role="button"+tabindex makes it
+      // focusable and operable; the delegated Enter/Space handler activates it.
+      chips+='<span class="fl-pchip" role="button" tabindex="0" data-a="'+ai+'" data-p="'+pi+'" onclick="hkCyc(this)"><span class="mk"></span>'+esc(p.en)+' <small>'+esc(p.hi)+'</small></span>';
     });
     // Checkpoint dots: per-parameter state visible without opening the row.
     var dots='';
     for(var d=0;d<a.params.length;d++) dots+='<i></i>';
     h+='<div class="fl-act" data-ai="'+ai+'" style="--i:'+ai+'">'+
-      '<div class="fl-acthd" onclick="hkToggle('+ai+')">'+flIcon('caret','fl-caret')+
+      '<div class="fl-acthd" role="button" tabindex="0" aria-expanded="false"'+
+        ' aria-controls="hk-actbd-'+ai+'" onclick="hkToggle('+ai+')">'+flIcon('caret','fl-caret')+
         '<span class="fl-actname">'+esc(a.en)+'<small>'+esc(a.hi)+'</small></span>'+
         '<span class="fl-dots" id="hk-dots-'+ai+'" aria-hidden="true">'+dots+'</span>'+
         '<button class="fl-actok" id="hk-ok-'+ai+'" aria-label="Mark all OK for '+esc(a.en)+'" '+
           'onclick="event.stopPropagation();hkActOk('+ai+')">'+flIcon('check')+'All</button>'+
         '<span class="fl-badge" id="hk-badge-'+ai+'"><span class="led"></span>0/'+a.params.length+'</span></div>'+
       '<div class="fl-failnote" id="hk-fail-'+ai+'"></div>'+
-      '<div class="fl-actbd"><div class="fl-params">'+chips+'</div>'+
+      '<div class="fl-actbd" id="hk-actbd-'+ai+'"><div class="fl-params">'+chips+'</div>'+
         '<textarea class="fl-ctrl fl-rem" placeholder="Remarks / deviation" oninput="FL.hkState[FL.hkCfg['+ai+'].en].remarks=this.value"></textarea></div></div>';
   });
   // Wrap the rows in one bordered panel so they read as a grouped list rather
@@ -6917,7 +7072,14 @@ function hkAllOk(){
   hkUpdateSummary();
   showStatus(undo?'Cleared — mark each item':'All marked OK — now change only the exceptions','info',3500);
 }
-function hkToggle(ai){ document.querySelectorAll('#hk-acts .fl-act')[ai].classList.toggle('open'); }
+function hkToggle(ai){
+  var act = document.querySelectorAll('#hk-acts .fl-act')[ai];
+  if (!act) return;
+  var open = act.classList.toggle('open');
+  // aria-expanded must track the real state or it actively misinforms.
+  var hd = act.querySelector('.fl-acthd');
+  if (hd) hd.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
 function hkCyc(el){
   var seq=['','yes','no','na'], mk={yes:'✓',no:'✗',na:'NA'}, res={yes:'Y',no:'N',na:'NA'};
   var cur=el.classList.contains('yes')?'yes':el.classList.contains('no')?'no':el.classList.contains('na')?'na':'';
@@ -7079,7 +7241,7 @@ function hkLoadMonth(){
       g.cells.forEach(function(c){
         var cls=c.done?'fl-cellfull':(c.partial?'fl-cellpart':'');
         var m=c.done?'✓':(c.partial?'◐':'');
-        h+='<td>'+(m?'<span class="cell '+cls+'" onclick="hkDrill(\''+g.activity.replace(/'/g,"\\'")+'\','+c.day+')">'+m+'</span>':'')+'</td>';
+        h+='<td>'+(m?'<span class="cell '+cls+'" role="button" tabindex="0" onclick="hkDrill(\''+g.activity.replace(/'/g,"\\'")+'\','+c.day+')">'+m+'</span>':'')+'</td>';
       });
       h+='</tr>';
     });
@@ -7192,7 +7354,9 @@ function slLive(){
   var kp=document.getElementById('sl-k-pct')&&document.getElementById('sl-k-pct').parentNode;
   if(kp){ kp.className='fl-kpi'+(pct==null?'':pct>=85?' good':pct>=50?' warn':' bad'); }
   var bar=document.getElementById('sl-bar');
-  if(bar) bar.style.width=(pct==null?0:Math.max(0,Math.min(100,pct)))+'%';
+  // --p (0..1) drives scaleX; see .fl-bar > i. Was style.width, which forced
+  // a layout pass on every frame of the .45s transition.
+  if(bar) bar.style.setProperty('--p', String((pct==null?0:Math.max(0,Math.min(100,pct)))/100));
   set('sl-barl', (g!=null?g:0)+' kWh');
   set('sl-barr', 'expected '+(expected||'—')+' kWh');
   var chips=document.getElementById('sl-chips');
@@ -7245,7 +7409,7 @@ function rdRenderSummary(r){
       '<div class="fl-kpi"><span class="k">Generated</span><span class="v">'+esc(t.generated)+'<span class="u">kWh</span></span></div>'+
       '<div class="fl-kpi'+cls+'"><span class="k">Of Expected</span><span class="v">'+(t.percent===''?'—':esc(t.percent)+'<span class="u">%</span>')+'</span></div>'+
       '<div class="fl-kpi"><span class="k">Best Day</span><span class="v">'+(t.best==null?'—':esc(t.best)+'<span class="u">kWh</span>')+'</span></div>'+
-      '</div><div class="fl-bar"><i style="width:'+Math.max(0,Math.min(100,isNaN(p)?0:p))+'%"></i></div>'+
+      '</div><div class="fl-bar"><i style="--p:'+(Math.max(0,Math.min(100,isNaN(p)?0:p))/100)+'"></i></div>'+
       '<div class="fl-barlbl"><span>'+esc(t.days||0)+' days logged</span><span>expected '+esc(t.expected)+' kWh</span></div>';
   } else {
     var unit=FL.rdRepKind==='elec'?'kWh':'units';
