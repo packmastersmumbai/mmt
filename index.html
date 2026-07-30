@@ -1600,22 +1600,35 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .sf-kc-act { font-size:11px; color:#334155; margin:4px 0; line-height:1.3; }
 .sf-kc-meta { font-size:10px; color:#64748b; }
 
-/* ══════ FACILITY LOGS — dark instrument panel ═══════════════════════════════
+/* ══════ FACILITY LOGS — light instrument panel ══════════════════════════════
    Density 7 (operational cockpit, not a marketing page): 1px dividers instead of
-   gapped cards, tabular mono numerals, tight rows. Every colour is a token — the
-   27 hardcoded hexes that were scattered through these rules are gone.
-   Accent desaturated from #4dd8c0 (S 84%) to #3fb8a4 (S 66%) per the
-   "saturation < 80%, no neon" rule; the glow shadows are inner borders now. */
+   gapped cards, tabular mono numerals, tight rows.
+   THEME: light. This module used to be the app's only dark surface, which meant
+   navigating into Housekeeping or Readings crossed a hard seam — the header, the
+   bottom nav and every other view are light, so the two facility pages read as a
+   different product. It is now light like the rest of the app, using the same
+   slate/teal families as the dashboard so the two share one vocabulary.
+   Every value below is a token, and every ink was checked for contrast against BOTH
+   surfaces it can sit on (--flpanel #fff and --flbg #f6f8fb), computed not eyeballed:
+     ink 17.9:1 · dim 7.1:1 · faint 5.2:1 · acc 5.1:1 · R 5.3:1 · Y 4.6:1
+     B 5.6:1 · good 4.7:1 · warn 4.7:1     (all ≥4.5 on the darker of the two)
+   The status washes carry their own ink at ≥4.5:1 too (good 4.6 · R 4.9 · Y 4.6 ·
+   acc 4.9). Note --flfaint is #5b6a80 not the app's usual #64748b: on #f6f8fb that
+   lighter grey measured 4.47:1, just under the floor. */
 .fl{
-  /* surfaces */
-  --flbg:#0e1116; --flpanel:#151a21; --flpanel2:#1a2028; --flfield:#0b0e13;
-  --fledge:#252d38; --fledge2:#333d4a; --fledge3:#465262;
+  /* surfaces — panel is pure white so it lifts off the page tint */
+  --flbg:#f6f8fb; --flpanel:#ffffff; --flpanel2:#f8fafc; --flfield:#ffffff;
+  --fledge:#e2e8f0; --fledge2:#cbd5e1; --fledge3:#94a3b8;
   /* ink */
-  --flink:#e9eef5; --fldim:#8e9bab; --flfaint:#5d6877;
-  /* accent + semantics (all < 80% saturation) */
-  --flacc:#3fb8a4; --flacc2:#2e9385; --flaccd:#1b6a5e; --flaccw:#0f2f2b;
-  --flR:#e8564e; --flRw:#2a1210; --flY:#e0b234; --flYw:#241d0d;
-  --flB:#4a92e8; --flgood:#35c477; --flgoodw:#0f2418; --flwarn:#dd9a2a;
+  --flink:#0f172a; --fldim:#475569; --flfaint:#5b6a80;
+  /* accent + semantics — the app's own light families, not inverted darks */
+  --flacc:#0f766e; --flacc2:#0e6b63; --flaccd:#0b5b54; --flaccw:#e6f5f3;
+  --flR:#c62828; --flRw:#fdecec; --flY:#a16207; --flYw:#fdf6e3;
+  --flB:#0369a1; --flgood:#15803d; --flgoodw:#eafaf0; --flwarn:#b45309;
+  /* status BORDERS — mid-tone tints, visible on white without shouting */
+  --flgoodb:#a7dcbc; --flRb:#f2b8b8; --flYb:#e6cf95; --flBb:#a8cbe6;
+  /* ink that sits ON a filled accent/semantic block (buttons, marks) */
+  --flon:#ffffff;
   /* brand (the only orange in the app — confined to the logo mark) */
   --flbrand:#ea6c0a;
   /* type scale — 1.25 ratio, clamped so it holds on a 360px phone */
@@ -1651,7 +1664,14 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   .fl-wrap > .fl-monthbar,
   .fl-wrap > .fl-launch,
   .fl-wrap > #hk-report-pane,
-  .fl-wrap > #rd-report-pane,
+  /* #rd-report, not #rd-report-pane — the latter never existed in the markup, so the
+     readings report was silently NOT getting its full-bleed column and was being laid
+     out inside the narrow form track. */
+  .fl-wrap > #rd-report,
+  .fl-wrap > #rd-launch,
+  .fl-wrap > #rd-elec-form,
+  .fl-wrap > #rd-water-form,
+  .fl-wrap > #rd-solar-form,
   .fl-wrap > .fl-gridwrap { grid-column:1/-1; }
   .fl-side{ position:sticky; top:16px; display:flex; flex-direction:column; gap:10px; }
 }
@@ -1666,25 +1686,38 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .fl-glyph{ width:34px; height:34px; border-radius:var(--r-md); display:grid;
   place-items:center; font-size:15px; flex:none;
   background:var(--flaccw); border:1px solid var(--flaccd); color:var(--flacc);
-  box-shadow:inset 0 1px 0 #ffffff0d; }
+  box-shadow:none; }
 .fl-glyph svg{ width:17px; height:17px; }
 .fl-sub{ font-size:var(--t-sm); color:var(--fldim); font-variant-numeric:tabular-nums; }
 .fl-sub2{ font-size:var(--t-sm); color:var(--flfaint); }
 .fl-toolbar{ display:flex; gap:9px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
-.fl-seg{ display:flex; gap:3px; background:var(--flpanel); border:1px solid var(--fledge);
-  padding:3px; border-radius:var(--r-md); }
+/* The segmented control inverts on light: the TRACK takes the page tint and the active
+   pill becomes white and raised. On dark it was the other way round (dark track, lighter
+   active pill) — keeping that here made the selected tab look recessed, i.e. disabled. */
+.fl-seg{ display:inline-flex; gap:3px; background:var(--flpanel2);
+  border:1px solid var(--fledge2); padding:3px; border-radius:var(--r-md); }
 .fl-segbtn{ font:600 var(--t-sm)/1 'Archivo','PMDev',sans-serif; color:var(--fldim);
   background:transparent; border:0; padding:0 15px; min-height:44px; border-radius:var(--r-sm);
   cursor:pointer; transition:color .18s var(--ease),background .18s var(--ease); }
 .fl-segbtn:hover{ color:var(--flink); }
-.fl-segbtn.active{ background:var(--flpanel2); color:var(--flink);
-  box-shadow:inset 0 0 0 1px var(--fledge2); }
-.fl-ctrl{ width:100%; background:var(--flfield); border:1px solid var(--fledge);
+.fl-segbtn.active{ background:var(--flpanel); color:var(--flink);
+  box-shadow:0 1px 2px rgba(15,23,42,.10); font-weight:700; }
+/* max-width, not a bare width:100% — the meter picker was stretching to the full
+   1180px report width to hold a 12-character meter number. A control should be about as
+   wide as the value it holds. */
+.fl-ctrl{ width:100%; max-width:340px; background:var(--flfield);
+  border:1px solid var(--fledge2);
   color:var(--flink); border-radius:var(--r-md); padding:0 12px; min-height:44px;
   font:500 var(--t-md) 'Archivo','PMDev',sans-serif; outline:none;
   transition:border-color .18s var(--ease); }
-.fl-ctrl:focus{ border-color:var(--flacc); box-shadow:inset 0 0 0 1px var(--flacc); }
-select.fl-ctrl{ font-weight:600; cursor:pointer; }
+.fl-ctrl:focus{ border-color:var(--flacc); box-shadow:0 0 0 3px var(--flaccw); }
+/* Native select arrows are near-invisible on a white field in some engines, and this is
+   the only control on the Readings report — an explicit caret makes it read as openable.
+   Inline data URI: the page's CSP blocks external assets. */
+select.fl-ctrl{ font-weight:600; cursor:pointer;
+  appearance:none; -webkit-appearance:none; padding-right:32px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%23475569' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 12px center; }
 .fl-by,.fl-sup{ max-width:230px; }
 /* ── progress summary ───────────────────────────────────────────────────── */
 .fl-summary{ display:flex; align-items:center; gap:12px; font-size:var(--t-md);
@@ -1700,7 +1733,10 @@ select.fl-ctrl{ font-weight:600; cursor:pointer; }
   transition:transform .3s var(--ease); }
 .fl-prog.full i{ background:var(--flgood); }
 /* ── skeleton loading (replaces the light-theme spinner on a dark panel) ─── */
-.fl-loading{ padding:0; }
+/* padding:0 left the loading / empty text flush against the .fl-gridwrap border. It is
+   the only thing in that box while it shows, so it needs its own inset. */
+.fl-loading{ padding:22px 16px; text-align:center; color:var(--fldim);
+  font-size:var(--t-sm); font-weight:600; }
 .fl-skel{ border:1px solid var(--fledge); border-radius:var(--r-lg);
   background:var(--flpanel); overflow:hidden; }
 .fl-skel > div{ padding:15px 14px; border-bottom:1px solid var(--fledge);
@@ -1709,7 +1745,7 @@ select.fl-ctrl{ font-weight:600; cursor:pointer; }
 .fl-skel i{ display:block; height:11px; border-radius:5px; background:var(--flpanel2);
   position:relative; overflow:hidden; }
 .fl-skel i::after{ content:''; position:absolute; inset:0;
-  background:linear-gradient(90deg,transparent,#ffffff0e,transparent);
+  background:linear-gradient(90deg,transparent,#0f172a10,transparent);
   transform:translateX(-100%); animation:flsheen 1.5s var(--ease) infinite;
   animation-delay:calc(var(--i,0) * 90ms); }
 @keyframes flsheen{ to{ transform:translateX(100%); } }
@@ -1718,11 +1754,11 @@ select.fl-ctrl{ font-weight:600; cursor:pointer; }
    the single loudest element on the screen; "no neon/outer glows" applies. */
 .fl-allok{ width:100%; margin-bottom:12px; padding:0 16px; min-height:50px;
   border-radius:var(--r-lg); cursor:pointer;
-  font:700 var(--t-lg) 'Archivo','PMDev',sans-serif; color:#04120f; border:0;
-  background:var(--flacc); box-shadow:inset 0 1px 0 #ffffff30;
+  font:700 var(--t-lg) 'Archivo','PMDev',sans-serif; color:var(--flon); border:0;
+  background:var(--flacc);
   transition:background .18s var(--ease),transform .1s var(--ease);
   display:inline-flex; align-items:center; justify-content:center; gap:9px; }
-.fl-allok:hover{ background:#48c7b2; }
+.fl-allok:hover{ background:var(--flacc2); }
 .fl-allok:active{ transform:scale(.985); }
 .fl-allok.undo{ background:var(--flpanel); color:var(--flink);
   border:1px solid var(--fledge2); box-shadow:none; }
@@ -1736,7 +1772,7 @@ select.fl-ctrl{ font-weight:600; cursor:pointer; }
   transition:border-color .18s var(--ease),color .18s var(--ease),background .18s var(--ease); }
 .fl-actok:hover{ border-color:var(--flgood); color:var(--flgood); }
 .fl-actok:active{ transform:scale(.96); }
-.fl-actok.on{ background:var(--flgoodw); border-color:#1e5a3c; color:var(--flgood); }
+.fl-actok.on{ background:var(--flgoodw); border-color:var(--flgoodb); color:var(--flgood); }
 .fl-actok svg{ width:13px; height:13px; }
 /* ── checkpoint dots: progress visible without opening the row ──────────── */
 .fl-dots{ display:inline-flex; gap:3px; align-items:center; flex:none; }
@@ -1765,8 +1801,8 @@ select.fl-ctrl{ font-weight:600; cursor:pointer; }
 .fl-statrow b{ font-family:'PMMono',ui-monospace,monospace; font-weight:700;
   font-size:var(--t-lg); color:var(--flink); font-variant-numeric:tabular-nums; }
 /* a failed parameter must be visible without opening the accordion */
-.fl-act.hasfail{ border-color:#5a1e1e; }
-.fl-act.hasfail .fl-acthd{ background:#170d0d; }
+.fl-act.hasfail{ border-color:var(--flRb); }
+.fl-act.hasfail .fl-acthd{ background:var(--flRw); }
 .fl-failnote{ font:700 12.5px 'Archivo'; color:var(--flR); padding:0 14px 12px; display:none; }
 .fl-act.hasfail .fl-failnote{ display:block; }
 .fl-act.open .fl-failnote{ display:none; }
@@ -1786,11 +1822,11 @@ select.fl-ctrl{ font-weight:600; cursor:pointer; }
   color:var(--fldim); display:inline-flex; align-items:center; gap:6px; }
 .fl-covpill b{ color:var(--flink); font-family:'PMMono',ui-monospace,monospace;
   font-variant-numeric:tabular-nums; }
-.fl-covpill.ok{ border-color:#1e5a3c; color:var(--flgood); background:var(--flgoodw); }
+.fl-covpill.ok{ border-color:var(--flgoodb); color:var(--flgood); background:var(--flgoodw); }
 .fl-covpill.ok b{ color:var(--flgood); }
-.fl-covpill.warn{ border-color:#6b4a12; color:var(--flwarn); background:var(--flYw); }
+.fl-covpill.warn{ border-color:var(--flYb); color:var(--flwarn); background:var(--flYw); }
 .fl-covpill.warn b{ color:var(--flwarn); }
-.fl-covpill.bad{ border-color:#5a1e1e; color:var(--flR); background:var(--flRw); }
+.fl-covpill.bad{ border-color:var(--flRb); color:var(--flR); background:var(--flRw); }
 .fl-covpill.bad b{ color:var(--flR); }
 /* ── activity rows ───────────────────────────────────────────────────────
    Grouped into ONE bordered panel with 1px dividers instead of 11 separate
@@ -1831,35 +1867,38 @@ select.fl-ctrl{ font-weight:600; cursor:pointer; }
   border:1px solid var(--fledge); color:var(--flfaint); flex:none;
   font-variant-numeric:tabular-nums; }
 .fl-badge .led{ width:7px; height:7px; border-radius:50%; background:var(--flfaint); flex:none; }
-.fl-badge.part{ color:var(--flwarn); border-color:#5a4212; background:var(--flYw); }
+.fl-badge.part{ color:var(--flwarn); border-color:var(--flYb); background:var(--flYw); }
 .fl-badge.part .led{ background:var(--flwarn); }
-.fl-badge.full{ color:var(--flgood); border-color:#1e5a3c; background:var(--flgoodw); }
+.fl-badge.full{ color:var(--flgood); border-color:var(--flgoodb); background:var(--flgoodw); }
 .fl-badge.full .led{ background:var(--flgood); }
 /* Kept as a display toggle: the existing markup has no inner wrapper, and a
    grid-template-rows slide would need one. Not worth restructuring working JS. */
 .fl-actbd{ display:none; padding:2px 13px 14px; border-top:1px solid var(--fledge); }
 .fl-act.open .fl-actbd{ display:block; animation:flin .22s var(--ease) both; }
 .fl-params{ display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
-.fl-pchip{ font:600 14px 'Archivo'; padding:11px 14px; border-radius:12px; border:1px solid var(--fledge); background:#0c1218; color:var(--fldim); cursor:pointer; display:flex; align-items:center; gap:9px; min-height:48px; }
+.fl-pchip{ font:600 14px 'Archivo'; padding:11px 14px; border-radius:12px; border:1px solid var(--fledge); background:var(--flpanel2); color:var(--fldim); cursor:pointer; display:flex; align-items:center; gap:9px; min-height:48px; }
 .fl-pchip small{ color:var(--flfaint); font-size:12px; display:block; font-weight:400; }
 .fl-pchip .mk{ width:22px; height:22px; border-radius:6px; border:2px solid var(--flfaint); display:grid; place-items:center; font-size:13px; font-weight:700; color:transparent; flex-shrink:0; }
-.fl-pchip.yes{ background:#0d1a13; border-color:#1e5a3c; color:var(--flgood); } .fl-pchip.yes .mk{ background:var(--flgood); border-color:var(--flgood); color:#04120f; }
-.fl-pchip.no{ background:#1a0d0d; border-color:#5a1e1e; color:var(--flR); } .fl-pchip.no .mk{ background:var(--flR); border-color:var(--flR); color:#fff; }
-.fl-pchip.na{ background:#14171c; border-color:var(--fledge2); color:var(--flfaint); } .fl-pchip.na .mk{ color:var(--flfaint); font-size:9px; }
+.fl-pchip.yes{ background:var(--flgoodw); border-color:var(--flgoodb); color:var(--flgood); } .fl-pchip.yes .mk{ background:var(--flgood); border-color:var(--flgood); color:var(--flon); }
+.fl-pchip.no{ background:var(--flRw); border-color:var(--flRb); color:var(--flR); } .fl-pchip.no .mk{ background:var(--flR); border-color:var(--flR); color:var(--flon); }
+.fl-pchip.na{ background:var(--flpanel2); border-color:var(--fledge2); color:var(--flfaint); } .fl-pchip.na .mk{ color:var(--flfaint); font-size:9px; }
 .fl-rem{ min-height:44px; resize:vertical; font-family:'Archivo'; font-size:14px; }
 /* Flat accent + inner highlight, matching .fl-allok. The gradient and the 22px
    coloured drop shadow are gone per the no-neon-glow rule. */
 .fl-submit{ margin-top:16px; width:100%; border:0; border-radius:var(--r-lg);
   min-height:52px; padding:0 16px; font:700 var(--t-lg) 'Archivo','PMDev',sans-serif;
-  cursor:pointer; color:#04120f; background:var(--flacc);
-  box-shadow:inset 0 1px 0 #ffffff30;
+  cursor:pointer; color:var(--flon); background:var(--flacc);
   transition:background .18s var(--ease),transform .1s var(--ease); }
-.fl-submit:hover{ background:#48c7b2; }
+.fl-submit:hover{ background:var(--flacc2); }
 .fl-submit:active{ transform:scale(.99); }
 .fl-submit:disabled{ background:var(--flpanel2); color:var(--flfaint);
   box-shadow:none; cursor:not-allowed; }
 /* readings — 3-up launcher; single column on narrow phones */
-.fl-launch{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
+/* auto-fit, capped: three fixed columns across the full 1180px grid gave each launcher
+   a ~380px card holding one word plus a glyph. These are three choices, not a data grid,
+   so each tile stops at 300px and the group sits left rather than stretching. */
+.fl-launch{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,300px));
+  gap:12px; margin-bottom:16px; justify-content:start; }
 @media(max-width:560px){ .fl-launch{ grid-template-columns:1fr; } }
 /* Left-aligned tiles: the icon sits in a tinted chip at top-left and the text
    ranges left, so the three tiles scan as a list rather than three centred
@@ -1875,15 +1914,16 @@ select.fl-ctrl{ font-weight:600; cursor:pointer; }
   place-items:center; margin-bottom:8px; border:1px solid var(--fledge2);
   background:var(--flfield); }
 .fl-lg .pmi{ width:18px; height:18px; }
-.fl-launchbtn.elec  .fl-lg{ color:var(--flY); border-color:#5a4212; background:var(--flYw); }
-.fl-launchbtn.water .fl-lg{ color:var(--flB); border-color:#1e3a5a; background:#0d1725; }
-.fl-launchbtn.solar .fl-lg{ color:var(--flwarn); border-color:#5a4212; background:var(--flYw); }
+.fl-launchbtn.elec  .fl-lg{ color:var(--flY); border-color:var(--flYb); background:var(--flYw); }
+.fl-launchbtn.water .fl-lg{ color:var(--flB); border-color:var(--flBb); background:#eaf4fb; }
+.fl-launchbtn.solar .fl-lg{ color:var(--flwarn); border-color:var(--flYb); background:var(--flYw); }
 .fl-ln{ font-weight:600; font-size:var(--t-lg); letter-spacing:-.01em; }
 .fl-lh{ font-size:var(--t-sm); color:var(--fldim); font-family:'PMDev','Archivo',sans-serif; }
 .fl-llast{ font-size:var(--t-sm); color:var(--flfaint); margin-top:6px;
   font-family:'PMMono',ui-monospace,monospace; font-variant-numeric:tabular-nums; }
 /* Report is a peer action, not a footnote — solid panel, not a dashed hint. */
-.fl-linkbtn{ width:100%; background:var(--flpanel); border:1px solid var(--fledge2); color:var(--flink);
+/* max-width so this does not become a 1180px-wide button for four words. */
+.fl-linkbtn{ width:100%; max-width:420px; background:var(--flpanel); border:1px solid var(--fledge2); color:var(--flink);
   border-radius:13px; padding:16px; font:700 15px 'Archivo'; cursor:pointer;
   display:flex; align-items:center; justify-content:center; gap:10px; min-height:52px; }
 .fl-linkbtn:hover{ border-color:var(--flacc); color:var(--flacc); }
@@ -1904,32 +1944,61 @@ select.fl-ctrl{ font-weight:600; cursor:pointer; }
 .fl-fld.ph::before{ content:""; position:absolute; left:12px; bottom:14px; width:12px; height:12px; border-radius:50%; box-shadow:0 0 8px currentColor; }
 .fl-fld.ph.R::before{ background:var(--flR); color:var(--flR); } .fl-fld.ph.Y::before{ background:var(--flY); color:var(--flY); } .fl-fld.ph.B::before{ background:var(--flB); color:var(--flB); }
 .fl-chips{ display:flex; flex-wrap:wrap; gap:9px; margin-top:16px; }
-.fl-chip{ font:600 13.5px 'Archivo'; padding:9px 13px; border-radius:10px; border:1px solid var(--fledge); background:#0c1218; color:var(--fldim); }
-.fl-chip b{ color:var(--flink); } .fl-chip.ok{ border-color:#1e5a3c; color:var(--flgood); } .fl-chip.ok b{ color:var(--flgood); }
-.fl-chip.warn{ border-color:#6b4a12; color:var(--flwarn); } .fl-chip.warn b{ color:var(--flwarn); }
-.fl-monthbar{ display:flex; align-items:center; justify-content:center; gap:18px; margin:10px 0 16px; font-weight:800; font-size:16px; }
+.fl-chip{ font:600 13.5px 'Archivo'; padding:9px 13px; border-radius:10px; border:1px solid var(--fledge); background:var(--flpanel2); color:var(--fldim); }
+.fl-chip b{ color:var(--flink); } .fl-chip.ok{ border-color:var(--flgoodb); color:var(--flgood); } .fl-chip.ok b{ color:var(--flgood); }
+.fl-chip.warn{ border-color:var(--flYb); color:var(--flwarn); } .fl-chip.warn b{ color:var(--flwarn); }
+/* justify-content:flex-start, not center. Centring put the month stepper in the middle
+   of a 1180px row while the toolbar, KPI tiles and table all start at the left edge —
+   it read as a stray floating control. It now begins on the same left rail as
+   everything else and keeps its own group spacing. */
+.fl-monthbar{ display:flex; align-items:center; justify-content:flex-start; gap:14px;
+  margin:14px 0 14px; font-weight:800; font-size:16px; }
+.fl-monthbar > span{ min-width:104px; text-align:center; font-variant-numeric:tabular-nums; }
 .fl-mbtn{ width:44px; height:44px; border-radius:11px; background:var(--flpanel); border:1px solid var(--fledge2); color:var(--flink); font-size:19px; cursor:pointer; }
 .fl-mbtn:active{ transform:translateY(1px); }
-.fl-gridwrap{ overflow-x:auto; border:1px solid var(--fledge); border-radius:12px; -webkit-overflow-scrolling:touch; }
+.fl-gridwrap{ overflow-x:auto; border:1px solid var(--fledge); border-radius:12px;
+  -webkit-overflow-scrolling:touch; background:var(--flpanel); }
 .fl-tbl{ border-collapse:collapse; width:100%; font-size:14px; font-variant-numeric:tabular-nums; }
 .fl-tbl th,.fl-tbl td{ padding:12px 14px; border-bottom:1px solid var(--fledge); white-space:nowrap; text-align:right; }
-.fl-tbl th{ color:var(--fldim); font-weight:700; font-size:12.5px; letter-spacing:.05em; text-transform:uppercase; position:sticky; top:0; background:#12171e; text-align:right; }
-.fl-tbl td:first-child,.fl-tbl th:first-child{ text-align:left; position:sticky; left:0; background:#12171e; }
-.fl-tbl td.amber{ background:#1a1408; color:var(--flwarn); }
-.fl-tbl tr:hover td{ background:#161d26; }
+/* z-index on the sticky header: on light the row beneath showed THROUGH it while
+   scrolling, because a tinted header over a white row has no opacity advantage the way
+   a dark header did. */
+.fl-tbl th{ color:var(--fldim); font-weight:700; font-size:12.5px; letter-spacing:.05em;
+  text-transform:uppercase; position:sticky; top:0; background:var(--flpanel2);
+  text-align:right; z-index:2; }
+/* The pinned first column needs a visible right edge on light. On dark its opaque fill
+   was enough to separate it from the scrolling columns; on white against white there is
+   no separation at all, so the date column blurred into the numbers as you scrolled. */
+.fl-tbl td:first-child,.fl-tbl th:first-child{ text-align:left; position:sticky; left:0;
+  background:var(--flpanel); border-right:1px solid var(--fledge); }
+.fl-tbl th:first-child{ z-index:3; background:var(--flpanel2); }
+.fl-tbl td.amber{ background:var(--flYw); color:var(--flwarn); font-weight:700; }
+/* :hover must not repaint the sticky column back to panel — it would break the
+   left-edge alignment of the highlight. */
+.fl-tbl tbody tr:hover td{ background:var(--flpanel2); }
+.fl-tbl tbody tr:hover td.amber{ background:var(--flYw); }
 .fl-tbl .cell{ display:inline-block; width:16px; text-align:center; cursor:pointer; }
 .fl-cellfull{ color:var(--flgood); } .fl-cellpart{ color:var(--flwarn); }
 .fl-tbl tfoot td{ font-weight:800; font-size:15px; color:var(--flink); border-top:2px solid var(--fledge2); }
 /* ── solar: live KPI band + month summary ── */
-.fl-kpis{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:16px 0 4px; }
-@media(max-width:460px){ .fl-kpis{ grid-template-columns:1fr 1fr; } }
-.fl-kpi{ background:var(--flpanel); border:1px solid var(--fledge); border-radius:13px; padding:14px 12px; text-align:center; }
+/* auto-fit with a 150px minimum instead of a hard repeat(3): the report pane spans the
+   full 1180px grid, so three fixed columns stretched each tile to ~390px for a single
+   number — "TOTAL USED 66021 kWh" sat in a card wide enough for a paragraph. auto-fit
+   packs as many 150–260px tiles as fit and stops growing them, so 2 readings do not
+   sprawl and 6 still fit on one line. */
+.fl-kpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,260px));
+  gap:10px; margin:16px 0 4px; justify-content:start; }
+@media(max-width:460px){ .fl-kpis{ grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); } }
+.fl-kpi{ background:var(--flpanel); border:1px solid var(--fledge); border-radius:13px;
+  padding:14px 12px; text-align:center;
+  /* On light, a 1px border alone made the tile disappear into the page tint. */
+  box-shadow:0 1px 1px rgba(15,23,42,.04), 0 2px 5px rgba(15,23,42,.04); }
 .fl-kpi .k{ display:block; font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--flfaint); font-weight:700; margin-bottom:6px; }
 .fl-kpi .v{ display:block; font-size:24px; font-weight:800; color:var(--flink); font-variant-numeric:tabular-nums; line-height:1.1; }
 .fl-kpi .u{ font-size:12.5px; color:var(--fldim); font-weight:600; margin-left:3px; }
 .fl-kpi.good .v{ color:var(--flgood); } .fl-kpi.warn .v{ color:var(--flwarn); } .fl-kpi.bad .v{ color:var(--flR); }
 /* generation vs expected — the one graphic that reads at a glance */
-.fl-bar{ height:12px; border-radius:99px; background:#0c1218; border:1px solid var(--fledge); overflow:hidden; margin:14px 0 6px; }
+.fl-bar{ height:12px; border-radius:99px; background:var(--flpanel2); border:1px solid var(--fledge); overflow:hidden; margin:14px 0 6px; }
 .fl-bar > i{ display:block; height:100%; width:100%; border-radius:99px;
   background:var(--flwarn); transform:scaleX(var(--p,0));
   transform-origin:left center; transition:transform .45s var(--ease); }
@@ -8225,7 +8294,11 @@ function rdRenderSummary(r){
       '<div class="fl-barlbl"><span>'+esc(t.days||0)+' days logged</span><span>expected '+esc(t.expected)+' kWh</span></div>';
   } else {
     var unit=FL.rdRepKind==='elec'?'kWh':'units';
-    el.innerHTML='<div class="fl-kpis" style="margin-top:0;grid-template-columns:1fr 1fr">'+
+    /* The inline grid-template-columns:1fr 1fr that used to be here overrode the
+       stylesheet and split the FULL report width between two tiles — "Total Used 66021
+       kWh" ended up in a 563px card. .fl-kpis already auto-fits and caps each tile, so
+       the inline override is removed and only the margin reset stays. */
+    el.innerHTML='<div class="fl-kpis" style="margin-top:0">'+
       '<div class="fl-kpi"><span class="k">Total Used</span><span class="v">'+esc(t.used)+'<span class="u">'+unit+'</span></span></div>'+
       '<div class="fl-kpi"><span class="k">Readings</span><span class="v">'+esc(r.rows.length)+'</span></div></div>';
   }
