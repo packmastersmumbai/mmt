@@ -540,9 +540,14 @@ body {
    "Ø". Archivo 700 ships real 'tnum' tabular figures, so the columns still align and
    the count-up animation still can't reflow the tile — with a normal zero.
    PMMono keeps its job in dense data rows and IDs, where a slashed zero is a feature. */
+/* PROPORTIONAL figures, not tabular. These are standalone stat-tile values, not a
+   column of numbers that must align vertically — and equal-width digits make a display
+   -size figure read loose ("121" gains a visible gap either side of the 1). tabular-nums
+   stays where it earns its keep: axis ticks and table rows.
+   The count-up animation can't reflow the tile regardless, because the grid track is
+   fixed and the numeral is centred. */
 .dk-num { font-size:25px; font-weight:800; line-height:1.02;
-  font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1;
-  letter-spacing:-0.025em; }
+  font-variant-numeric:proportional-nums; letter-spacing:-0.025em; }
 .dk-lbl { font-size:9.5px; font-weight:800; color:#475569; text-transform:uppercase;
   letter-spacing:.5px; margin-top:4px; }
 .dk-sub { font-size:9.5px; color:#64748b; font-weight:600; margin-top:2px; }
@@ -1289,6 +1294,9 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
     position:sticky; top:0; background:#f8fafc; z-index:5; }
   .sf-thead span { cursor:pointer; user-select:none; }
   .sf-thead span:hover { color:#0f172a; }
+  /* The incident header's first span only reserves the empty .score track — it names
+     nothing, so it must not look or behave like a sortable column heading. */
+  .sf-thead span:empty { cursor:default; pointer-events:none; }
   .sf-row { grid-template-columns:56px 1fr 92px 132px 128px 96px 62px;
     align-items:center; gap:12px; padding:10px 12px 10px 16px; }
   .sf-row .top { grid-column:2; grid-row:1; }
@@ -1299,8 +1307,25 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   .sf-row .meta { display:none; }
   .sf-row .top .sr { position:absolute; width:1px; height:1px; overflow:hidden;
     clip-path:inset(50%); }
+  /* Each .cell is pinned to an EXPLICIT track. Relying on auto-placement broke the
+     incident register: the 7-track grid reserves track 1 (56px) for .score, which
+     HIRA rows have but incident rows do not. With track 1 never claimed, the five
+     .cell spans auto-flowed from column 1 instead of column 3, so every value
+     rendered one track left of its header — "Shift A" sat under "Type" and the Ppl
+     column came out empty. Verified live: header "Shift" at x=818 against its cell
+     at x=31. nth-of-type counts .cell elements only (.top/.haz/.meta are divs, the
+     cells are spans), so this holds for both row shapes. */
   .sf-row .cell { font-size:13px; color:#475569; grid-row:1/span 2;
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  /* Counted from the END, not the start. Both row shapes finish with exactly five
+     .cell spans, but a HIRA row ALSO opens with <span class="score"> while an
+     incident row has no score at all — so nth-of-type counted from the front would
+     be off by one on HIRA and would break the table it currently gets right. */
+  .sf-row > span:nth-last-of-type(5) { grid-column:3; }
+  .sf-row > span:nth-last-of-type(4) { grid-column:4; }
+  .sf-row > span:nth-last-of-type(3) { grid-column:5; }
+  .sf-row > span:nth-last-of-type(2) { grid-column:6; }
+  .sf-row > span:nth-last-of-type(1) { grid-column:7; }
   .sf-row .cell.num { font-variant-numeric:tabular-nums; }
 }
 @media (max-width:1024px){ .sf-thead, .sf-row .cell { display:none; } }
@@ -3180,11 +3205,19 @@ function renderDashboard() {
     }).join('');
   }
 
-  /* ---- donut: activity mix (BD/PM/CLIT, 30d) ---- */
+  /* ---- donut: activity mix (BD/PM/CLIT, 30d) ----
+     Palette validated, not eyeballed. The previous #dc2626/#16a34a/#0ea5e9 was a hard
+     FAIL: red↔green measured ΔE 5.0 under deuteranopia (below even the 6–8 floor
+     band), and #0ea5e9 sat at 2.7:1 against the surface. Darkening the green one step
+     to #15803d and the blue to #0284c7 clears every check — deutan ΔE 8.6, normal-vision
+     ΔE 20.7, all three ≥3:1 contrast — while keeping the app's established meaning
+     (red = breakdown, green = PM, blue = CLIT). Verified with
+     validate_palette.js "#dc2626,#15803d,#0284c7" --mode light. */
+  var MIX_COLORS = ['#dc2626','#15803d','#0284c7'];
   var a30 = [metrics.bdCount30||0, metrics.pmCount30||0, metrics.clitCount30||0];
   var a30sum = a30[0]+a30[1]+a30[2];
   var donutMix = _donut([
-    {v:a30[0],c:'#dc2626'},{v:a30[1],c:'#16a34a'},{v:a30[2],c:'#0ea5e9'}
+    {v:a30[0],c:MIX_COLORS[0]},{v:a30[1],c:MIX_COLORS[1]},{v:a30[2],c:MIX_COLORS[2]}
   ], a30sum, a30sum + (a30sum===1?' event':' events'));
 
   /* The checklist donut is gone: the "CL Today" KPI above already carries the same
@@ -3248,8 +3281,8 @@ function renderDashboard() {
       '<div class="dc-title">Activity Mix &middot; 30d</div>' +
       '<div class="dc-donut-wrap">'+donutMix+
         '<div class="dc-leg">' +
-          _legRow('#dc2626','BD',a30[0]) + _legRow('#16a34a','PM',a30[1]) +
-          _legRow('#0ea5e9','CLIT',a30[2]) +
+          _legRow(MIX_COLORS[0],'BD',a30[0]) + _legRow(MIX_COLORS[1],'PM',a30[1]) +
+          _legRow(MIX_COLORS[2],'CLIT',a30[2]) +
         '</div></div>' +
     '</div>' +
 
@@ -3313,13 +3346,25 @@ function _trendBars(buckets) {
       '<div class="tb-x">'+(i%3===0?lbl:'')+'</div></div>';
   }).join('');
 }
+/* A 2px surface-coloured gap separates adjacent fills (the mark spec: adjacent fills
+   never touch, so a boundary is a boundary and not a colour transition). The gap is
+   subtracted from each arc's own sweep, so the proportions stay true. */
 function _donut(segs, total, centre) {
+  var R = 33, W = 16, GAP_DEG = 2.6;   // ~2px of arc at r=33
   function arc(s,e,col){
-    if (e-s<=0) return '';
-    var sa=(s/100)*2*Math.PI-Math.PI/2, ea=(e/100)*2*Math.PI-Math.PI/2;
-    var x1=45+33*Math.cos(sa),y1=45+33*Math.sin(sa),x2=45+33*Math.cos(ea),y2=45+33*Math.sin(ea);
-    var lg=(e-s)>50?1:0;
-    return '<path d="M'+x1+' '+y1+' A33 33 0 '+lg+' 1 '+x2+' '+y2+'" fill="none" stroke="'+col+'" stroke-width="16"/>';
+    var sweep = e-s;
+    if (sweep<=0) return '';
+    // A single segment at 100% would have start==end and draw nothing at all, so it
+    // is rendered as a full ring instead of an arc.
+    if (sweep>=99.999) return '<circle cx="45" cy="45" r="'+R+'" fill="none" stroke="'+
+      col+'" stroke-width="'+W+'"/>';
+    var half = Math.min(GAP_DEG/2, (sweep*3.6)/3) / 360 * 100;  // never eat the segment
+    var s2 = s+half, e2 = e-half;
+    var sa=(s2/100)*2*Math.PI-Math.PI/2, ea=(e2/100)*2*Math.PI-Math.PI/2;
+    var x1=45+R*Math.cos(sa),y1=45+R*Math.sin(sa),x2=45+R*Math.cos(ea),y2=45+R*Math.sin(ea);
+    var lg=(e2-s2)>50?1:0;
+    return '<path d="M'+x1+' '+y1+' A'+R+' '+R+' 0 '+lg+' 1 '+x2+' '+y2+
+      '" fill="none" stroke="'+col+'" stroke-width="'+W+'" stroke-linecap="butt"/>';
   }
   var sum = segs.reduce(function(a,b){return a+b.v;},0) || 1;
   var acc = 0, paths = '';
@@ -3327,8 +3372,11 @@ function _donut(segs, total, centre) {
     var p = (s.v/sum)*100;
     paths += arc(acc, acc+p, s.c); acc += p;
   });
-  return '<svg width="90" height="90" viewBox="0 0 90 90">' +
-    '<circle cx="45" cy="45" r="33" fill="none" stroke="#f1f5f9" stroke-width="16"/>' +
+  /* role=img + aria-label: the ring is decorative to a screen reader on its own, and
+     the legend beside it already carries every value as text. */
+  return '<svg width="90" height="90" viewBox="0 0 90 90" role="img" aria-label="'+
+    esc(String(centre))+' total">' +
+    '<circle cx="45" cy="45" r="'+R+'" fill="none" stroke="#f1f5f9" stroke-width="'+W+'"/>' +
     paths +
     '<text x="45" y="50" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a">'+
       esc(centre)+'</text></svg>';
@@ -5995,11 +6043,20 @@ var SF = { tab:'dashboard', dash:null, hira:null, charts:null, lists:null,
 // SAFETY / OHS MODULE  (SF declared earlier, above init())
 // ═══════════════════════════════════════════════════════
 /* Risk bands are ORDINAL — the order carries the meaning — so the ramp runs
-   safe→severe and keeps the safety-convention hues. Validated with the dataviz
-   validator: the old Tolerable #eab308 vs Substantial #f97316 pair sat at
-   OKLab dE 14.8, under the hard normal-vision floor of 15; #ea580c lifts that
-   pair to 20.4. Substantial→Intolerable is 8.7, which the method allows only
-   with secondary encoding — every cell and bar here carries its numeral. */
+   safe→severe and keeps the safety-convention hues.
+   Validated with the dataviz validator in BOTH scopes, not eyeballed:
+     --ordinal  → the 5 semantic hues FAIL a one-hue ramp (124° spread, non-monotone L).
+                  A validated single-hue red ramp (#f98080→#701212) does pass, but it
+                  makes "Negligible" red and breaks the product's "green = healthy"
+                  convention. Keeping green→red is a deliberate, user-confirmed choice.
+     default    → Tolerable #eab308 vs Substantial #f97316 was ΔE 14.8; #ea580c lifts
+                  that pair to 20.4. Substantial #ea580c vs Intolerable #dc2626 remains
+                  ΔE 8.7 on NORMAL vision, below the hard floor of 15.
+   That last pair is therefore carried by SECONDARY ENCODING, which is mandatory here:
+   the band name is always printed beside the colour, heatmap cells carry their score
+   in per-band ink, and sfChartBarClass paints a persistent value above every bar (see
+   its sfBarValueLabels plugin). Colour is the hint; the name and the number are the
+   information. Do not remove any of those and leave the hue doing the work alone. */
 var SF_RISK_COLORS = { Negligible:'#15803d', Tolerable:'#eab308',
   Substantial:'#ea580c', Intolerable:'#dc2626', Critical:'#7f1d1d' };
 /* Ink per band, not a blanket white. White on #eab308 is 1.9:1 — the numerals
@@ -6136,7 +6193,12 @@ function sfRenderDashboard(){
     function(label){ sfOpenRecords('actions', {status:label}); });
   sfChartBarClass('sfc-class', SF.charts.classification,
     function(label){ sfOpenRecords('hira', {classification:label}); });
-  sfChartHBar('sfc-section', SF.charts.bySection, '#0f766e',
+  /* #0d9488 for the FILL, while #0f766e stays the UI accent everywhere else. The brand
+     teal measures chroma 0.086, under the 0.1 floor where a data mark starts reading as
+     grey rather than as a colour; one step brighter clears it (and still passes 3:1).
+     Scoped to the mark deliberately — the floor is a rule about data fills, not about
+     buttons and links, so the app's accent is unchanged. */
+  sfChartHBar('sfc-section', SF.charts.bySection, '#0d9488',
     function(label){ sfOpenRecords('hira', {section:label}); });
 }
 
@@ -6257,6 +6319,44 @@ function sfHeatDrill(l,c){
 }
 
 /* ---------- CHART BUILDERS ---------- */
+/* Persistent value labels. The method's rule: a tooltip enhances, it never GATES —
+   every value must also be readable without hovering, which also covers keyboard users,
+   touch (where there is no hover at all), greyscale and print. Both bar builders had
+   their counts only in the tooltip.
+   Text wears an ink token (#334155), never the series colour. `vertical` puts the value
+   above the bar; horizontal puts it just past the bar end, and falls inside the end when
+   the bar runs close to the plot edge so the digits are never clipped. */
+function sfBarValuePlugin(vertical){
+  return {
+    id:'sfBarValues',
+    afterDatasetsDraw:function(ch){
+      var cx=ch.ctx, meta=ch.getDatasetMeta(0), ds=ch.data.datasets[0].data;
+      cx.save();
+      cx.font='700 11px Archivo, system-ui, sans-serif';
+      cx.fillStyle='#334155';
+      meta.data.forEach(function(bar,i){
+        var v=ds[i]; if(v==null) return;
+        var s=String(v);
+        if(vertical){
+          cx.textAlign='center'; cx.textBaseline='bottom';
+          cx.fillText(s, bar.x, bar.y-5);
+        } else {
+          cx.textBaseline='middle';
+          var right=ch.chartArea.right;
+          if(bar.x + 6 + cx.measureText(s).width > right){
+            cx.textAlign='right'; cx.fillStyle='#fff';
+            cx.fillText(s, bar.x-6, bar.y);
+            cx.fillStyle='#334155';
+          } else {
+            cx.textAlign='left';
+            cx.fillText(s, bar.x+6, bar.y);
+          }
+        }
+      });
+      cx.restore();
+    }
+  };
+}
 function sfChartDoughnut(id, obj, colorMap, onPick){
   var el = document.getElementById(id); if(!el||!obj) return;
   var labels = Object.keys(obj).filter(function(k){return obj[k]>0;});
@@ -6284,6 +6384,8 @@ function sfChartBarClass(id, obj, onPick){
       backgroundColor:labels.map(function(k){return SF_RISK_COLORS[k]||'#64748b';}),
       borderRadius:4, borderSkipped:'start', barPercentage:.66, categoryPercentage:.8}]},
     options:{responsive:true,maintainAspectRatio:false,
+      // Headroom for the value printed above each bar.
+      layout:{padding:{top:18}},
       onClick:function(ev,els){ if(onPick&&els.length) onPick(labels[els[0].index]); },
       plugins:{legend:{display:false},
         tooltip:{displayColors:false,callbacks:{label:function(c){
@@ -6295,7 +6397,18 @@ function sfChartBarClass(id, obj, onPick){
         y:{beginAtZero:true,ticks:{precision:0,color:'#64748b',font:{size:11}},
            grid:{color:'#eef2f6',drawTicks:false},border:{display:false}},
         x:{ticks:{color:'#334155',font:{size:11}},
-           grid:{display:false},border:{display:false}}}}}));
+           grid:{display:false},border:{display:false}}}},
+    /* SECONDARY ENCODING — required, not decorative. Substantial #ea580c and
+       Intolerable #dc2626 measure OKLab ΔE 8.7 on NORMAL vision, under the hard floor
+       of 15, and every 5-hue safe→severe ramp fails the same way because the hues are
+       neighbours on the wheel. Keeping the safety-convention hues is a deliberate
+       decision (the band NAME is what an auditor reads), and the method permits that
+       only with a non-colour channel carrying the same information. A previous comment
+       here asserted "every bar carries its numeral" — it did not; the count lived only
+       in the hover tooltip. Now it is painted persistently above each bar, so the chart
+       is readable in one glance, in greyscale, and on a printout.
+       Text wears ink tokens, never the series colour. */
+    plugins:[sfBarValuePlugin(true)]}));
 }
 function sfChartHBar(id, obj, color, onPick){
   var el = document.getElementById(id); if(!el||!obj) return;
@@ -6328,7 +6441,11 @@ function sfChartHBar(id, obj, color, onPick){
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
       // ent is re-sorted, so the clicked index maps to ent, not to obj's keys.
       onClick:function(ev,els){ if(onPick&&els.length) onPick(ent[els[0].index][0]); },
-      // Values are direct-labelled by the tooltip; the axis stays recessive.
+      /* Right padding leaves room for the value printed past each bar end. */
+      layout:{padding:{right:26}},
+      /* The count is painted persistently at each bar end (sfBarValuePlugin) — it was
+         previously reachable only by hovering, which is not a direct label and is
+         unreachable on touch. The axis itself stays recessive. */
       plugins:{legend:{display:false},
         tooltip:{displayColors:false,callbacks:{label:function(c){
           return c.parsed.x + (c.parsed.x===1?' hazard':' hazards')+
@@ -6348,7 +6465,8 @@ function sfChartHBar(id, obj, color, onPick){
                return [s.slice(0,cut), s.slice(cut).trim()];
              }},
            afterFit:function(sc){ sc.width=Math.min(sc.width,190); },
-           grid:{display:false},border:{display:false}}}}}));
+           grid:{display:false},border:{display:false}}}},
+    plugins:[sfBarValuePlugin(false)]}));
 }
 function sfChartLine(id, labels, data, label, color){
   var el = document.getElementById(id); if(!el) return;
@@ -7122,7 +7240,10 @@ function sfRenderIncidents(){
     '<button class="sf-fab" onclick="sfNewIncident()" aria-label="Log new incident">+</button>';
   if(SF_PREFS.chartPosition!=='off'){
     sfChartDoughnut('sfi-type', (SF.charts||{}).incidentType, null);
-    sfChartHBar('sfi-zone', (SF.charts||{}).incidentZone, '#0ea5e9');
+    // #0284c7, not #0ea5e9: the lighter blue measured 2.7:1 against the card surface,
+    // a validator WARN that obligates relief. One step darker clears 3:1 outright at
+    // the same hue.
+    sfChartHBar('sfi-zone', (SF.charts||{}).incidentZone, '#0284c7');
   }
   google.script.run.withSuccessHandler(function(res){
     var el=document.getElementById('sf-inc-list'); if(!el) return;
@@ -7257,8 +7378,14 @@ function sfIncSections(rows, total){
   if(!open.length && !closed.length) out=sfEmpty('Nothing to show','');
   return out;
 }
+/* The header must describe the tracks the ROW actually fills. An incident row has no
+   .score element, so track 1 (the 56px Risk column a HIRA row uses) is empty here and
+   the type name renders inside .top in track 2 — the old header labelled track 1
+   "Type" and track 2 "What happened", so both were wrong and the five value columns
+   were each described by the wrong heading. The leading empty span holds track 1. */
 function sfIncTable(){
-  return '<div class="sf-thead"><span>Type</span><span>What happened</span>'+
+  return '<div class="sf-thead sf-thead-inc"><span aria-hidden="true"></span>'+
+    '<span>Type &amp; what happened</span>'+
     '<span>Shift</span><span>Status</span><span>Zone</span><span>Date</span>'+
     '<span>Ppl</span></div>';
 }
