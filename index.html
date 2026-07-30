@@ -1506,6 +1506,16 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
    dangling dot whenever the row wraps and the last chip moves to a new line. */
 .if-chips span + span::before { content:'·'; margin-right:10px; color:#64748b; }
 .sf-form .hf-2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+/* The CAPA closed / effectiveness-verified date pair. Same two-column shape as .hf-2,
+   but each cell holds its own label above its input, so it needs the nested stacking
+   that .hf-2 (bare fields) does not. Stacks on a narrow phone — two date inputs side by
+   side at 412px leave ~180px each, which clips the native date picker in some engines. */
+.sf-form .if-dates { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:2px; }
+.sf-form .if-dates > div { display:flex; flex-direction:column; gap:4px; min-width:0; }
+.sf-form .if-dates label { margin-top:0; }
+@media (max-width:460px){ .sf-form .if-dates { grid-template-columns:1fr; } }
+/* Explains the auto-stamp so an empty date field does not read as a missing value. */
+.sf-form .if-hint { font-size:10.5px; color:#64748b; line-height:1.4; margin-top:6px; }
 .sf-form .hf-3 { display:grid; grid-template-columns:1fr 1fr auto; gap:8px; align-items:end; }
 .hf-risk { font-size:18px; font-weight:800; color:#fff; background:#16a34a;
   border-radius:7px; padding:6px 14px; text-align:center; min-width:48px; }
@@ -7694,6 +7704,23 @@ function sfIncidentDetail(sr){
     '<label>Status</label>'+
     '<select id="if-status">'+statuses.map(function(s){
       return '<option'+(s===r.capaStatus?' selected':'')+'>'+sfEsc(s)+'</option>';}).join('')+'</select>'+
+    /* CAPA closed / effectiveness verified dates (sheet columns M and N).
+       The register could previously assert "Closed - Effective" with nothing recording
+       WHEN it closed or when that effectiveness was reviewed — ISO 45001 §10.2 expects
+       the review to be evidenced. Both are left blank rather than pre-filled: the
+       backend stamps today's date on the closing transition if the field is empty, so
+       the common path needs no typing, while a back-dated entry stays possible.
+       The hint states the auto-stamp so the blank does not look like a missing field. */
+    '<div class="if-dates">'+
+      '<div><label for="if-closed">CAPA closed</label>'+
+        '<input type="date" id="if-closed" value="'+sfEsc(r.closedDate||'')+'" /></div>'+
+      '<div><label for="if-eff">Effectiveness verified</label>'+
+        '<input type="date" id="if-eff" value="'+sfEsc(r.effectiveDate||'')+'" /></div>'+
+    '</div>'+
+    '<div class="if-hint">Left blank, these are stamped automatically — closing a CAPA '+
+      'sets the closed date, and “Closed - Effective” sets the verified date.'+
+      (r.daysToClose!=null? ' Closed in '+r.daysToClose+' day'+(r.daysToClose===1?'':'s')+'.':'')+
+    '</div>'+
     '<button class="sf-btn-primary" onclick="sfSaveIncident(\''+sfEsc(String(r.sr))+'\')">'+
       'Save Changes</button>'+
     '</div>';
@@ -7703,6 +7730,12 @@ function sfSaveIncident(sr){
   function v(id){var e=document.getElementById(id);return e?e.value:'';}
   var d={ sr:sr, description:v('if-desc'), rootCause:v('if-rc'),
           capa:v('if-capa'), capaStatus:v('if-status') };
+  /* Only SEND the dates when the operator actually set one. updateIncident treats
+     undefined as "not supplied" and applies its auto-stamp; sending '' would be an
+     explicit instruction to CLEAR the cell and would defeat the stamp entirely. */
+  var _cd=v('if-closed'), _ed=v('if-eff');
+  if(_cd) d.closedDate=_cd;
+  if(_ed) d.effectiveDate=_ed;
   if(!d.rootCause.trim()){ showStatus('Root cause is required to act on an incident','error',3500); return; }
   if(!d.capa.trim()){ showStatus('Corrective action is required','error',3500); return; }
   showStatus('Saving incident…','info',0);
