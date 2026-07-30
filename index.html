@@ -3199,6 +3199,19 @@ function renderDashboard() {
     machBD[k] = (machBD[k]||0)+1;
   });
   var topMach = Object.keys(machBD).sort(function(a,b){return machBD[b]-machBD[a];}).slice(0,5);
+  /* Machine names here share long prefixes and differ only in their TRAILING unit
+     number — "Load Cell Filling Machine 03" vs "…04". CSS text-overflow clips the end,
+     so in the narrow chart column three separate machines all rendered "Load Cell
+     Filli…" and became one indistinguishable bar. Keep the tail, which is the part that
+     identifies the machine, and elide the middle instead. The full name stays on the
+     row's title attribute either way. */
+  function _machShort(name, max){
+    var s = String(name);
+    if (s.length <= max) return s;
+    var head = Math.max(4, Math.floor((max-1)/2));
+    var tail = max - 1 - head;
+    return s.slice(0, head) + '…' + s.slice(s.length - tail);
+  }
 
   // BD trend — last 12 weeks by parsing record dates (dd-MMM-yy)
   var trend = _bdTrendWeeks(bd);
@@ -3315,7 +3328,8 @@ function renderDashboard() {
       '<div class="dash-card">' +
         '<div class="dc-title">Top Machines &middot; Breakdowns</div>' +
         '<div class="dc-hbars">' +
-          (recLoaded ? hbars(machBD, topMach, '#ea580c') : '<div class="dc-empty">loading…</div>') +
+          (recLoaded ? hbars(machBD, topMach, '#ea580c', function(k){ return _machShort(k,17); })
+                     : '<div class="dc-empty">loading…</div>') +
         '</div></div>' +
 
       '<div class="dash-card">' +
