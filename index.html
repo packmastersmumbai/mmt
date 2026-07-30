@@ -7389,11 +7389,29 @@ function sfIncTable(){
     '<span>Shift</span><span>Status</span><span>Zone</span><span>Date</span>'+
     '<span>Ppl</span></div>';
 }
+/* The `persons` column carries TWO incompatible kinds of value, from two eras of data
+   entry in the sheet: newer rows (sr 31–36) store a COUNT ("1"), older rows (sr 27–29)
+   store a NAME ("Mr. Rajesh Kumar"). Rendering it blindly produced "Mr. Rajesh Kumar
+   injured" in the body and put names under the numeric "Ppl" column heading.
+   Parse it instead of trusting it: a numeric value is a count and belongs in the Ppl
+   column; anything else is a person and is shown as such, with the Ppl column left as
+   "—" because no count was ever recorded for those rows.
+   This is presentation-side defence, not a data fix — the sheet should be normalised to
+   a count column plus a separate name column, which is a data-entry job. */
+function sfIncPersons(r){
+  var raw = r.persons==null ? '' : String(r.persons).trim();
+  if(!raw) return {count:null, name:''};
+  if(/^\d+$/.test(raw)) return {count:parseInt(raw,10), name:''};
+  return {count:null, name:raw};
+}
 function sfIncRow(r){
   var tm=sfTypeMeta(r.type), cm=sfCapaMeta(r.capaStatus);
-  // "injured/treated" for harm records, "exposed" for precursors: `persons` is an
+  // "injured/treated" for harm records, "exposed" for precursors: a person COUNT is an
   // exposure count (it is recorded on near misses too), so the wording must differ.
-  var ppl = r.persons ? (sfIsHarm(r.type)? r.persons+' injured' : r.persons+' exposed') : '';
+  var pp = sfIncPersons(r);
+  var ppl = pp.count!=null
+    ? pp.count+(sfIsHarm(r.type) ? ' injured' : ' exposed')
+    : pp.name;
   return '<div class="sf-row'+(tm.harm?' harm':'')+'" style="--bar:'+tm.color+'" '+
     'tabindex="0" role="button" onclick="sfIncidentDetail(\''+sfEsc(String(r.sr))+'\')" '+
     'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();this.click();}">'+
@@ -7413,7 +7431,11 @@ function sfIncRow(r){
     '<span class="cell">'+sfChip(cm,cm.short)+'</span>'+
     '<span class="cell">'+sfEsc((r.zone||'—').replace(/^[A-Z]: /,''))+'</span>'+
     '<span class="cell num">'+sfIncDate(r.date)+'</span>'+
-    '<span class="cell num">'+(r.persons||'—')+'</span>'+
+    /* Count only. A name in this column is a data-entry artefact (see sfIncPersons) and
+       would sit under a numeric heading in a tabular-figures cell. title= keeps it
+       reachable on the cell that would otherwise just read "—". */
+    '<span class="cell num"'+(pp.name?' title="'+sfEsc(pp.name)+'"':'')+'>'+
+      (pp.count!=null ? pp.count : '—')+'</span>'+
     '</div>';
 }
 /* BOARD: harm vs precursor — the ratio between the two families IS the safety
