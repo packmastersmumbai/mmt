@@ -2595,7 +2595,62 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 (function() {
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbznhY-2hEreRwLK_7bQOmbvjusfT8OpycIx1FfDfBhNpKnYiGjWdG1kftG9x1Y2td13/exec';
   var POST_THRESHOLD = 1800; // bytes — switch to POST if URL would exceed this
+  var MAX_ATTEMPTS = 3;      // 1 try + 2 retries
   var _s = function() {}, _f = function(e) { console.error('API error', e); };
+
+  /* ── Why every call retries ──────────────────────────────────────────────────
+     A GAS /exec request does not answer directly: it 302s to
+     script.googleusercontent.com/macros/echo?user_content_key=… and the body comes
+     from there. Those keys are SINGLE-USE — re-fetching the same redirect URL
+     returns 302/404 rather than the payload (verified: first fetch 200, immediate
+     second fetch 302). So any hiccup that makes the browser re-resolve the chain —
+     a dropped packet on plant wifi, a phone waking from sleep mid-request, four
+     parallel calls racing on a view load — surfaces as a hard "HTTP 404" and the
+     call died permanently, because there was no retry at all.
+     That is what produced "Network error calling getHkConfig: HTTP 404" on the
+     Housekeeping page, which fires four calls at once on open.
+     Each attempt builds a FRESH url (with a cache-busting _r) so it gets a new key
+     rather than replaying a spent one. Backoff is 400ms then 1200ms.
+     Retries cover transport faults only. A 4xx/5xx that repeats, or a valid JSON
+     body carrying {success:false}, is a real answer and reaches the caller as-is. */
+  function _delay(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+
+  function _attempt(prop, args, argsJson, usePost, n) {
+    var p;
+    if (usePost) {
+      p = fetch(GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify({ fn: prop, args: args }),
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        redirect: 'follow'
+      }).then(function(resp) {
+        if (!resp.ok && resp.type === 'opaque') throw new Error('CORS blocked');
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        return resp.text();
+      }).then(function(text) {
+        try { return JSON.parse(text); }
+        catch(e) { throw new Error('Invalid response: ' + text.substring(0, 100)); }
+      });
+    } else {
+      // _r makes each attempt a distinct URL, so a retry cannot be served from cache
+      // and cannot reuse the previous attempt's spent redirect key.
+      var url = GAS_URL + '?fn=' + encodeURIComponent(prop) +
+        '&args=' + encodeURIComponent(argsJson) +
+        (n > 1 ? '&_r=' + n + '_' + Date.now() : '');
+      p = fetch(url, { redirect: 'follow' }).then(function(resp) {
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        return resp.json();
+      });
+    }
+    return p.catch(function(err) {
+      if (n >= MAX_ATTEMPTS) throw err;
+      console.warn('API ' + prop + ' attempt ' + n + ' failed (' + err.message + ') — retrying');
+      return _delay(n === 1 ? 400 : 1200).then(function() {
+        return _attempt(prop, args, argsJson, usePost, n + 1);
+      });
+    });
+  }
+
   var _run = new Proxy({
     withSuccessHandler: function(fn) { _s = fn; return _run; },
     withFailureHandler: function(fn) { _f = fn; return _run; }
@@ -2608,39 +2663,18 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
         _s = function() {}; _f = function(e) { console.error('API call failed:', prop, e); };
         var argsJson = JSON.stringify(args);
         var urlLen = GAS_URL.length + prop.length + argsJson.length + 50;
+        var usePost = urlLen > POST_THRESHOLD;
 
-        if (urlLen > POST_THRESHOLD) {
-          // ── POST mode (large payloads like image uploads) ──
-          fetch(GAS_URL, {
-            method: 'POST',
-            body: JSON.stringify({ fn: prop, args: args }),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            redirect: 'follow'
-          })
-          .then(function(resp) {
-            if (!resp.ok && resp.type === 'opaque') throw new Error('CORS blocked');
-            return resp.text();
-          })
-          .then(function(text) {
-            var data;
-            try { data = JSON.parse(text); } catch(e) { throw new Error('Invalid response: ' + text.substring(0, 100)); }
-            try { s(data); } catch(e) { f(e); }
-          })
-          .catch(function(err) { f(new Error('Network error calling ' + prop + ': ' + err.message)); });
-        } else {
-          // ── GET fetch mode (replaces JSONP — GAS returns CORS headers on GET) ──
-          var url = GAS_URL + '?fn=' + encodeURIComponent(prop) +
-            '&args=' + encodeURIComponent(argsJson);
-          fetch(url)
-          .then(function(resp) {
-            if (!resp.ok) throw new Error('HTTP ' + resp.status);
-            return resp.json();
-          })
+        _attempt(prop, args, argsJson, usePost, 1)
           .then(function(data) {
-            try { s(data); } catch(e) { f(e); }
+            // A throw inside the caller's success handler is the CALLER's bug, not a
+            // transport failure — it must not be reported as a network error.
+            try { s(data); } catch(e) { console.error('handler threw for ' + prop, e); f(e); }
           })
-          .catch(function(err) { f(new Error('Network error calling ' + prop + ': ' + err.message)); });
-        }
+          .catch(function(err) {
+            f(new Error('Network error calling ' + prop + ': ' + err.message +
+              ' (after ' + MAX_ATTEMPTS + ' attempts)'));
+          });
       };
     }
   });
