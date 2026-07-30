@@ -7661,29 +7661,35 @@ function sfIncPick(id){
   if(sel.value==='__other') return box ? box.value.trim() : '';
   return sel.value;
 }
+/* Field ids are sfnew-*, NOT sfi-*. The Incidents tab already owns <canvas id="sfi-type">
+   and <canvas id="sfi-zone"> for its two charts, and this modal opens on top of that
+   tab — so sfi-type/sfi-zone were duplicate ids and getElementById returned the CANVAS,
+   not the field. Verified: the type control resolved to tagName "CANVAS". The old
+   free-text form had the same collision and was silently reading canvases, which is why
+   type and zone could arrive empty. Keep this namespace distinct from the chart ids. */
 function sfNewIncident(){
   var body='<div class="sfi-form">'+
     '<label class="sfi-f"><span class="sfi-lbl">Date</span>'+
-      '<input id="sfi-date" type="date" /></label>'+
+      '<input id="sfnew-date" type="date" /></label>'+
     '<label class="sfi-f"><span class="sfi-lbl">Time</span>'+
-      '<input id="sfi-time" type="time" /></label>'+
-    sfIncSelect('sfi-type',  'Incident type', sfIncOptionsFor('type'))+
-    sfIncSelect('sfi-shift', 'Shift',         sfIncOptionsFor('shift'))+
+      '<input id="sfnew-time" type="time" /></label>'+
+    sfIncSelect('sfnew-type',  'Incident type', sfIncOptionsFor('type'))+
+    sfIncSelect('sfnew-shift', 'Shift',         sfIncOptionsFor('shift'))+
     '<label class="sfi-f"><span class="sfi-lbl">Person(s)</span>'+
-      '<input id="sfi-persons" placeholder="How many people, or a name" /></label>'+
-    sfIncSelect('sfi-zone',  'Dept / Zone',   sfIncOptionsFor('zone'))+
-    sfIncSelect('sfi-loc',   'Location',      sfIncOptionsFor('location'))+
+      '<input id="sfnew-persons" placeholder="How many people, or a name" /></label>'+
+    sfIncSelect('sfnew-zone',  'Dept / Zone',   sfIncOptionsFor('zone'))+
+    sfIncSelect('sfnew-loc',   'Location',      sfIncOptionsFor('location'))+
     '<label class="sfi-f sfi-wide"><span class="sfi-lbl">What happened</span>'+
-      '<textarea id="sfi-desc" placeholder="Describe the incident" rows="2"></textarea></label>'+
+      '<textarea id="sfnew-desc" placeholder="Describe the incident" rows="2"></textarea></label>'+
     '<label class="sfi-f sfi-wide"><span class="sfi-lbl">Root cause</span>'+
-      '<textarea id="sfi-rc" placeholder="Why it happened" rows="2"></textarea></label>'+
+      '<textarea id="sfnew-rc" placeholder="Why it happened" rows="2"></textarea></label>'+
     '<label class="sfi-f sfi-wide"><span class="sfi-lbl">CAPA / corrective action</span>'+
-      '<textarea id="sfi-capa" placeholder="What will stop it recurring" rows="2"></textarea></label>'+
+      '<textarea id="sfnew-capa" placeholder="What will stop it recurring" rows="2"></textarea></label>'+
     '<button class="sfi-submit" onclick="sfSubmitIncident()">Log Incident</button></div>';
   sfModal('New Incident', body);
   // Default the date to today — an incident is logged the day it happens, and a
   // pre-filled date is one less field to fill on a phone.
-  var d=document.getElementById('sfi-date');
+  var d=document.getElementById('sfnew-date');
   if(d && !d.value){ var t=new Date();
     d.value=t.getFullYear()+'-'+('0'+(t.getMonth()+1)).slice(-2)+'-'+('0'+t.getDate()).slice(-2); }
 }
@@ -7691,11 +7697,11 @@ function sfSubmitIncident(){
   function val(id){var e=document.getElementById(id);return e?e.value.trim():'';}
   // type/shift/zone/location come from a <select> that may be set to "Other…", so they
   // are read through sfIncPick rather than straight off the element.
-  var d={ date:val('sfi-date'), time:val('sfi-time'),
-    type:sfIncPick('sfi-type'), shift:sfIncPick('sfi-shift'),
-    persons:val('sfi-persons'),
-    zone:sfIncPick('sfi-zone'), location:sfIncPick('sfi-loc'),
-    description:val('sfi-desc'),rootCause:val('sfi-rc'),capa:val('sfi-capa') };
+  var d={ date:val('sfnew-date'), time:val('sfnew-time'),
+    type:sfIncPick('sfnew-type'), shift:sfIncPick('sfnew-shift'),
+    persons:val('sfnew-persons'),
+    zone:sfIncPick('sfnew-zone'), location:sfIncPick('sfnew-loc'),
+    description:val('sfnew-desc'),rootCause:val('sfnew-rc'),capa:val('sfnew-capa') };
   // Type and description are what make a record identifiable in the register; without
   // them the row is unusable, so fail here rather than writing a blank line to a sheet.
   if(!d.type){ showStatus('Pick an incident type','error',3000); return; }
