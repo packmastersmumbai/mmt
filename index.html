@@ -1945,6 +1945,9 @@ select.fl-ctrl{ font-weight:600; cursor:pointer;
 .fl-seclbl::after{ content:""; flex:1; height:1px; background:var(--fledge); }
 .fl-u{ color:var(--flfaint); }
 .fl-g2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+/* Single-field row (solar generation). Capped rather than full-width: this holds a
+   4–6 character kWh figure, and a 1180px input for "96.4" reads as a text area. */
+.fl-g1{ display:grid; grid-template-columns:minmax(0,260px); gap:12px; }
 .fl-g3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
 @media(max-width:460px){ .fl-g3{ grid-template-columns:1fr; } }
 .fl-fld.num .fl-ctrl{ text-align:right; font-variant-numeric:tabular-nums; font-size:19px; font-weight:600; }
@@ -2595,10 +2598,15 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
         <div class="fl-fld"><label for="sl-meter">Plant / Meter</label><select class="fl-ctrl" id="sl-meter"></select></div>
         <div class="fl-fld"><label for="sl-time">Time</label><input class="fl-ctrl" id="sl-time"></div>
       </div>
-      <div class="fl-seclbl">Meter Reading <span class="fl-u">(cumulative kWh)</span></div>
-      <div class="fl-g2">
-        <div class="fl-fld num"><label for="sl-read">Reading</label><input class="fl-ctrl" id="sl-read" inputmode="decimal" oninput="slLive()"></div>
-        <div class="fl-fld num"><label>Generated (auto)</label><div class="fl-ctrl fl-ro" id="sl-gen">—</div></div>
+      <!-- One field: the kWh generated today, read straight off the inverter display.
+           This replaced a cumulative-meter input whose generation was derived by
+           subtracting the previous entry — that made the first entry blank, rolled a
+           missed day into the next, and turned a meter reset into a negative number. -->
+      <div class="fl-seclbl">Generation <span class="fl-u">(today, kWh)</span></div>
+      <div class="fl-g1">
+        <div class="fl-fld num"><label for="sl-gen-in">Generated today</label>
+          <input class="fl-ctrl" id="sl-gen-in" inputmode="decimal" placeholder="e.g. 96.4"
+                 oninput="slLive()"></div>
       </div>
       <div class="fl-seclbl">Today's Performance</div>
       <div class="fl-kpis">
@@ -8258,13 +8266,18 @@ function wtSubmit(){
     .submitWaterReading({ meterNo:meter, date:_flToday(), time:_v('wt-time'), reading:_n('wt-read'), remarks:_v('wt-rem'), by:_flReader() });
 }
 // ── SOLAR ──
-// Live panel. Generation needs the PREVIOUS meter reading, which only the
-// server has, so until submit we show expected/plant figures and treat the
-// typed value as a meter reading — never as generation.
+/* Live panel, now genuinely live. Generation used to be derivable only on the server
+   (it needed the previous cumulative reading), so this panel could show nothing until
+   after a submit round-trip. The operator now types the generation itself, so percent
+   of expected and specific yield are computable as they type — the figures update on
+   every keystroke and the bar fills before anything is saved. */
 function slLive(){
   var cfg=FL.solarCfg||{}, dc=Number(cfg.dcKw)||0, y=Number(cfg.yieldPerKw)||0;
   var expected=Math.round(dc*y*100)/100;
-  var g=FL.slPrevGen;   // set after a submit round-trip; null before
+  var typed=_n('sl-gen-in');
+  // The typed value wins; FL.slPrevGen still backs the panel straight after a save,
+  // when the input has been cleared but the result is worth leaving on screen.
+  var g=(typed!=null&&typed>=0)?typed:FL.slPrevGen;
   var pct=(g!=null&&expected>0)?Math.round(g/expected*1000)/10:null;
   var sp =(g!=null&&dc>0)?Math.round(g/dc*100)/100:null;
   var set=function(id,v){ var e=document.getElementById(id); if(e) e.innerHTML=v; };
@@ -8282,28 +8295,36 @@ function slLive(){
   var chips=document.getElementById('sl-chips');
   if(chips){
     chips.innerHTML='<span class="fl-chip">Plant <b>'+esc(cfg.dcKw||'—')+' kW</b> DC · inverter <b>'+esc(cfg.inverterKw||'—')+' kW</b> · <b>'+esc(cfg.yieldPerKw||'—')+'</b> kWh/kWp/day</span>'
-      + (g==null?'<span class="fl-chip">Enter meter reading · generation computed vs last entry</span>':'');
+      + (g==null?'<span class="fl-chip">Enter today\'s generated kWh from the inverter display</span>':'');
   }
 }
 function slSubmit(){
   var meter=_v('sl-meter'); if(!meter){ showStatus('No plant/meter','error',3000); return; }
-  if(_n('sl-read')===null){ showStatus('Enter meter reading','error',3000); return; }
+  var gen=_n('sl-gen-in');
+  if(gen===null){ showStatus('Enter the kWh generated today','error',3000); return; }
+  // Caught here as well as on the server: a negative figure is always a typo, and
+  // failing before the round-trip tells the operator immediately.
+  if(gen<0){ showStatus('Generation cannot be negative','error',3000); return; }
   showStatus('Submitting…','info',0);
   google.script.run.withSuccessHandler(function(r){
     if(r&&r.success){
-      var msg=(r.generated===''||r.generated==null)
-        ? 'Saved ✓  first reading — generation from next entry'
-        : 'Saved ✓  '+r.generated+' kWh  ·  '+r.percent+'% of expected';
-      showStatus(msg+(r.warnings&&r.warnings.length?'  ⚠ '+r.warnings.length:''),'success',5000);
-      FL.slPrevGen=(r.generated===''||r.generated==null)?null:Number(r.generated);
+      showStatus('Saved ✓  '+r.generated+' kWh  ·  '+r.percent+'% of expected'+
+        (r.warnings&&r.warnings.length?'  ⚠ '+r.warnings.length:''),'success',5000);
+      FL.slPrevGen=Number(r.generated);
+      ['sl-gen-in','sl-rem'].forEach(function(i){var e=document.getElementById(i); if(e) e.value='';});
       slLive();
-      ['sl-read','sl-rem'].forEach(function(i){document.getElementById(i).value='';});
-      document.getElementById('sl-gen').textContent='—';
       rdBack();
-    } else showStatus('Failed: '+((r&&r.error)||'?'),'error',5000);
+    } else {
+      // A duplicate-day rejection is not a failure the operator caused — the day is
+      // already logged. Show it longer and without the "Failed:" prefix, which would
+      // read as though the entry was lost.
+      var err=(r&&r.error)||'?';
+      if(r&&r.duplicate) showStatus(err,'error',8000);
+      else showStatus('Failed: '+err,'error',5000);
+    }
   }).withFailureHandler(function(e){ showStatus('Failed: '+(e&&e.message||e),'error',5000); })
     .submitSolarReading({ meterNo:meter, date:_flToday(), time:_v('sl-time'),
-      reading:_n('sl-read'), remarks:_v('sl-rem'), by:_flReader() });
+      generated:gen, remarks:_v('sl-rem'), by:_flReader() });
 }
 // reader name — reuse hk-by if set, else 'web-app'
 function _flReader(){ var el=document.getElementById('hk-by'); return (el&&el.value)||'web-app'; }
