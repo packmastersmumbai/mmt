@@ -6422,15 +6422,22 @@ function sfChartHBar(id, obj, color, onPick){
   ent = ent.map(function(e){
     return [ (String(e[0]).trim().length <= 2 ? e[0] + ' — unlabelled' : e[0]), e[1] ];
   });
-  // Height follows the row count (28px/row) instead of a fixed 300px, so 11
-  // sections no longer squeeze into the same box as 4. Set on the container
-  // since maintainAspectRatio:false reads its height.
+  /* Height follows the row count instead of a fixed 300px, so 11 sections no longer
+     squeeze into the same box as 4. Set on the container because maintainAspectRatio
+     :false reads its height.
+     The per-row allowance must cover a label that WRAPS: the y-axis callback below
+     splits any name over 26 chars onto two lines, and most section names ("I:
+     Maintenance, Electrical & Lifting") do wrap. At 34px/row the plot came out taller
+     than its container and the entire x-axis band rendered outside the card — visible
+     as an 0–40 axis floating below the page's bottom nav. 46px/row covers two 11px
+     lines plus separation, and X_BAND reserves the axis itself rather than folding it
+     into a magic +40. */
+  var ROW_H = 46, X_BAND = 34;
   var box = el.parentElement;
   if(box && box.classList.contains('sf-canvas-box')){
-    // 34px/row: long section names wrap to two lines on narrow viewports, and
-    // 28px clipped the second line. flex:none stops a stretched card row from
-    // squeezing the box below the height the rows actually need.
-    box.style.height = Math.max(150, ent.length*34 + 40) + 'px';
+    // flex:none stops a stretched card row from squeezing the box below the height
+    // the rows actually need.
+    box.style.height = Math.max(150, ent.length*ROW_H + X_BAND) + 'px';
     box.style.flex = 'none';
   }
   SF.chartObjs.push(new Chart(el,{type:'bar',
