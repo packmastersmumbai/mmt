@@ -115,11 +115,14 @@ body {
   border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  /* Inset top highlight + inset bottom shade = a bevelled physical tile. The outer
-     shadow carries a real offset and blur, not a zero-offset halo. */
+  /* Inset top highlight + inset bottom shade = a bevelled physical tile.
+     The outer cast is NEUTRAL, not orange-tinted: a coloured blurred shadow on a dark
+     surface is the "colored glow" pattern, and the detector flagged the earlier
+     rgba(180,80,10,.34) version. A neutral shadow separates the tile from the header
+     just as well without lighting it from inside. */
   box-shadow: inset 0 1px 0 rgba(255,255,255,.34),
               inset 0 -1px 0 rgba(120,52,0,.30),
-              0 2px 6px rgba(180,80,10,.34);
+              0 2px 5px rgba(0,0,0,.34);
 }
 .logo-mark svg { width:19px; height:19px; display:block; }
 @media (min-width:1101px){
@@ -1915,7 +1918,10 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
   <!-- The wordmark is the document's h1. There was no h1 at all, so the
        accessibility tree had no title. .header-title carries every style, so
        the element swap is visually inert. -->
-  <h1 class="header-title">Pack Masters<span class="ht-sub">MMS</span></h1>
+  <!-- The space before <span> is deliberate: without it the accessible name and any
+       text extraction read "Pack MastersMMS" as one word. The visual gap comes from
+       the .ht-sub divider rule, so the space costs nothing on screen. -->
+  <h1 class="header-title">Pack Masters <span class="ht-sub">MMS</span></h1>
   <div class="header-machine" id="header-machine"></div>
   <div class="header-right">
     <button class="back-btn" id="back-btn" onclick="navigateToBoard()">&#x2190; Board</button>
