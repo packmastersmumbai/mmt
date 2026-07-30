@@ -37,16 +37,37 @@ body {
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Ask for a plain zero everywhere. NOTE: this does NOT currently change PMMono —
+     that subset's GSUB carries only 'calt' and 'frac', so there is no 'zero' feature
+     to disable and its single zero glyph is the dotted JetBrains form. Verified by
+     inspecting the embedded woff2, not assumed. The declaration is kept because it is
+     free and becomes correct the moment the subset is regenerated with 'zero'
+     included; until then, numerals that must not show a dotted zero use Archivo's
+     own 'tnum' instead of PMMono (see .dk-num). */
+  font-feature-settings: "zero" 0;
 }
 /* Every number in the app: mono + tabular so columns align and counts don't
-   jitter as they tick. */
+   jitter as they tick.
+   font-feature-settings "zero" 0 is REQUIRED here. PMMono is JetBrains Mono, whose
+   default zero is DOTTED — on a dashboard KPI a lone "0" then reads as "Ø", and this
+   app shows a bare zero constantly ("0 open BD", "0 overdue", "0%"). The slash earns
+   its place in code, where 0/O ambiguity is real; on a number tile it is noise.
+   'tnum' is stated explicitly alongside tabular-nums so the feature survives in
+   engines that honour feature-settings but not the higher-level property. */
 .num, .mono { font-family:'PMMono', ui-monospace, monospace;
-  font-variant-numeric: tabular-nums; }
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 0; }
 /* "MMS" recedes behind "Pack Masters" — hierarchy by weight/colour, not size. */
 .ht-sub { margin-left:6px; font-weight:400; font-size:11.5px; color:#7c8ba1;
   letter-spacing:.06em; }
 
 /* ── FIXED HEADER ── */
+/* The header height lives in one place. Six fixed offsets (status bar top, content
+   margins, min-height calcs, the .fl view) previously hardcoded 56/88/112px, so
+   changing the header meant finding all of them and any miss left a visible seam. */
+:root { --hdr-h: 60px; --nav-h: 56px; }
+@media (min-width:1101px){ :root { --hdr-h: 64px; } }
+
 /* Global stroke-icon sizing. One rule so an icon can never stretch to fill a
    flex line (inline SVG has no intrinsic size). */
 .pmi { width:20px; height:20px; flex:none; display:block; }
@@ -57,14 +78,19 @@ body {
   z-index: 200;
   /* Hairline instead of a 8px drop shadow: the shadow read as a soft blur band
      across the top of every screen. */
-  background: #0d1420;
-  border-bottom: 1px solid #1e293b;
+  /* A near-flat vertical gradient, not a solid fill: 3% of lift across 60px reads as
+     a machined surface catching light rather than as a gradient effect. The bottom
+     hairline is warmed toward the brand orange so the header terminates on a
+     deliberate edge instead of a generic slate rule. */
+  background: linear-gradient(180deg,#111a29 0%,#0b1220 100%);
+  border-bottom: 1px solid #202c40;
+  box-shadow: 0 1px 0 rgba(234,108,10,.20), 0 2px 12px rgba(4,8,15,.28);
   color: white;
-  height: 56px;
+  height: var(--hdr-h);
   display: flex;
   align-items: center;
   padding: 0 14px;
-  gap: 11px;
+  gap: 12px;
   font-family: 'Archivo', system-ui, sans-serif;
 }
 /* Wide screens: align the header content with the page container. */
@@ -75,17 +101,30 @@ body {
 /* Logo mark. The orange is the company mark and stays — but it is now the ONLY
    orange in the interface (nav active state moved to teal), so it reads as
    brand rather than as another UI accent competing with the app's palette. */
+/* The mark was the letters "PM" set in the body font inside an orange square — the
+   placeholder every app ships with. It is now a drawn glyph: a sealed carton seen
+   corner-on, which is the thing this company actually makes and the thing every
+   machine in the plant is there to produce. Two top faces meeting at a centre seam
+   read as a box lid; the vertical below it is the closure.
+   The gradient runs across the brand orange only (#f0822a → #ea6c0a → #d15f05), so
+   the mark stays one colour with a lit top-left corner rather than becoming a
+   two-colour badge. */
 .logo-mark {
-  width: 32px; height: 32px;
-  background: #ea6c0a;
-  border-radius: 8px;
+  width: 34px; height: 34px;
+  background: linear-gradient(145deg,#f0822a 0%,#ea6c0a 52%,#d15f05 100%);
+  border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
-  font: 700 12.5px/1 'Archivo', system-ui, sans-serif;
-  color: #fff;
   flex-shrink: 0;
-  letter-spacing: 0.02em;
-  /* Inner top highlight — physical edge, not an outer glow. */
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.28);
+  /* Inset top highlight + inset bottom shade = a bevelled physical tile. The outer
+     shadow carries a real offset and blur, not a zero-offset halo. */
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.34),
+              inset 0 -1px 0 rgba(120,52,0,.30),
+              0 2px 6px rgba(180,80,10,.34);
+}
+.logo-mark svg { width:19px; height:19px; display:block; }
+@media (min-width:1101px){
+  .logo-mark { width:36px; height:36px; }
+  .logo-mark svg { width:20px; height:20px; }
 }
 
 /* App title — "Pack Masters" carries the weight, "MMS" recedes. Hierarchy by
@@ -102,14 +141,33 @@ body {
   border-radius:8px; font-size:13px; font-weight:700;
   text-decoration:none; box-shadow:0 4px 14px rgba(15,23,42,.35);
   transition:top .16s cubic-bezier(.16,1,.3,1); }
-.skip-link:focus { top:64px; }
+.skip-link:focus { top:calc(var(--hdr-h) + 8px); }
 @media (prefers-reduced-motion:reduce){ .skip-link { transition:none; } }
 
+/* The wordmark was 14.5px/600 — the same weight as a form label, so the product name
+   had no more presence than the UI around it. At 700 and 16.5px with tightened
+   tracking it reads as the title of the thing, which is the one piece of brand the
+   operator sees on every screen. Optical alignment: the cap-height of Archivo at this
+   size sits ~1px high against the 34px mark, so a -0.5px nudge lines the two up.
+   "MMS" stays small and recedes — hierarchy by weight and colour, never by size alone. */
 .header-title {
-  font-size: 14.5px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-size: 16.5px;
+  font-weight: 700;
+  letter-spacing: -0.022em;
   flex-shrink: 0;
+  line-height: 1.1;
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+  transform: translateY(-0.5px);
+}
+@media (min-width:1101px){ .header-title { font-size: 17.5px; } }
+/* A 1px vertical rule between the wordmark and "MMS": it separates the company from
+   the product without the em-dash or bullet that would read as running text. */
+.ht-sub::before {
+  content:''; display:inline-block; width:1px; height:11px;
+  background:rgba(255,255,255,.20); margin-right:7px;
+  vertical-align:-1px;
 }
 
 /* Machine name — center */
@@ -157,7 +215,7 @@ body {
 /* ── STATUS BAR (below header, hidden by default) ── */
 .status-bar {
   position: fixed;
-  top: 56px; left: 0; right: 0;
+  top: var(--hdr-h); left: 0; right: 0;
   z-index: 190;
   padding: 8px 14px;
   font-size: 12px;
@@ -172,13 +230,13 @@ body {
 
 /* ── CONTENT AREA ── */
 .app-content {
-  margin-top: 56px;
-  margin-bottom: 56px;   /* global nav height */
-  min-height: calc(100vh - 112px);
+  margin-top: var(--hdr-h);
+  margin-bottom: var(--nav-h);
+  min-height: calc(100vh - var(--hdr-h) - var(--nav-h));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
-.app-content.has-status { margin-top: 88px; }
+.app-content.has-status { margin-top: calc(var(--hdr-h) + 32px); }
 .app-content.has-mnav   { margin-bottom: 100px; }
 
 /* ── VIEW PANES ── */
@@ -247,6 +305,12 @@ body {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 4px;
   background: none; border: none; color: #64748b;
+  /* font-family:inherit is REQUIRED, not redundant. .nav-global declares Archivo,
+     but a <button> does not inherit font-family from its parent — UA stylesheets set
+     it explicitly on form controls — so all six nav labels were rendering in Arial
+     while the rest of the app used Archivo. It was the one place the brand face
+     visibly broke, and it sat in the most-looked-at chrome in the app. */
+  font-family: inherit;
   /* 11px, was 10.5px — the global nav is permanent, always-visible chrome and
      was below the functional-text floor. The tighter tracking below keeps the
      six labels on one line each at the new size. */
@@ -406,45 +470,114 @@ body {
      the pointer is precise and the nav is only 58px tall. */
   .dash-wrap { max-width:1280px; margin:0 auto; padding:18px 20px 76px; }
   /* Six KPIs in one row instead of two rows of three — at this width the
-     numbers are small and the tiles were mostly empty space. */
-  .dash-wrap .dk-grid { grid-template-columns:repeat(6,1fr); gap:10px; }
+     numbers are small and the tiles were mostly empty space. :not(.dk-grid-4)
+     keeps the reliability row at its own four columns instead of being stretched
+     to six with two empty cells. */
+  .dash-wrap .dk-grid:not(.dk-grid-4) { grid-template-columns:repeat(6,1fr); }
+  .dash-wrap .dk-grid { gap:10px; }
   .dash-wrap .dk-num { font-size:26px; }
+  .dash-wrap .dks-n { font-size:22px; }
   .dash-wrap .dk-lbl, .dash-wrap .dk-sub { font-size:10.5px; }
-  .dash-wrap .dash-card { padding:14px 16px; }
+  /* Reliability keeps its one-step-down scale on desktop too — it is the secondary
+     row, and matching the 26px KPI numerals would make the two rows compete. */
+  .dash-wrap .dash-rel-row .dk-num { font-size:22px; }
+  .dash-wrap .dash-rel-row .dk-lbl { font-size:10px; }
+  .dash-wrap .dash-card { padding:15px 18px; }
   .dash-wrap .dash-2col { gap:12px; margin-top:12px; }
   .dash-wrap .dash-card, .dash-wrap .dash-2col { margin-top:12px; }
   /* Trend chart earns more height once it has real width to breathe into. */
-  .dash-wrap .dc-bars { height:96px; }
+  .dash-wrap .dc-bars { height:104px; }
+  /* ── Cap the CONTENT, not the card ──
+     The three breakdown cards are full-width by design (that is the sequence), but a
+     bar track stretched to 1600px to express a value of 1 is absurd, and a one-line
+     empty state centred in 1600px of card is unreadable. The card keeps its full
+     width so the stack still reads as one column; the chart inside it stops at a
+     width where a bar length still means something. */
+  .dash-wrap .dc-hbars { max-width:760px; }
+  .dash-wrap .dc-bars  { max-width:900px; }
+  .dash-wrap .dc-empty { max-width:760px; text-align:left; }
+  /* The donut + legend is a compact pair; left-aligned in a full-width card it was
+     trailing ~1400px of empty white. */
+  .dash-wrap .dc-donut-wrap { max-width:420px; }
 }
 @media (min-width:1601px){
   .dash-wrap { max-width:1440px; }
 }
-.dash-hd { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px; }
-.dash-hd h2 { font-size:17px; font-weight:800; color:#0f172a; }
-.dash-hd .dash-date { font-size:11px; color:#64748b; font-weight:600; }
+.dash-hd { display:flex; align-items:baseline; justify-content:space-between;
+  margin-bottom:12px; gap:10px; }
+/* -0.03em tracking: Archivo at 21px+ opens up noticeably, and the floor for display
+   sizes is -0.04em, so this stays inside it while tightening a loose setting. */
+.dash-hd h2 { font-size:21px; font-weight:800; color:#0f172a; letter-spacing:-0.03em;
+  line-height:1.15; }
+@media (min-width:1025px){ .dash-hd h2 { font-size:24px; } }
+/* Tabular figures via Archivo's own 'tnum', not the PMMono subset — same dotted-zero
+   reason as .dk-num, and "30 Jul" set in a mono face read as a timestamp in a log
+   rather than as the date this page describes. */
+.dash-hd .dash-date { font-size:11.5px; color:#64748b; font-weight:700;
+  font-variant-numeric:tabular-nums; white-space:nowrap; letter-spacing:-0.01em; }
 /* KPI grid — 3 per row, 2 rows */
-.dk-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
-.dk-cell { background:#fff; border:1px solid #e2e8f0; border-radius:11px;
-  padding:9px 8px; text-align:center; box-shadow:0 1px 2px rgba(0,0,0,.03); }
-.dk-cell:active { background:#f8fafc; }
-.dk-num { font-size:23px; font-weight:900; line-height:1.05; }
+.dk-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.dk-cell { background:#fff; border:1px solid #e4e9f0; border-radius:12px;
+  padding:11px 8px 10px; text-align:center;
+  /* Two-layer shadow with real offset and blur: a 1px contact edge plus a soft cast.
+     A single 1px shadow read as a slightly darker border, which is not depth. */
+  box-shadow:0 1px 1px rgba(15,23,42,.04), 0 2px 6px rgba(15,23,42,.045);
+  transition:box-shadow .16s cubic-bezier(.16,1,.3,1),
+             transform .16s cubic-bezier(.16,1,.3,1); }
+/* Only the tiles that actually navigate get a pointer affordance. */
+.dk-cell[role="button"]:hover { box-shadow:0 2px 3px rgba(15,23,42,.06),
+  0 6px 16px rgba(15,23,42,.09); transform:translateY(-1px); }
+.dk-cell[role="button"]:active { transform:translateY(0); background:#f8fafc; }
+@media (prefers-reduced-motion:reduce){ .dk-cell { transition:none; }
+  .dk-cell[role="button"]:hover { transform:none; } }
+/* Archivo with 'tnum', NOT the PMMono face. PMMono is a 55-glyph subset of JetBrains
+   Mono whose only zero glyph is the DOTTED one — its GSUB carries just 'calt' and
+   'frac', so there is no 'zero' feature to switch off and no CSS can restore a plain
+   zero. On tiles that read "0 overdue" / "0%" / "0 open" constantly, that dot reads as
+   "Ø". Archivo 700 ships real 'tnum' tabular figures, so the columns still align and
+   the count-up animation still can't reflow the tile — with a normal zero.
+   PMMono keeps its job in dense data rows and IDs, where a slashed zero is a feature. */
+.dk-num { font-size:25px; font-weight:800; line-height:1.02;
+  font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1;
+  letter-spacing:-0.025em; }
 .dk-lbl { font-size:9.5px; font-weight:800; color:#475569; text-transform:uppercase;
-  letter-spacing:.4px; margin-top:2px; }
-.dk-sub { font-size:9.5px; color:#64748b; font-weight:600; margin-top:1px; }
+  letter-spacing:.5px; margin-top:4px; }
+.dk-sub { font-size:9.5px; color:#64748b; font-weight:600; margin-top:2px; }
 /* cards + 2-col layout */
-.dash-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px;
-  padding:11px 12px; margin-top:8px; box-shadow:0 1px 2px rgba(0,0,0,.03); }
+.dash-card { background:#fff; border:1px solid #e4e9f0; border-radius:13px;
+  padding:13px 14px; margin-top:10px;
+  box-shadow:0 1px 1px rgba(15,23,42,.04), 0 2px 6px rgba(15,23,42,.045); }
 .dash-2col { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
 .dash-2col .dash-card { margin-top:0; }
-.dc-title { font-size:11px; font-weight:800; color:#475569; text-transform:uppercase;
-  letter-spacing:.5px; margin-bottom:9px; }
-.dc-empty { font-size:11px; color:#cbd5e1; padding:10px 0; text-align:center; }
+/* Card titles were uppercase + .5px tracking, the same treatment as the KPI labels and
+   the section heads — so every line of chrome on the page shouted at the same pitch and
+   none of it led. Sentence case at 12.5px/700 in the ink colour makes the title a
+   heading; the uppercase eyebrow is now reserved for the small tile labels beneath
+   numerals, where it is a label and not a headline. Titles also stop wrapping to two
+   lines at 412px now that the cards are full-width. */
+.dc-title { font-size:12.5px; font-weight:700; color:#0f172a;
+  letter-spacing:-0.012em; margin-bottom:10px; }
+/* More space above a heading than below it — the rhythm that groups a title with the
+   chart it belongs to instead of floating it between two cards. */
+.dash-card + .dash-card { margin-top:10px; }
+/* #64748b, not #cbd5e1: an empty state is real information the reader needs, and
+   #cbd5e1 on white is 1.6:1 — it was set as decoration. Now 4.8:1 and legible. */
+.dc-empty { font-size:11.5px; color:#64748b; padding:14px 0; text-align:center;
+  font-weight:600; }
+/* The bar row is a fixed 76px so the axis baseline never moves between renders — but
+   when the chart is EMPTY that reserves 76px of blank space above a one-line message
+   floating in the middle of it. Collapse to the text's own height in that case. */
+.dc-bars:has(> .dc-empty) { height:auto; display:block; }
 /* trend bar chart */
-.dc-bars { display:flex; align-items:flex-end; gap:3px; height:62px; }
+.dc-bars { display:flex; align-items:flex-end; gap:5px; height:76px; }
 .tb-col { flex:1; display:flex; flex-direction:column; align-items:center;
-  justify-content:flex-end; height:100%; }
-.tb-bar { width:100%; border-radius:2px 2px 0 0; min-height:2px; }
-.tb-x { font-size:7px; color:#cbd5e1; font-weight:700; margin-top:2px; height:9px; }
+  justify-content:flex-end; height:100%; min-width:0; }
+.tb-bar { width:100%; border-radius:3px 3px 0 0; min-height:3px; }
+/* 9px and #94a3b8, up from 7px/#cbd5e1: at 7px the tick was below any legible floor
+   and #cbd5e1 on white is 1.6:1 — the axis was decorative rather than readable.
+   Only every third week carries a label, so there is room for a real date. */
+.tb-x { font-size:9px; color:#94a3b8; font-weight:700; margin-top:5px; height:11px;
+  white-space:nowrap; font-variant-numeric:tabular-nums; letter-spacing:-0.02em; }
 /* horizontal bars */
 .dc-hbars { display:flex; flex-direction:column; gap:6px; }
 .hb-row { display:flex; align-items:center; gap:7px; }
@@ -462,18 +595,55 @@ body {
 .hb-val { flex:0 0 auto; font-size:11px; font-weight:800; color:#0f172a; min-width:16px;
   text-align:right; }
 /* donut + legend */
-.dc-donut-wrap { display:flex; align-items:center; gap:12px; }
-.dc-leg { flex:1; display:flex; flex-direction:column; gap:5px; }
+.dc-donut-wrap { display:flex; align-items:center; gap:16px; }
+/* max-width, not flex:1 — on a 1400px card the legend stretched the full width and
+   flung each value ~700px from its own label, so the pair stopped reading as a pair. */
+.dc-leg { display:flex; flex-direction:column; gap:5px; min-width:150px; max-width:220px; }
 .dleg-row { display:flex; align-items:center; gap:6px; font-size:11.5px; color:#475569;
   font-weight:600; }
 .dleg-dot { width:9px; height:9px; border-radius:3px; flex-shrink:0; }
 .dleg-v { margin-left:auto; font-weight:800; color:#0f172a; }
-/* reliability 2x2 */
-.dc-rel { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-.dc-rel-stat { background:#f8fafc; border-radius:9px; padding:8px 6px; text-align:center; }
-.drs-n { font-size:18px; font-weight:900; line-height:1; }
-.drs-l { font-size:8.5px; font-weight:800; color:#64748b; text-transform:uppercase;
-  letter-spacing:.4px; margin-top:3px; }
+/* ── Split KPI tile — open + closed in one cell ──
+   Both figures sit on one optical baseline with a hairline between them, so the tile
+   reads as one measurement with two parts rather than two stacked numbers. The
+   numerals shrink from 23px to 19px because two of them share a cell that was sized
+   for one; at 412px the cell is ~127px and 23px twice would collide with the divider. */
+.dk-split { padding:10px 5px; }
+.dks-pair { display:flex; align-items:flex-start; justify-content:center; gap:5px; }
+.dks-half { flex:1; min-width:0; }
+.dks-n { font-size:20px; }
+.dks-t { font-size:8.5px; font-weight:800; text-transform:uppercase;
+  letter-spacing:.3px; margin-top:2px; }
+.dks-div { width:1px; align-self:stretch; background:#e4e9f0; flex:0 0 1px;
+  margin:1px 0 3px; }
+/* ── Reliability tile row ──
+   Four readings in the same tile shell as the KPI row above. 2-up on a phone (four
+   across at 412px gives a 95px cell, too narrow for "mean time between failures"),
+   4-up from 700px. */
+.dash-sec-hd { font-size:11px; font-weight:800; color:#475569; text-transform:uppercase;
+  letter-spacing:.5px; margin:18px 0 8px; }
+/* Four across at every width, including 412px — this is a ROW of readings, and
+   breaking it to 2x2 on a phone turns it back into the block it was meant to replace.
+   At 412px each cell is ~95px, which fits a 4-char reading ("827h") and a short label;
+   the descriptive sub-line is what gets dropped instead (see below). */
+.dk-grid-4 { grid-template-columns:repeat(4,1fr); gap:6px; }
+/* The reliability numerals are readings, not headline KPIs, so they sit a step below
+   the top row rather than competing with it. */
+.dash-rel-row .dk-cell { padding:10px 3px 9px; }
+.dash-rel-row .dk-num { font-size:16px; letter-spacing:-0.03em; }
+.dash-rel-row .dk-lbl { font-size:8.5px; letter-spacing:.3px; margin-top:3px; }
+/* "mean time between failures" cannot fit a 95px cell, and truncating it to
+   "mean time betwe…" is worse than not showing it. The label (MTBF) plus the tile
+   title carry the meaning on a phone; the expansion returns at 640px where there
+   is room for it. */
+.dash-rel-row .dk-sub { display:none; }
+@media (min-width:640px){
+  .dk-grid-4 { gap:8px; }
+  .dash-rel-row .dk-cell { padding:11px 8px 10px; }
+  .dash-rel-row .dk-num { font-size:20px; }
+  .dash-rel-row .dk-lbl { font-size:9.5px; letter-spacing:.5px; }
+  .dash-rel-row .dk-sub { display:block; }
+}
 /* ════════ COMPACT MACHINE BOARD ════════ */
 .mb-toolbar { display:flex; gap:8px; padding:8px 10px; background:#fff;
   border-bottom:1px solid #f1f5f9; align-items:center; }
@@ -1378,7 +1548,7 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   font-variant-numeric:tabular-nums; letter-spacing:-.01em; }
 /* Fill the whole scroll area with the dark bg so no white shows below content.
    These views manage their own padding via .fl-wrap, so kill .view's padding. */
-.view.fl{ padding:0; background:var(--flbg); min-height:calc(100vh - 112px); }
+.view.fl{ padding:0; background:var(--flbg); min-height:calc(100vh - var(--hdr-h) - var(--nav-h)); }
 /* Responsive shell. Was a hard 760px centred column, which left ~71% of a
    desktop viewport empty. Now the content width answers the viewport. */
 .fl-wrap{ max-width:760px; margin:0 auto; padding:16px 14px 90px; }
@@ -1725,7 +1895,17 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 
 <!-- ══════ FIXED HEADER ══════ -->
 <header class="app-header" id="app-header">
-  <div class="logo-mark" aria-hidden="true">PM</div>
+  <!-- A sealed carton seen corner-on: two top faces meeting at a centre seam, with the
+       closure running down the front. aria-hidden because the <h1> beside it already
+       names the product; announcing the mark too would just repeat it. -->
+  <div class="logo-mark" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9"
+         stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3.2 3.4 7.4v9.2L12 20.8l8.6-4.2V7.4z"/>
+      <path d="M3.4 7.4 12 11.6l8.6-4.2"/>
+      <path d="M12 11.6v9.2"/>
+    </svg>
+  </div>
   <!-- The wordmark is the document's h1. There was no h1 at all, so the
        accessibility tree had no title. .header-title carries every style, so
        the element swap is visually inert. -->
@@ -2056,7 +2236,6 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
       <button class="sf-tab" data-sftab="hira">HIRA</button>
       <button class="sf-tab" data-sftab="actions">Actions</button>
       <button class="sf-tab" data-sftab="incidents">Incidents</button>
-      <button class="sf-tab" data-sftab="charts">Charts</button>
     </div>
     <div id="safety-content">
       <div class="loading-spinner" style="padding:60px"><div class="spinner-ring"></div>Loading safety data&hellip;</div>
@@ -2893,21 +3072,17 @@ function renderDashboard() {
   var metrics = _dashMetrics || {};
 
   /* ---- aggregate from kanban ---- */
-  var total=0, clDone=0, clPartial=0, clPending=0, bdOpen=0;
-  var catCounts={};
+  var total=0, clDone=0, bdOpen=0;
   if (kanban.success) {
     total = kanban.total || 0;
     Object.keys(kanban.groups).forEach(function(cat){
-      var ms = kanban.groups[cat]; catCounts[cat]=ms.length;
+      var ms = kanban.groups[cat];
       ms.forEach(function(m){
         if (m.checklist==='done') clDone++;
-        else if (m.checklist==='partial') clPartial++;
-        else clPending++;
         bdOpen += (m.openBD||0);
       });
     });
   }
-  var clPend = clPartial + clPending;
   var clRate = total>0 ? Math.round((clDone/total)*100) : 0;
   var mtbf = metrics.mtbf||0, mttr = metrics.mttr||0;
   var safetyCrit = (window.SF && SF.dash && SF.dash.critical) || 0;
@@ -2934,8 +3109,8 @@ function renderDashboard() {
   });
   var topMach = Object.keys(machBD).sort(function(a,b){return machBD[b]-machBD[a];}).slice(0,5);
 
-  // BD trend — last 14 days by parsing record dates (dd-MMM-yy)
-  var trend = _bdTrend14(bd);
+  // BD trend — last 12 weeks by parsing record dates (dd-MMM-yy)
+  var trend = _bdTrendWeeks(bd);
 
   var now = new Date();
   var dateStr = now.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
@@ -2947,9 +3122,39 @@ function renderDashboard() {
       '<div class="dk-lbl">'+lbl+'</div>' +
       (sub?'<div class="dk-sub">'+sub+'</div>':'') + '</div>';
   }
+  /* Breakdowns are one fact with two halves — what is still open and what has been
+     closed. Two separate tiles made the reader do the pairing; one tile with two
+     colour-coded figures and a shared divider states the ratio directly. Red is the
+     open count, green the closed count, matching the status colours used everywhere
+     else in the app. The aria-label spells the pairing out, because the colour split
+     is not available to a screen reader. */
+  function kpiSplit(openN, closedN, lbl, onclick) {
+    var openCol = openN>0 ? '#dc2626' : '#16a34a';
+    return '<div class="dk-cell dk-split" role="button" tabindex="0" onclick="'+onclick+'"'+
+      ' style="cursor:pointer" aria-label="'+esc(lbl)+': '+openN+' open, '+closedN+' closed">'+
+      '<div class="dks-pair">'+
+        '<div class="dks-half"><div class="dk-num dks-n" style="color:'+openCol+'" data-count="'+openN+'">'+openN+'</div>'+
+          '<div class="dks-t" style="color:'+openCol+'">Open</div></div>'+
+        '<div class="dks-div" aria-hidden="true"></div>'+
+        '<div class="dks-half"><div class="dk-num dks-n" style="color:#16a34a" data-count="'+closedN+'">'+closedN+'</div>'+
+          '<div class="dks-t" style="color:#16a34a">Closed</div></div>'+
+      '</div>'+
+      '<div class="dk-lbl">'+lbl+'</div></div>';
+  }
+  /* A reliability reading: same tile shell as the KPI row so the two rows read as one
+     system, but not clickable — there is no records view behind MTBF. */
+  function relTile(v, lbl, sub, color) {
+    return '<div class="dk-cell"><div class="dk-num" style="color:'+color+'">'+v+'</div>'+
+      '<div class="dk-lbl">'+lbl+'</div><div class="dk-sub">'+sub+'</div></div>';
+  }
   function hbars(map, keys, color, fmtKey) {
-    var max = Math.max.apply(null, keys.map(function(k){return map[k];})) || 1;
     if (!keys.length) return '<div class="dc-empty">No data</div>';
+    /* Scale against the max OR 4, whichever is larger. Scaling purely to the max meant
+       that when every category sat at 1 — the common case here — every bar rendered at
+       full width, which reads as "all maxed out" instead of "one each". A floor of 4
+       keeps a single breakdown looking like a small quantity. */
+    var dataMax = Math.max.apply(null, keys.map(function(k){return map[k];})) || 1;
+    var max = Math.max(dataMax, 4);
     return keys.map(function(k){
       var w = Math.round((map[k]/max)*100);
       return '<div class="hb-row"><div class="hb-lbl" title="'+esc(k)+'">'+
@@ -2970,10 +3175,9 @@ function renderDashboard() {
     {v:a30[0],c:'#dc2626'},{v:a30[1],c:'#16a34a'},{v:a30[2],c:'#0ea5e9'}
   ], a30sum, a30sum + (a30sum===1?' event':' events'));
 
-  /* ---- donut: checklist ---- */
-  var donutCL = _donut([
-    {v:clDone,c:'#16a34a'},{v:clPartial,c:'#eab308'},{v:clPending,c:'#e2e8f0'}
-  ], total, clRate+'%');
+  /* The checklist donut is gone: the "CL Today" KPI above already carries the same
+     rate plus the done/total split, and a donut of three values it duplicates is a
+     picture of a number we have already printed. */
 
   el.innerHTML =
     '<div class="dash-wrap">' +
@@ -2982,89 +3186,92 @@ function renderDashboard() {
     /* ── ROW 1 — 6 KPI cells ── */
     '<div class="dk-grid">' +
       kpi(total,'Machines','in use','#0f172a',"navigate('board')") +
-      kpi(bdOpen,'Open BD',bdOpen>0?'unresolved':'all clear',bdOpen>0?'#dc2626':'#16a34a',"dashGotoBoard('bd')") +
+      kpiSplit(bdOpen, bdClosed, 'Breakdowns', "dashGotoBoard('bd')") +
       kpi(metrics.bdCount30||0,'BD · 30d','breakdowns','#ea580c',"dashGotoBoard('bd')") +
       kpi(metrics.pmCount30||0,'PM · 30d','done','#16a34a',"dashGotoBoard('pm')") +
       kpi(clRate+'%','CL Today',clDone+'/'+total+' done',clRate>=80?'#16a34a':clRate>=50?'#eab308':'#dc2626',"dashGotoBoard('checklist')") +
       kpi(safetyCrit,'Safety',safetyCrit>0?'critical':'ok',safetyCrit>0?'#dc2626':'#16a34a',"navigate('safety')") +
     '</div>' +
 
-    /* ── ROW 2 — BD trend + activity mix ── */
-    '<div class="dash-2col">' +
-      '<div class="dash-card">' +
-        '<div class="dc-title">Breakdown Trend &middot; 14 days</div>' +
-        '<div class="dc-bars" id="dc-trend">'+_trendBars(trend)+'</div>' +
-      '</div>' +
-      '<div class="dash-card">' +
-        '<div class="dc-title">Activity Mix &middot; 30d</div>' +
-        '<div class="dc-donut-wrap">'+donutMix+
-          '<div class="dc-leg">' +
-            _legRow('#dc2626','BD',a30[0]) + _legRow('#16a34a','PM',a30[1]) +
-            _legRow('#0ea5e9','CLIT',a30[2]) +
-          '</div></div>' +
-      '</div>' +
+    /* ── The three breakdown views, full width and in sequence ──
+       These answer one question in three steps and are meant to be read in order:
+       WHERE the open breakdowns sit (by category), WHEN they happened (14-day trend),
+       then WHICH machines carry them. Side by side at two columns each chart was
+       half-width and the reading order was ambiguous; stacked full-width, the
+       narrative is the layout and every bar has room for its label. */
+    '<div class="dash-card">' +
+      '<div class="dc-title">Open BD by Category</div>' +
+      '<div class="dc-hbars">' +
+        hbars(catBD, Object.keys(catBD).filter(function(k){return catBD[k]>0;})
+          .sort(function(a,b){return catBD[b]-catBD[a];}).slice(0,6), '#dc2626', _catAbbr) +
+      '</div></div>' +
+
+    '<div class="dash-card">' +
+      '<div class="dc-title">Breakdown Trend &middot; 12 weeks</div>' +
+      '<div class="dc-bars" id="dc-trend">'+_trendBars(trend)+'</div>' +
     '</div>' +
 
-    /* ── ROW 3 — BD by category + top machines ── */
-    '<div class="dash-2col">' +
-      '<div class="dash-card">' +
-        '<div class="dc-title">Open BD by Category</div>' +
-        '<div class="dc-hbars">' +
-          hbars(catBD, Object.keys(catBD).filter(function(k){return catBD[k]>0;})
-            .sort(function(a,b){return catBD[b]-catBD[a];}).slice(0,6), '#dc2626', _catAbbr) +
-        '</div></div>' +
-      '<div class="dash-card">' +
-        '<div class="dc-title">Top Machines &middot; Breakdowns</div>' +
-        '<div class="dc-hbars">' +
-          (recLoaded ? hbars(machBD, topMach, '#ea580c') : '<div class="dc-empty">loading…</div>') +
-        '</div></div>' +
+    '<div class="dash-card">' +
+      '<div class="dc-title">Top Machines &middot; Breakdowns</div>' +
+      '<div class="dc-hbars">' +
+        (recLoaded ? hbars(machBD, topMach, '#ea580c') : '<div class="dc-empty">loading…</div>') +
+      '</div></div>' +
+
+    /* ── Reliability — a row of tiles, not a card of stats ──
+       These four are readings, the same kind of thing as the KPI row at the top, so
+       they take the same tile form rather than sitting inside a titled card. The
+       heading is a label on the row itself; wrapping four tiles in a card only added
+       a nested container. */
+    '<div class="dash-sec-hd">Reliability</div>' +
+    '<div class="dk-grid dk-grid-4 dash-rel-row">' +
+      relTile(mtbf>0?mtbf+'h':'—','MTBF','mean time between failures','#ea580c') +
+      relTile(mttr>0?mttr+'h':'—','MTTR','mean time to repair','#dc2626') +
+      relTile(bdClosed,'BD Closed','resolved to date','#16a34a') +
+      relTile(bdTotal,'BD Total','all records','#475569') +
     '</div>' +
 
-    /* ── ROW 4 — checklist donut + reliability ── */
-    '<div class="dash-2col">' +
-      '<div class="dash-card">' +
-        '<div class="dc-title">Checklist Completion</div>' +
-        '<div class="dc-donut-wrap">'+donutCL+
-          '<div class="dc-leg">' +
-            _legRow('#16a34a','Done',clDone) + _legRow('#eab308','Partial',clPartial) +
-            _legRow('#e2e8f0','Pending',clPending) +
-          '</div></div>' +
-      '</div>' +
-      '<div class="dash-card">' +
-        '<div class="dc-title">Reliability</div>' +
-        '<div class="dc-rel">' +
-          '<div class="dc-rel-stat"><div class="drs-n" style="color:#ea580c">'+(mtbf>0?mtbf+'h':'—')+'</div><div class="drs-l">MTBF</div></div>' +
-          '<div class="dc-rel-stat"><div class="drs-n" style="color:#dc2626">'+(mttr>0?mttr+'h':'—')+'</div><div class="drs-l">MTTR</div></div>' +
-          '<div class="dc-rel-stat"><div class="drs-n" style="color:#16a34a">'+bdClosed+'</div><div class="drs-l">BD Closed</div></div>' +
-          '<div class="dc-rel-stat"><div class="drs-n" style="color:#64748b">'+bdTotal+'</div><div class="drs-l">BD Total</div></div>' +
+    /* ── Activity mix — the one remaining donut, and the only chart here that is a
+       composition rather than a breakdown count. ── */
+    '<div class="dash-card">' +
+      '<div class="dc-title">Activity Mix &middot; 30d</div>' +
+      '<div class="dc-donut-wrap">'+donutMix+
+        '<div class="dc-leg">' +
+          _legRow('#dc2626','BD',a30[0]) + _legRow('#16a34a','PM',a30[1]) +
+          _legRow('#0ea5e9','CLIT',a30[2]) +
         '</div></div>' +
     '</div>' +
 
-    /* ── fleet strip ── */
-    '<div class="dash-card fleet-tile" role="button" tabindex="0" aria-label="Open machine board" onclick="navigate(\'board\')" style="display:flex;align-items:center;gap:10px;cursor:pointer">' +
-      '<span style="display:inline-flex;color:#0f766e" data-i="machines"></span>' +
-      '<div style="flex:1"><div style="font-size:13px;font-weight:800;color:#0f172a">'+total+' Machines &middot; '+Object.keys(catCounts).length+' categories</div>' +
-      '<div style="font-size:11px;color:#64748b">tap to open the machine board</div></div>' +
-      '<span style="font-size:16px;color:#cbd5e1">&#8250;</span></div>' +
+    /* The fleet strip that used to sit here is gone — the "Machines" KPI at the top
+       already carries the count and opens the same board, so the strip repeated a
+       figure and a destination the reader had already passed. */
 
     '</div>';
 
   _animateCounts();
 }
 
-/* BD records → array of 14 daily counts (oldest→newest). */
-function _bdTrend14(bd) {
-  var days = [];
-  var today = new Date(); today.setHours(0,0,0,0);
-  for (var i=13;i>=0;i--) days.push({t:today.getTime()-i*86400000, n:0});
+/* BD records → 12 weekly counts (oldest→newest), each with the week's start date.
+   This was a 14-day DAILY trend, which rendered as an entirely empty card: breakdowns
+   here arrive a handful per month, so on almost any given fortnight every bucket is
+   zero and the chart showed fourteen grey stubs. A quarter in weekly buckets is the
+   shortest window where this plant's actual rate produces a readable shape. */
+function _bdTrendWeeks(bd) {
+  var WEEKS = 12;
+  var weekStart = new Date(); weekStart.setHours(0,0,0,0);
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());  // Sunday of this week
+  var buckets = [];
+  for (var i=WEEKS-1;i>=0;i--) {
+    buckets.push({ t: weekStart.getTime() - i*7*86400000, n:0 });
+  }
   bd.forEach(function(r){
     var d = _parseRecDate(r.date);
     if (!d) return;
     d.setHours(0,0,0,0);
+    d.setDate(d.getDate() - d.getDay());
     var t = d.getTime();
-    for (var j=0;j<days.length;j++) if (days[j].t===t) { days[j].n++; break; }
+    for (var j=0;j<buckets.length;j++) if (buckets[j].t===t) { buckets[j].n++; break; }
   });
-  return days.map(function(x){ return x.n; });
+  return buckets;
 }
 /* parse 'dd-MMM-yy' */
 function _parseRecDate(s) {
@@ -3074,13 +3281,24 @@ function _parseRecDate(s) {
   var mon = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
   return new Date(2000+(+m[3]), mon[m[2]]||0, +m[1]);
 }
-function _trendBars(arr) {
-  var max = Math.max.apply(null,arr) || 1;
-  return arr.map(function(n,i){
-    var h = Math.round((n/max)*44)+2;
-    return '<div class="tb-col"><div class="tb-bar" style="height:'+h+'px;background:'+
-      (n>0?'#dc2626':'#e2e8f0')+'" title="'+n+' BD"></div>' +
-      (i%2===0?'<div class="tb-x">'+(13-i)+'d</div>':'<div class="tb-x"></div>')+'</div>';
+/* Weekly buckets → bars. Axis labels are real dates ("18 May"), not "9d ago": on a
+   quarter-long window a relative offset is arithmetic the reader has to do, and it is
+   the month boundary they actually navigate by. Every third week is labelled so the
+   ticks do not collide at 412px. */
+function _trendBars(buckets) {
+  var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var max = Math.max.apply(null, buckets.map(function(b){return b.n;})) || 1;
+  var allZero = max===1 && !buckets.some(function(b){return b.n>0;});
+  if (allZero) return '<div class="dc-empty">No breakdowns recorded in the last 12 weeks</div>';
+  return buckets.map(function(b,i){
+    var d = new Date(b.t);
+    var lbl = d.getDate()+' '+MON[d.getMonth()];
+    var h = Math.round((b.n/max)*44)+2;
+    return '<div class="tb-col" title="'+b.n+(b.n===1?' breakdown':' breakdowns')+
+      ' week of '+lbl+'">'+
+      '<div class="tb-bar" style="height:'+h+'px;background:'+
+      (b.n>0?'#dc2626':'#e2e8f0')+'"></div>' +
+      '<div class="tb-x">'+(i%3===0?lbl:'')+'</div></div>';
   }).join('');
 }
 function _donut(segs, total, centre) {
@@ -3605,11 +3823,13 @@ function navigate(hash, machineId, skipPush) {
   }
   if (hash === 'labels')    loadLabels();
   if (hash === 'safety')    loadSafety();
-  // Facility views (#view-hk/#view-readings) are siblings AFTER .app-content,
-  // which keeps a min-height and would reserve blank space above them.
-  // Collapse .app-content while a facility view is active, restore otherwise.
+  // #view-hk and #view-readings live INSIDE <main class="app-content"> (the <main>
+  // refactor wrapped the existing container rather than nesting a new one). An earlier
+  // revision collapsed .app-content here on the assumption they were siblings after it,
+  // which hid the very view it was switching to — both pages rendered blank at height 0.
+  // The .view/.view.active rule already shows exactly one view, so nothing to collapse.
   var _ac = document.querySelector('.app-content');
-  if (_ac) _ac.style.display = (hash === 'hk' || hash === 'readings') ? 'none' : '';
+  if (_ac) _ac.style.display = '';
   if (hash === 'hk')        hkInit();
   if (hash === 'readings')  rdInit();
   if (hash === 'checklist') {
@@ -5856,7 +6076,6 @@ function sfRender(){
   else if(SF.tab==='hira') sfRenderHira();
   else if(SF.tab==='actions') sfRenderActions();
   else if(SF.tab==='incidents') sfRenderIncidents();
-  else if(SF.tab==='charts') sfRenderCharts();
 }
 
 /* ---------- DASHBOARD TAB ---------- */
@@ -6128,84 +6347,14 @@ function sfChartLine(id, labels, data, label, color){
       plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}}));
 }
 
-/* ---------- CHARTS TAB (all 12) ---------- */
-function sfRenderCharts(){
-  var box = document.getElementById('safety-content');
-  var ch = SF.charts||{};
-  box.innerHTML = '<div class="sf-wrap">'+
-    '<div class="sf-card"><h4>1 &middot; KPI Actual vs Target</h4>'+
-      '<div class="sf-canvas-box" style="height:380px"><canvas id="sfg-kpi"></canvas></div></div>'+
-    '<div class="sf-grid2">'+
-      '<div class="sf-card"><h4>2 &middot; Action Status</h4><div class="sf-canvas-box"><canvas id="sfg-status"></canvas></div></div>'+
-      '<div class="sf-card"><h4>3 &middot; Risk Classification</h4><div class="sf-canvas-box"><canvas id="sfg-class"></canvas></div></div>'+
-    '</div>'+
-    '<div class="sf-card"><h4>4 &middot; Hazards by Section</h4><div class="sf-canvas-box" style="height:300px"><canvas id="sfg-section"></canvas></div></div>'+
-    '<div class="sf-grid2">'+
-      '<div class="sf-card"><h4>5 &middot; Incidents by Type</h4><div class="sf-canvas-box"><canvas id="sfg-itype"></canvas></div></div>'+
-      '<div class="sf-card"><h4>6 &middot; Incidents by Zone</h4><div class="sf-canvas-box"><canvas id="sfg-izone"></canvas></div></div>'+
-    '</div>'+
-    '<div class="sf-card"><h4>7 &middot; Risk Heatmap (5&times;5)</h4>'+sfHeatmapHtml()+'</div>'+
-    '<div class="sf-grid2">'+
-      '<div class="sf-card"><h4>8 &middot; Overdue Action Aging</h4><div class="sf-canvas-box"><canvas id="sfg-aging"></canvas></div></div>'+
-      '<div class="sf-card"><h4>9 &middot; TBT Coverage by Zone</h4><div class="sf-canvas-box"><canvas id="sfg-tbt"></canvas></div></div>'+
-    '</div>'+
-    '<div class="sf-card"><h4>10 &middot; Evacuation Time Trend</h4><div class="sf-canvas-box"><canvas id="sfg-evac"></canvas></div></div>'+
-    '<div class="sf-card"><h4>11 &middot; CAPA Completion Rate</h4><div class="sf-canvas-box"><canvas id="sfg-capa"></canvas></div></div>'+
-    '<div class="sf-card"><h4>12 &middot; Monthly KPI Tracker</h4><div class="sf-canvas-box"><canvas id="sfg-monthly"></canvas></div></div>'+
-    '</div>';
-  // build all
-  sfChartKpi('sfg-kpi');
-  sfChartDoughnut('sfg-status', ch.actionStatus, SF_STATUS_COLORS);
-  sfChartBarClass('sfg-class', ch.classification);
-  sfChartHBar('sfg-section', ch.bySection, '#0f766e');
-  sfChartDoughnut('sfg-itype', ch.incidentType, null);
-  sfChartHBar('sfg-izone', ch.incidentZone, '#0ea5e9');
-  sfChartBarObj('sfg-aging', ch.overdueAging, '#dc2626', 'Overdue actions');
-  sfChartHBar('sfg-tbt', ch.tbtByZone, '#8b5cf6');
-  var dt = ch.drillTrend||[];
-  sfChartLine('sfg-evac', dt.map(function(d){return d.period;}),
-    dt.map(function(d){return d.minutes;}), 'Evac mins', '#0ea5e9');
-  sfChartCapa('sfg-capa');
-  sfChartLine('sfg-monthly', ['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'],
-    [], 'Monthly KPI', '#0f766e');
-}
-function sfChartBarObj(id,obj,color,label){
-  var el=document.getElementById(id); if(!el||!obj) return;
-  var labels=Object.keys(obj);
-  SF.chartObjs.push(new Chart(el,{type:'bar',
-    data:{labels:labels,datasets:[{label:label,data:labels.map(function(k){return obj[k];}),
-      backgroundColor:color}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{y:{beginAtZero:true,ticks:{precision:0}}}}}));
-}
-function sfChartKpi(id){
-  var el=document.getElementById(id); if(!el) return;
-  // derive from dashboard + chart data (no #REF! source needed)
-  var k=SF.dash||{};
-  var rows=[['Hazards ID',k.totalHazards,143],['Open Actions',k.openActions,50],
-    ['Overdue',k.overdueActions,0],['Critical Risks',k.criticalRisks,0],
-    ['Completed',k.completedActions,143],['Incidents',k.totalIncidents,20]];
-  SF.chartObjs.push(new Chart(el,{type:'bar',
-    data:{labels:rows.map(function(r){return r[0];}),datasets:[
-      {label:'Actual',data:rows.map(function(r){return r[1];}),backgroundColor:'#0f766e'},
-      {label:'Target',data:rows.map(function(r){return r[2];}),backgroundColor:'#cbd5e1'}]},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'bottom',labels:{boxWidth:11,font:{size:10}}}},
-      scales:{y:{beginAtZero:true}}}}));
-}
-function sfChartCapa(id){
-  var el=document.getElementById(id); if(!el) return;
-  var k=SF.dash||{};
-  var done=k.completedActions||0, total=k.totalHazards||1;
-  var pct=Math.round(done/total*100);
-  SF.chartObjs.push(new Chart(el,{type:'doughnut',
-    data:{labels:['Completed','Remaining'],datasets:[{data:[done,total-done],
-      backgroundColor:['#16a34a','#e2e8f0'],borderWidth:0}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'72%',
-      plugins:{legend:{position:'bottom',labels:{boxWidth:11,font:{size:10}}},
-        tooltip:{enabled:true},
-        title:{display:true,text:pct+'% CAPA completion',font:{size:15}}}}}));
-}
+/* The Safety "Charts" tab was REMOVED. Of its twelve charts, three were not real
+   measurements: "KPI Actual vs Target" carried hardcoded targets (143/50/0/0/143/20),
+   "Monthly KPI Tracker" plotted twelve month labels against an empty dataset, and
+   "CAPA Completion Rate" divided completedActions by totalHazards — unrelated
+   denominators. Four more (Action Status, Risk Classification, Hazards by Section,
+   Risk Heatmap) duplicated the dashboard exactly. The dashboard is the single place
+   safety charts live now; sfChartBarObj/sfChartKpi/sfChartCapa went with the tab.
+   SF.charts data is still loaded — the dashboard and the Incidents tab read it. */
 
 /* ---------- HIRA TAB ---------- */
 function sfRenderHira(){
