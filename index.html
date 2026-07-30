@@ -580,9 +580,15 @@ body {
   white-space:nowrap; font-variant-numeric:tabular-nums; letter-spacing:-0.02em; }
 /* horizontal bars */
 .dc-hbars { display:flex; flex-direction:column; gap:6px; }
-.hb-row { display:flex; align-items:center; gap:7px; }
-.hb-lbl { flex:0 0 38px; font-size:10px; font-weight:700; color:#475569;
+.hb-row { display:flex; align-items:center; gap:8px; }
+/* 38px fitted the 3-letter category codes ("IP", "SST") this column was built for, but
+   Top Machines puts real machine names here and they truncated to "Load …" / "PUM…" —
+   two different loaders both rendered "Load …" and became indistinguishable. 104px
+   holds ~15 characters, enough to separate the names that share a prefix, and the
+   track still has room to read as a proportion at 412px. */
+.hb-lbl { flex:0 0 104px; font-size:10.5px; font-weight:700; color:#475569;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+@media (min-width:1025px){ .hb-lbl { flex:0 0 190px; font-size:11px; } }
 .hb-track { flex:1; height:13px; background:#f1f5f9; border-radius:7px; overflow:hidden; }
 /* Animates transform, not width: width triggers layout on every frame of the
    transition, transform is composited. The element is laid out at full width
