@@ -1951,6 +1951,11 @@ select.fl-ctrl{ font-weight:600; cursor:pointer;
 .fl-g3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
 @media(max-width:460px){ .fl-g3{ grid-template-columns:1fr; } }
 .fl-fld.num .fl-ctrl{ text-align:right; font-variant-numeric:tabular-nums; font-size:19px; font-weight:600; }
+/* The placeholder is a HINT, not a value. Right-aligned at 19px/600 it read as a figure
+   already entered — "e.g. 96.4" sitting exactly where the typed number will appear.
+   Left-aligned, lighter and smaller, it reads as guidance and vacates the numeral slot. */
+.fl-fld.num .fl-ctrl::placeholder{ text-align:left; font-size:14px; font-weight:500;
+  color:var(--flfaint); opacity:1; }
 .fl-ro{ color:var(--flacc); }
 .fl-fld.ph{ position:relative; } .fl-fld.ph .fl-ctrl{ padding-left:34px; }
 .fl-fld.ph label span{ display:none; }
