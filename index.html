@@ -7684,7 +7684,13 @@ function sfIncidentDetail(sr){
       chip('<b>'+sfIncDate(r.date)+(r.time?' '+sfEsc(r.time):'')+'</b>')+
       (r.shift?chip('Shift '+sfEsc(r.shift)):'')+
       chip(sfEsc(r.type))+
-      (r.persons?chip(sfEsc(r.persons)+' person(s)'):'')+
+      /* sfIncPersons, not raw r.persons: that column carries a COUNT on newer rows and a
+         NAME on older ones, so appending " person(s)" produced "Mr. Tarun Mishra
+         person(s)". The row renderer already parses this; the modal was still
+         concatenating blindly. A count reads "2 person(s)", a name reads as the name. */
+      (function(){ var pp=sfIncPersons(r);
+        if(pp.count!=null) return chip(pp.count+(pp.count===1?' person':' persons'));
+        return pp.name? chip(sfEsc(pp.name)) : ''; })()+
     '</div>'+
     // Zone and location are long free-text values that wrap. A dot separator
     // between them strands itself on a line break, so give each its own line.
