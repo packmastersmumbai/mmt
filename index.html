@@ -490,18 +490,11 @@ body {
   .dash-wrap .dash-card, .dash-wrap .dash-2col { margin-top:12px; }
   /* Trend chart earns more height once it has real width to breathe into. */
   .dash-wrap .dc-bars { height:104px; }
-  /* ── Cap the CONTENT, not the card ──
-     The three breakdown cards are full-width by design (that is the sequence), but a
-     bar track stretched to 1600px to express a value of 1 is absurd, and a one-line
-     empty state centred in 1600px of card is unreadable. The card keeps its full
-     width so the stack still reads as one column; the chart inside it stops at a
-     width where a bar length still means something. */
-  .dash-wrap .dc-hbars { max-width:760px; }
-  .dash-wrap .dc-bars  { max-width:900px; }
-  .dash-wrap .dc-empty { max-width:760px; text-align:left; }
-  /* The donut + legend is a compact pair; left-aligned in a full-width card it was
-     trailing ~1400px of empty white. */
-  .dash-wrap .dc-donut-wrap { max-width:420px; }
+  /* The content caps that used to live here (max-width on .dc-hbars / .dc-bars /
+     .dc-donut-wrap) existed because the charts were full-width cards and a bar track
+     stretched to 1600px to express a value of 1 was absurd. In the 4-across row each
+     card is ~330px, so the cap is now the column itself and an explicit max-width
+     would only shrink the charts twice. See .dash-chartrow below. */
 }
 @media (min-width:1601px){
   .dash-wrap { max-width:1440px; }
@@ -617,6 +610,41 @@ body {
   font-weight:600; }
 .dleg-dot { width:9px; height:9px; border-radius:3px; flex-shrink:0; }
 .dleg-v { margin-left:auto; font-weight:800; color:#0f172a; }
+/* ── New Incident form ──
+   Every field carries a visible label, not a placeholder alone: a placeholder vanishes
+   the moment you type, so a half-filled form on a phone becomes a column of anonymous
+   boxes. Two columns from 560px — date/time and type/shift pair naturally. */
+.sfi-form { display:grid; grid-template-columns:1fr; gap:11px; }
+@media (min-width:560px){
+  .sfi-form { grid-template-columns:1fr 1fr; }
+  /* The long free-text fields span both columns — a 2-line textarea in a half-width
+     column fits about four words per line. An explicit .sfi-wide class rather than
+     :has(textarea), so the span does not depend on :has() support. */
+  .sfi-form > .sfi-wide, .sfi-form > .sfi-submit { grid-column:1/-1; }
+}
+.sfi-f { display:flex; flex-direction:column; gap:4px; min-width:0; }
+.sfi-lbl { font-size:11px; font-weight:800; color:#475569; text-transform:uppercase;
+  letter-spacing:.4px; }
+.sfi-form input, .sfi-form select, .sfi-form textarea {
+  width:100%; padding:9px 10px; border:1px solid #cbd5e1; border-radius:7px;
+  font-size:14px; font-family:inherit; color:#0f172a; background:#fff;
+  /* 16px on iOS would be needed to stop zoom-on-focus, but 14px + the meta viewport
+     already in this page is the established pattern for every other form here. */
+  min-height:40px; }
+.sfi-form textarea { min-height:56px; resize:vertical; }
+.sfi-form select { appearance:none; -webkit-appearance:none;
+  /* Inline caret as a data URI — no external asset, and it survives the strict CSP. */
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%2364748b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 11px center; padding-right:30px; }
+.sfi-form input:focus, .sfi-form select:focus, .sfi-form textarea:focus {
+  outline:2px solid #0f766e; outline-offset:-1px; border-color:#0f766e; }
+.sfi-other { margin-top:6px; }
+.sfi-submit { background:#0f766e; color:#fff; border:none; padding:11px;
+  border-radius:8px; font-weight:700; font-size:14px; font-family:inherit;
+  cursor:pointer; min-height:44px; }
+.sfi-submit:hover { background:#0e6b63; }
+.sfi-submit:active { background:#0c5f58; }
+
 /* ── Split KPI tile — open + closed in one cell ──
    Both figures sit on one optical baseline with a hairline between them, so the tile
    reads as one measurement with two parts rather than two stacked numbers. The
@@ -634,6 +662,32 @@ body {
    Four readings in the same tile shell as the KPI row above. 2-up on a phone (four
    across at 412px gives a 95px cell, too narrow for "mean time between failures"),
    4-up from 700px. */
+/* ── The four-chart row ──
+   Stacked by default; one row of four only from 1100px. Below that a quarter-column is
+   under ~250px, where the section names and machine names these charts carry cannot be
+   read, so the phone keeps the full-width stack. */
+.dash-chartrow { display:contents; }
+@media (min-width:1100px){
+  .dash-chartrow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:12px; margin-top:12px; align-items:stretch; }
+  /* display:contents on the wrapper below 1100px means the cards inherit the stack's
+     own margin-top; inside the grid that margin would double the gap. */
+  .dash-chartrow > .dash-card { margin-top:0; display:flex; flex-direction:column; }
+  /* Equal-height cards: the plot area absorbs the slack so all four bottom edges line
+     up regardless of how many bars each one has. */
+  .dash-chartrow > .dash-card > .dc-hbars,
+  .dash-chartrow > .dash-card > .dc-donut-wrap { flex:1; }
+  /* At ~330px the label column and the value both need to shrink, or a 6-bar chart
+     leaves the track about 90px wide. */
+  .dash-chartrow .hb-lbl { flex:0 0 78px; font-size:10px; }
+  .dash-chartrow .hb-val { font-size:10.5px; }
+  .dash-chartrow .dc-bars { height:90px; }
+  /* The donut + legend go vertical in a narrow column — side by side, the legend had
+     ~120px and "CLIT 53" wrapped. */
+  .dash-chartrow .dc-donut-wrap { flex-direction:column; align-items:flex-start; gap:10px; }
+  .dash-chartrow .dc-leg { min-width:0; max-width:none; width:100%; }
+  .dash-chartrow .dc-empty { text-align:center; }
+}
 .dash-sec-hd { font-size:11px; font-weight:800; color:#475569; text-transform:uppercase;
   letter-spacing:.5px; margin:18px 0 8px; }
 /* Four across at every width, including 412px — this is a ROW of readings, and
@@ -3238,29 +3292,41 @@ function renderDashboard() {
       kpi(safetyCrit,'Safety',safetyCrit>0?'critical':'ok',safetyCrit>0?'#dc2626':'#16a34a',"navigate('safety')") +
     '</div>' +
 
-    /* ── The three breakdown views, full width and in sequence ──
-       These answer one question in three steps and are meant to be read in order:
-       WHERE the open breakdowns sit (by category), WHEN they happened (14-day trend),
-       then WHICH machines carry them. Side by side at two columns each chart was
-       half-width and the reading order was ambiguous; stacked full-width, the
-       narrative is the layout and every bar has room for its label. */
-    '<div class="dash-card">' +
-      '<div class="dc-title">Open BD by Category</div>' +
-      '<div class="dc-hbars">' +
-        hbars(catBD, Object.keys(catBD).filter(function(k){return catBD[k]>0;})
-          .sort(function(a,b){return catBD[b]-catBD[a];}).slice(0,6), '#dc2626', _catAbbr) +
-      '</div></div>' +
+    /* ── The four charts in one row ──
+       Read left to right they still tell the breakdown story in order — WHERE the open
+       breakdowns sit, WHEN they happened, WHICH machines carry them — with the activity
+       mix closing the row as the one composition chart.
+       The row only exists at ≥1100px, where a quarter of the container is ~330px and a
+       bar still means something. Below that the cards stack full-width: four charts
+       across a 412px phone would be ~95px each, which is not a chart. */
+    '<div class="dash-chartrow">' +
+      '<div class="dash-card">' +
+        '<div class="dc-title">Open BD by Category</div>' +
+        '<div class="dc-hbars">' +
+          hbars(catBD, Object.keys(catBD).filter(function(k){return catBD[k]>0;})
+            .sort(function(a,b){return catBD[b]-catBD[a];}).slice(0,6), '#dc2626', _catAbbr) +
+        '</div></div>' +
 
-    '<div class="dash-card">' +
-      '<div class="dc-title">Breakdown Trend &middot; 12 weeks</div>' +
-      '<div class="dc-bars" id="dc-trend">'+_trendBars(trend)+'</div>' +
+      '<div class="dash-card">' +
+        '<div class="dc-title">Breakdown Trend &middot; 12 weeks</div>' +
+        '<div class="dc-bars" id="dc-trend">'+_trendBars(trend)+'</div>' +
+      '</div>' +
+
+      '<div class="dash-card">' +
+        '<div class="dc-title">Top Machines &middot; Breakdowns</div>' +
+        '<div class="dc-hbars">' +
+          (recLoaded ? hbars(machBD, topMach, '#ea580c') : '<div class="dc-empty">loading…</div>') +
+        '</div></div>' +
+
+      '<div class="dash-card">' +
+        '<div class="dc-title">Activity Mix &middot; 30d</div>' +
+        '<div class="dc-donut-wrap">'+donutMix+
+          '<div class="dc-leg">' +
+            _legRow(MIX_COLORS[0],'BD',a30[0]) + _legRow(MIX_COLORS[1],'PM',a30[1]) +
+            _legRow(MIX_COLORS[2],'CLIT',a30[2]) +
+          '</div></div>' +
+      '</div>' +
     '</div>' +
-
-    '<div class="dash-card">' +
-      '<div class="dc-title">Top Machines &middot; Breakdowns</div>' +
-      '<div class="dc-hbars">' +
-        (recLoaded ? hbars(machBD, topMach, '#ea580c') : '<div class="dc-empty">loading…</div>') +
-      '</div></div>' +
 
     /* ── Reliability — a row of tiles, not a card of stats ──
        These four are readings, the same kind of thing as the KPI row at the top, so
@@ -3273,17 +3339,6 @@ function renderDashboard() {
       relTile(mttr>0?mttr+'h':'—','MTTR','mean time to repair','#dc2626') +
       relTile(bdClosed,'BD Closed','resolved to date','#16a34a') +
       relTile(bdTotal,'BD Total','all records','#475569') +
-    '</div>' +
-
-    /* ── Activity mix — the one remaining donut, and the only chart here that is a
-       composition rather than a breakdown count. ── */
-    '<div class="dash-card">' +
-      '<div class="dc-title">Activity Mix &middot; 30d</div>' +
-      '<div class="dc-donut-wrap">'+donutMix+
-        '<div class="dc-leg">' +
-          _legRow(MIX_COLORS[0],'BD',a30[0]) + _legRow(MIX_COLORS[1],'PM',a30[1]) +
-          _legRow(MIX_COLORS[2],'CLIT',a30[2]) +
-        '</div></div>' +
     '</div>' +
 
     /* The fleet strip that used to sit here is gone — the "Machines" KPI at the top
@@ -7562,26 +7617,89 @@ function sfCloseModal(){
   if(typeof closeFormModal==='function'){ try{closeFormModal();}catch(e){} }
 }
 
+/* Distinct values for a field, taken from the register that is already loaded. The
+   server sends facets for type/zone/shift but not for location, so location is derived
+   from SF.incidents — same source, no extra round trip, and it stays correct as the
+   register grows. Values are NOT filtered against a hardcoded list: zone naming in the
+   sheet genuinely mixes three schemes (HIRA sections "A:", zone codes "Z-01", and plain
+   names like "Security Gate") and dropping any of them would hide real rows. */
+function sfIncOptionsFor(field){
+  var f = SF.incFacets||{};
+  if(f[field] && f[field].length) return f[field].slice();
+  var seen={}, out=[];
+  (SF.incidents||[]).forEach(function(r){
+    var v=String(r[field]==null?'':r[field]).trim();
+    if(v && !seen[v]){ seen[v]=1; out.push(v); }
+  });
+  return out.sort(function(a,b){ return a.localeCompare(b); });
+}
+/* A <select> over known values plus an "Other…" escape hatch. A closed list would block
+   the first genuinely new zone or location from ever being logged, so picking "Other…"
+   reveals a free-text box; the dropdown covers the 95% case with two taps and no typing,
+   which is what a plant floor on a phone needs. */
+function sfIncSelect(id, label, opts){
+  return '<label class="sfi-f"><span class="sfi-lbl">'+sfEsc(label)+'</span>'+
+    '<select id="'+id+'" onchange="sfIncOtherToggle(\''+id+'\')">'+
+      '<option value="">'+sfEsc(label)+'…</option>'+
+      opts.map(function(v){ return '<option value="'+sfEsc(v)+'">'+sfEsc(v)+'</option>'; }).join('')+
+      '<option value="__other">Other… (type a new one)</option>'+
+    '</select>'+
+    '<input id="'+id+'-other" class="sfi-other" style="display:none" '+
+      'placeholder="New '+sfEsc(label).toLowerCase()+'" /></label>';
+}
+function sfIncOtherToggle(id){
+  var sel=document.getElementById(id), box=document.getElementById(id+'-other');
+  if(!sel||!box) return;
+  var other = sel.value==='__other';
+  box.style.display = other ? 'block' : 'none';
+  if(other) box.focus();
+}
+/* Read a select-with-Other pair as one value. */
+function sfIncPick(id){
+  var sel=document.getElementById(id), box=document.getElementById(id+'-other');
+  if(!sel) return '';
+  if(sel.value==='__other') return box ? box.value.trim() : '';
+  return sel.value;
+}
 function sfNewIncident(){
-  var body='<div style="display:flex;flex-direction:column;gap:8px;font-size:12px">'+
-    '<input id="sfi-date" type="date" />'+
-    '<input id="sfi-time" placeholder="Time (e.g. 14:30)" />'+
-    '<input id="sfi-type" placeholder="Incident Type" />'+
-    '<input id="sfi-persons" placeholder="Person(s)" />'+
-    '<input id="sfi-zone" placeholder="Dept / Zone" />'+
-    '<input id="sfi-loc" placeholder="Location" />'+
-    '<textarea id="sfi-desc" placeholder="Description" rows="2"></textarea>'+
-    '<textarea id="sfi-rc" placeholder="Root Cause" rows="2"></textarea>'+
-    '<textarea id="sfi-capa" placeholder="CAPA / Corrective Action" rows="2"></textarea>'+
-    '<button onclick="sfSubmitIncident()" style="background:#0f766e;color:#fff;border:none;'+
-      'padding:9px;border-radius:7px;font-weight:700">Log Incident</button></div>';
+  var body='<div class="sfi-form">'+
+    '<label class="sfi-f"><span class="sfi-lbl">Date</span>'+
+      '<input id="sfi-date" type="date" /></label>'+
+    '<label class="sfi-f"><span class="sfi-lbl">Time</span>'+
+      '<input id="sfi-time" type="time" /></label>'+
+    sfIncSelect('sfi-type',  'Incident type', sfIncOptionsFor('type'))+
+    sfIncSelect('sfi-shift', 'Shift',         sfIncOptionsFor('shift'))+
+    '<label class="sfi-f"><span class="sfi-lbl">Person(s)</span>'+
+      '<input id="sfi-persons" placeholder="How many people, or a name" /></label>'+
+    sfIncSelect('sfi-zone',  'Dept / Zone',   sfIncOptionsFor('zone'))+
+    sfIncSelect('sfi-loc',   'Location',      sfIncOptionsFor('location'))+
+    '<label class="sfi-f sfi-wide"><span class="sfi-lbl">What happened</span>'+
+      '<textarea id="sfi-desc" placeholder="Describe the incident" rows="2"></textarea></label>'+
+    '<label class="sfi-f sfi-wide"><span class="sfi-lbl">Root cause</span>'+
+      '<textarea id="sfi-rc" placeholder="Why it happened" rows="2"></textarea></label>'+
+    '<label class="sfi-f sfi-wide"><span class="sfi-lbl">CAPA / corrective action</span>'+
+      '<textarea id="sfi-capa" placeholder="What will stop it recurring" rows="2"></textarea></label>'+
+    '<button class="sfi-submit" onclick="sfSubmitIncident()">Log Incident</button></div>';
   sfModal('New Incident', body);
+  // Default the date to today — an incident is logged the day it happens, and a
+  // pre-filled date is one less field to fill on a phone.
+  var d=document.getElementById('sfi-date');
+  if(d && !d.value){ var t=new Date();
+    d.value=t.getFullYear()+'-'+('0'+(t.getMonth()+1)).slice(-2)+'-'+('0'+t.getDate()).slice(-2); }
 }
 function sfSubmitIncident(){
-  var d={ date:val('sfi-date'),time:val('sfi-time'),type:val('sfi-type'),
-    persons:val('sfi-persons'),zone:val('sfi-zone'),location:val('sfi-loc'),
+  function val(id){var e=document.getElementById(id);return e?e.value.trim():'';}
+  // type/shift/zone/location come from a <select> that may be set to "Other…", so they
+  // are read through sfIncPick rather than straight off the element.
+  var d={ date:val('sfi-date'), time:val('sfi-time'),
+    type:sfIncPick('sfi-type'), shift:sfIncPick('sfi-shift'),
+    persons:val('sfi-persons'),
+    zone:sfIncPick('sfi-zone'), location:sfIncPick('sfi-loc'),
     description:val('sfi-desc'),rootCause:val('sfi-rc'),capa:val('sfi-capa') };
-  function val(id){var e=document.getElementById(id);return e?e.value:'';}
+  // Type and description are what make a record identifiable in the register; without
+  // them the row is unusable, so fail here rather than writing a blank line to a sheet.
+  if(!d.type){ showStatus('Pick an incident type','error',3000); return; }
+  if(!d.description){ showStatus('Describe what happened','error',3000); return; }
   showStatus('Logging incident…','info',0);
   google.script.run.withSuccessHandler(function(res){
     if(res&&res.success){ sfCloseModal(); showStatus('Incident logged','success',2500);
