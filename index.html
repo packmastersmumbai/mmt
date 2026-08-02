@@ -943,6 +943,20 @@ body {
 .cl-photo-box input { width:100%; padding:8px; border:2px dashed #4caf50; border-radius:4px; font-size:12px; cursor:pointer; }
 .cl-photo-box .btn-close { position:absolute; top:8px; right:8px; width:24px; height:24px; border-radius:50%; border:none; background:#f5f5f5; font-size:15px; cursor:pointer; }
 
+/* ── CLIT FORM PHOTOS ── */
+.clit-photos { display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 0; }
+.clit-ph { position:relative; width:76px; height:76px; padding:0; border:1px solid #e2e8f0;
+  border-radius:9px; overflow:hidden; background:#f8fafc; cursor:pointer; }
+.clit-ph img { width:100%; height:100%; object-fit:cover; display:block; }
+.clit-ph-meta { position:absolute; left:0; right:0; bottom:0; display:flex; align-items:center;
+  gap:4px; padding:2px 4px; background:rgba(15,23,42,0.78); color:#fff; font-size:9px; font-weight:700; }
+.clit-ph-meta i { font-style:normal; }
+.clit-ph-meta .ok  { color:#4ade80; }
+.clit-ph-meta .bad { color:#f87171; }
+.clit-addphoto { margin-top:8px; min-height:42px; width:100%; border:1px dashed #94a3b8;
+  border-radius:9px; background:#f8fafc; color:#334155; font-size:13px; font-weight:700; cursor:pointer; }
+.clit-photo-hint { margin-top:6px; font-size:10px; color:#64748b; line-height:1.5; }
+
 /* ── PHOTO ANNOTATOR ──────────────────────────────────────────────────────
    Full-bleed photo with overlay sheets rather than a permanent side panel:
    on a phone a fixed legend would eat the half of the screen you need to see
@@ -993,6 +1007,43 @@ body {
 .ann-dot.on { background:#fff; }
 
 .ann-foot { flex-shrink:0; padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px)); background:#0f172a; }
+
+/* Legend (CLIT only): number + item name + status icon, beside the photo.
+   Capped and scrollable so a long C/L/I/T list never pushes the photo away. */
+.ann-legend { display:flex; flex-direction:column; gap:4px; max-height:23vh; overflow-y:auto; margin-bottom:8px; }
+.ann-leg { display:flex; align-items:center; gap:8px; width:100%; min-height:34px; padding:4px 8px;
+  border:1px solid transparent; border-radius:8px; background:#1e293b; cursor:pointer; text-align:left; }
+.ann-leg.here { border-color:#334155; }
+.ann-leg-n { width:20px; height:20px; flex-shrink:0; border-radius:5px; background:#475569; color:#fff;
+  font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.ann-leg-x { flex:1; min-width:0; }
+.ann-leg-en { display:block; font-size:11px; font-weight:600; color:#e2e8f0;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ann-leg-note { display:block; font-size:10px; color:#94a3b8;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ann-leg-s { width:20px; height:20px; flex-shrink:0; border-radius:50%; color:#fff;
+  font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.ann-leg-s.pin-s0 { background:#64748b; } .ann-leg-s.pin-s1 { background:#16a34a; } .ann-leg-s.pin-s2 { background:#dc2626; }
+.ann-leg-empty { font-size:11px; color:#64748b; padding:6px 2px; }
+
+/* C/L/I/T identity colours — same hues the CLIT form already uses. Applied to
+   the legend chip and to unmarked pins; a marked pin keeps its status colour. */
+.ann-leg-n.t-C { background:#0ea5e9; } .ann-leg-n.t-L { background:#f97316; }
+.ann-leg-n.t-I { background:#8b5cf6; } .ann-leg-n.t-T { background:#10b981; }
+.ann-pin.t-C .ann-pin-body { background:#0ea5e9; }
+.ann-pin.t-L .ann-pin-body { background:#f97316; }
+.ann-pin.t-I .ann-pin-body { background:#8b5cf6; }
+.ann-pin.t-T .ann-pin-body { background:#10b981; }
+.ann-pitem b.t-C { background:none !important; color:#0ea5e9; }
+.ann-pitem b.t-L { background:none !important; color:#f97316; }
+.ann-pitem b.t-I { background:none !important; color:#8b5cf6; }
+.ann-pitem b.t-T { background:none !important; color:#10b981; }
+.ann-grp { display:flex; align-items:center; gap:7px; padding:10px 2px 4px; font-size:10px;
+  font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:#64748b; background:none !important; }
+.ann-grp > span { width:18px; height:18px; border-radius:4px; color:#fff; font-size:10px;
+  display:flex; align-items:center; justify-content:center; }
+.ann-grp.t-C > span { background:#0ea5e9; } .ann-grp.t-L > span { background:#f97316; }
+.ann-grp.t-I > span { background:#8b5cf6; } .ann-grp.t-T > span { background:#10b981; }
 .ann-strip { display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; }
 .ann-thumb { position:relative; width:46px; height:46px; flex-shrink:0; border-radius:8px; overflow:hidden;
   border:2px solid transparent; background:#1e293b; padding:0; cursor:pointer; }
@@ -2447,6 +2498,7 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
       <div class="ann-dots" id="cl-annDots"></div>
     </div>
     <div class="ann-foot">
+      <div class="ann-legend" id="cl-annLegend"></div>
       <div class="ann-strip" id="cl-annStrip"></div>
       <div class="ann-tallyrow">
         <div class="ann-tally" id="cl-annTally"></div>
@@ -4784,6 +4836,8 @@ function clToggleTask(id) {
 
 function clOpenPhoto(id) {
   _clPhotoTarget = id;
+  _clPhotoMode   = 'free';   // checklist capture — plain numbered pins
+  _clPhotoItems  = [];
   document.getElementById('cl-photoTitle').textContent = 'Task ' + id + ' - Photo';
   document.getElementById('cl-photoModal').classList.add('show');
 }
@@ -4852,7 +4906,10 @@ function clHandlePhoto() {
       clClosePhoto();
       // Jump straight into the annotator on the shot just taken \u2014 the operator
       // is looking at the machine right now, which is when they can place pins.
-      clOpenAnnotator(id, _clPhotos[id].length - 1);
+      // Checklist photos belong to one timed task, so there is nothing to pick
+      // from: free mode drops plain numbered pins. A CLIT capture sets
+      // _clPhotoMode first, so re-entry from "+ Photo" keeps its legend.
+      clOpenAnnotator(id, _clPhotos[id].length - 1, _clPhotoMode || 'free', _clPhotoItems);
     };
     img.src = e.target.result;
   };
@@ -4865,6 +4922,8 @@ function clHandlePhoto() {
  * preview/print paths need no change.
  */
 function _clSyncPhotoRow(id) {
+  // CLIT keeps its photos in the form, not a checklist task row.
+  if (id === 'clit') { clitRenderPhotos(); return; }
   var list = _clPhotos[id] || [];
   _b64[id] = list.length ? list[0].url : undefined;
   if (!list.length) delete _b64[id];
@@ -4875,7 +4934,7 @@ function _clSyncPhotoRow(id) {
       prev.src = list[0].url;
       prev.style.display = 'inline-block';
       prev.style.cursor = 'pointer';
-      prev.onclick = function(){ clOpenAnnotator(id, 0); };
+      prev.onclick = function(){ clOpenAnnotator(id, 0, 'free'); };
     } else {
       prev.removeAttribute('src');
       prev.style.display = 'none';
@@ -4905,19 +4964,37 @@ function clViewImg(src) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   CLIT PHOTO ANNOTATOR
-   The photo is the proof; the pins say what it proves. A point belongs to
-   exactly one photo, so multi-shot tasks stay unambiguous. Only one overlay
-   sheet is ever open, and the sheet is capped so the photo stays visible —
-   on a phone you must see where the pin lands while you drag it.
+   PHOTO ANNOTATOR — shared by Checklist and CLIT
+   The photo is the proof; the pins say what it proves. Two modes:
+
+     'free'   (Daily Checklist) — the photo already belongs to one timed task,
+              so there is nothing to choose. "+ Point" drops an auto-numbered
+              pin straight onto the image. No legend, no picker.
+
+     'legend' (CLIT) — the pins ARE the C/L/I/T checklist items, so each pin
+              carries a real item and the legend beside the photo lists
+              number + name + status.
+
+   A point belongs to exactly one photo, so multi-shot records stay
+   unambiguous. Only one overlay sheet is ever open, and the sheet is capped
+   so the photo stays visible — on a phone you must see where the pin lands
+   while you drag it.
    ═══════════════════════════════════════════════════════════════════════ */
 
-function clOpenAnnotator(taskId, photoIdx) {
+var _clAnnMode  = 'free';   // 'free' | 'legend'
+var _clAnnItems = [];       // legend mode: [{type,en,hi}] indexed by point number
+var _clPhotoMode  = 'free'; // mode the pending capture belongs to
+var _clPhotoItems = [];     // legend items for that pending capture
+
+function clOpenAnnotator(taskId, photoIdx, mode, items) {
   if (!(_clPhotos[taskId] || []).length) return;
   _clAnnTask  = taskId;
   _clAnnPhoto = photoIdx || 0;
   _clAnnSel   = null;
   _clAnnPlacing = null;
+  _clAnnMode  = mode || 'free';
+  _clAnnItems = items || [];
+  document.getElementById('cl-annModal').classList.toggle('mode-legend', _clAnnMode === 'legend');
   document.getElementById('cl-annModal').classList.add('show');
   document.body.style.overflow = 'hidden';
   clAnnRender();
@@ -4946,7 +5023,8 @@ function clAnnRender() {
   var cur = _clAnnCur();
   if (!cur) { clCloseAnnotator(); return; }
 
-  document.getElementById('cl-annTitle').textContent = 'Task ' + _clAnnTask;
+  document.getElementById('cl-annTitle').textContent =
+    _clAnnMode === 'legend' ? 'CLIT — Photo ' + (_clAnnPhoto + 1) : 'Task ' + _clAnnTask;
   document.getElementById('cl-annImg').src = cur.url;
 
   // Page dots — only meaningful with more than one shot.
@@ -4958,6 +5036,46 @@ function clAnnRender() {
   clAnnRenderPins();
   clAnnRenderStrip();
   clAnnRenderTally();
+  clAnnRenderLegend();
+}
+
+/**
+ * clAnnRenderLegend() — the key beside the photo: point number, item name and
+ * its status icon. Legend mode only; in free mode a pin has no item to name,
+ * so a legend would just repeat the numbers already visible on the image.
+ * Tapping a row jumps to that pin's photo and selects it.
+ */
+function clAnnRenderLegend() {
+  var box = document.getElementById('cl-annLegend');
+  if (_clAnnMode !== 'legend') { box.innerHTML = ''; box.style.display = 'none'; return; }
+  box.style.display = '';
+
+  var all = _clAnnAllPins();
+  if (!all.length) {
+    box.innerHTML = '<div class="ann-leg-empty">No points yet — tap + Point</div>';
+    return;
+  }
+  all.sort(function(a, b) { return (parseInt(a.pin.p,10)||0) - (parseInt(b.pin.p,10)||0); });
+
+  box.innerHTML = all.map(function(o) {
+    var st = CL_PIN_STATUS[o.pin.s] || CL_PIN_STATUS[0];
+    var t  = _clPointType(o.pin.p);
+    return '<button class="ann-leg' + (o.photo === _clAnnPhoto ? ' here' : '') + '"' +
+           ' onclick="clAnnJumpPin(' + o.photo + ',' + o.idx + ')">' +
+           '<span class="ann-leg-n t-' + t + '">' + esc(String(o.pin.p)) + '</span>' +
+           '<span class="ann-leg-x">' +
+             '<span class="ann-leg-en">' + esc(_clPointLabel(o.pin.p)) + '</span>' +
+             (o.pin.n ? '<span class="ann-leg-note">' + esc(o.pin.n) + '</span>' : '') +
+           '</span>' +
+           '<span class="ann-leg-s ' + st.cls + '">' + st.mark + '</span>' +
+           '</button>';
+  }).join('');
+}
+
+/** Jump to the photo holding a pin and open its status sheet. */
+function clAnnJumpPin(photoIdx, pinIdx) {
+  if (photoIdx !== _clAnnPhoto) { _clAnnPhoto = photoIdx; clAnnRender(); }
+  clAnnOpenStatus(pinIdx);
 }
 
 function clAnnRenderPins() {
@@ -4965,7 +5083,10 @@ function clAnnRenderPins() {
   var cur = _clAnnCur();
   layer.innerHTML = cur.pins.map(function(pin, i) {
     var st = CL_PIN_STATUS[pin.s] || CL_PIN_STATUS[0];
-    return '<button class="ann-pin ' + st.cls + (i === _clAnnSel ? ' sel' : '') + '"' +
+    // An unmarked CLIT pin wears its C/L/I/T colour so the discipline reads off
+    // the photo; once marked, status colour wins because that is the finding.
+    var t = pin.s === 0 ? _clPointType(pin.p) : '';
+    return '<button class="ann-pin ' + st.cls + (t ? ' t-' + t : '') + (i === _clAnnSel ? ' sel' : '') + '"' +
            ' style="left:' + pin.x + '%;top:' + pin.y + '%"' +
            ' data-i="' + i + '"' +
            ' aria-label="Point ' + esc(String(pin.p)) + ' — ' + st.label + '">' +
@@ -5008,6 +5129,8 @@ function clAnnGoPhoto(i) {
 function clAnnAddPhoto() {
   clAnnCloseSheets();
   _clPhotoTarget = _clAnnTask;
+  _clPhotoMode   = _clAnnMode;
+  _clPhotoItems  = _clAnnItems;
   document.getElementById('cl-photoTitle').textContent = 'Task ' + _clAnnTask + ' - Add Photo';
   document.getElementById('cl-photoModal').classList.add('show');
 }
@@ -5043,34 +5166,57 @@ function _clAnnPlacedIds() {
 }
 
 function clAnnOpenPoints() {
-  clAnnCloseSheets();
-  var placed = _clAnnPlacedIds();
-  var pending = [], elsewhere = [];
+  // Free mode has nothing to pick from — the photo already belongs to one task,
+  // so just drop the next numbered pin and go straight to positioning it.
+  if (_clAnnMode === 'free') {
+    clAnnCloseSheets();
+    var next = 1;
+    _clAnnAllPins().forEach(function(o) {
+      var n = parseInt(o.pin.p, 10);
+      if (!isNaN(n) && n >= next) next = n + 1;
+    });
+    clAnnBeginPlace(String(next));
+    return;
+  }
 
-  CL_SECTION_TASKS[_clAnnSection()].forEach(function(pid) {
+  clAnnCloseSheets();
+  var pending = [], elsewhere = [];
+  _clAnnItems.forEach(function(item, i) {
+    var pid = String(i + 1);
     var at = _clAnnFindPoint(pid);
-    if (at === -1) pending.push(pid);
-    else if (at !== _clAnnPhoto) elsewhere.push({ id: pid, photo: at });
+    if (at === -1) pending.push({ id: pid, item: item });
+    else if (at !== _clAnnPhoto) elsewhere.push({ id: pid, item: item, photo: at });
   });
 
   var html = '';
   html += '<div class="ann-sheet-h"><span class="ann-grab"></span></div>';
   html += '<div class="ann-sheet-t">Place a point on this photo</div>';
+
   if (pending.length) {
-    html += '<div class="ann-plist">' + pending.map(function(pid) {
-      return '<button class="ann-pitem" onclick="clAnnBeginPlace(\'' + esc(pid) + '\')">' +
-             '<b>' + esc(pid) + '</b><span>' + esc(_clPointLabel(pid)) + '</span>' +
-             '<i>&#8250;</i></button>';
+    // Grouped by C/L/I/T so the operator scans by discipline, not a flat list.
+    var lastType = null;
+    html += '<div class="ann-plist">' + pending.map(function(o) {
+      var t = (o.item.type || 'C').toUpperCase().charAt(0);
+      var head = '';
+      if (t !== lastType) {
+        lastType = t;
+        head = '<div class="ann-grp t-' + t + '"><span>' + t + '</span>' +
+               esc(CLIT_TYPE_LABEL[t] || t) + '</div>';
+      }
+      return head + '<button class="ann-pitem" onclick="clAnnBeginPlace(\'' + esc(o.id) + '\')">' +
+             '<b class="t-' + t + '">' + esc(o.id) + '</b>' +
+             '<span>' + esc(o.item.en || '') + '</span><i>&#8250;</i></button>';
     }).join('') + '</div>';
   } else {
-    html += '<div class="ann-empty">All points placed &#10003;</div>';
+    html += '<div class="ann-empty">All items placed &#10003;</div>';
   }
+
   if (elsewhere.length) {
     html += '<button class="ann-fold" onclick="this.nextElementSibling.classList.toggle(\'show\')">' +
             'On other photos (' + elsewhere.length + ') &#8964;</button>';
     html += '<div class="ann-plist ann-foldable">' + elsewhere.map(function(o) {
       return '<button class="ann-pitem dim" onclick="clAnnGoPhoto(' + o.photo + ')">' +
-             '<b>' + esc(o.id) + '</b><span>' + esc(_clPointLabel(o.id)) + '</span>' +
+             '<b>' + esc(o.id) + '</b><span>' + esc(o.item.en || '') + '</span>' +
              '<i>&#9635;' + (o.photo + 1) + '</i></button>';
     }).join('') + '</div>';
   }
@@ -5080,6 +5226,8 @@ function clAnnOpenPoints() {
   sheet.classList.add('show');
   document.getElementById('cl-annModal').classList.add('sheeted');
 }
+
+var CLIT_TYPE_LABEL = { C:'Cleaning', L:'Lubrication', I:'Inspection', T:'Tightening' };
 
 /** Which section the open task belongs to — drives the selectable point list. */
 function _clAnnSection() {
@@ -5099,12 +5247,21 @@ function _clAnnFindPoint(pid) {
   return hit;
 }
 
-/** Short label for a point, read from the rendered task row. */
+/** Short label for a point. Legend mode names the CLIT item; free mode has no
+ *  item behind the pin, so the operator's note is the only label there is. */
 function _clPointLabel(pid) {
-  var row = document.getElementById('btn-' + pid);
-  var item = row && row.closest ? row.closest('.task-item') : null;
-  var en = item ? item.querySelector('.task-en') : null;
-  return en ? en.textContent.trim() : ('Point ' + pid);
+  if (_clAnnMode === 'legend') {
+    var it = _clAnnItems[parseInt(pid, 10) - 1];
+    return it ? (it.en || ('Item ' + pid)) : ('Item ' + pid);
+  }
+  return 'Point ' + pid;
+}
+
+/** C/L/I/T letter behind a point, for colour-coding. Legend mode only. */
+function _clPointType(pid) {
+  if (_clAnnMode !== 'legend') return '';
+  var it = _clAnnItems[parseInt(pid, 10) - 1];
+  return it ? (it.type || 'C').toUpperCase().charAt(0) : '';
 }
 
 /** Drop a pin dead-centre, then let the operator drag it to the real spot. */
@@ -5166,11 +5323,13 @@ function clAnnSetStatus(si) {
   clAnnOpenStatus(_clAnnSel);
   clAnnRenderTally();
   clAnnRenderStrip();
+  clAnnRenderLegend();
 }
 
 function clAnnSetNote(v) {
   var pin = _clAnnCur().pins[_clAnnSel];
   if (pin) pin.n = v;
+  clAnnRenderLegend();
 }
 
 function clAnnRemovePin() {
@@ -6616,6 +6775,10 @@ function showCLITForm(machineId) {
       var t = (item.type||'C').toUpperCase().charAt(0);
       return {type:t, en:item.en||'', hi:item.hi||'', freq:item.freq||'', tool:item.tool||'', _idx:idx};
     });
+    // Photo state for this form instance. Keyed 'clit' in the shared _clPhotos
+    // store so the annotator, which is task-keyed, can drive it unchanged.
+    _clitItemDefs = allItems;
+    _clPhotos['clit'] = [];
 
     bodyEl.innerHTML =
       '<div style="background:'+mColor+';color:white;padding:12px 16px;margin:-0px;border-radius:0;margin-bottom:12px">'+
@@ -6632,12 +6795,60 @@ function showCLITForm(machineId) {
           taskRows+
         '</div>'+
       '</div>'+
+      '<div class="form-row"><label>Photos &amp; Points / फ़ोटो और बिंदु</label>'+
+        '<div class="clit-photos" id="f-clit-photos"></div>'+
+        '<button type="button" class="clit-addphoto" onclick="clitAddPhoto(\''+esc(machineId)+'\')">'+
+          '&#128247; Add Photo'+
+        '</button>'+
+        '<div class="clit-photo-hint">Add a photo, then pin the C/L/I/T items on it and mark each Done, Not done or Problem.</div>'+
+      '</div>'+
       '<div class="form-row"><label>Remarks / Observations</label>'+
         '<textarea id="f-rmk" rows="3" placeholder="Consumables used, oil type, parts replaced, observations…&#10;उपयोग किए गए सामान, टिप्पणियाँ…"></textarea>'+
       '</div>'+
       '<button class="form-submit-btn" id="f-submit" style="background:'+mColor+'" onclick="submitCLITForm(\''+esc(machineId)+'\')">&#x2713; Submit CLIT Record</button>'+
       '<div class="form-msg" id="f-msg"></div>';
+    clitRenderPhotos();
   });
+}
+
+// ═══════════════════════════════════════════════════════
+// CLIT PHOTOS — the annotator in 'legend' mode, where each pin is a real
+// C/L/I/T checklist item rather than an anonymous spot on the image.
+// ═══════════════════════════════════════════════════════
+
+var _clitItemDefs = [];
+
+/** Open the camera for a CLIT photo. Reuses the checklist capture pipeline
+ *  (downscale → _stampImage watermark → JPEG) via the shared photo modal. */
+function clitAddPhoto(machineId) {
+  _clPhotoTarget = 'clit';
+  _clPhotoMode   = 'legend';
+  _clPhotoItems  = _clitItemDefs;
+  document.getElementById('cl-photoTitle').textContent = 'CLIT — ' + machineId + ' Photo';
+  document.getElementById('cl-photoModal').classList.add('show');
+}
+
+/** Thumbnail row under the CLIT form, showing pin progress per photo. */
+function clitRenderPhotos() {
+  var box = document.getElementById('f-clit-photos');
+  if (!box) return;
+  var list = _clPhotos['clit'] || [];
+  if (!list.length) { box.innerHTML = ''; return; }
+  box.innerHTML = list.map(function(ph, i) {
+    var d = 0, p = 0;
+    ph.pins.forEach(function(pin){ if (pin.s===1) d++; else if (pin.s===2) p++; });
+    return '<button type="button" class="clit-ph" onclick="clitOpenPhoto(' + i + ')">' +
+      '<img src="' + ph.url + '" alt="CLIT photo ' + (i+1) + '">' +
+      '<span class="clit-ph-meta">' +
+        '<b>' + ph.pins.length + ' pt</b>' +
+        (d ? '<i class="ok">' + d + '✓</i>' : '') +
+        (p ? '<i class="bad">' + p + '!</i>' : '') +
+      '</span></button>';
+  }).join('');
+}
+
+function clitOpenPhoto(i) {
+  clOpenAnnotator('clit', i, 'legend', _clitItemDefs);
 }
 
 function submitCLITForm(machineId) {
@@ -6691,7 +6902,11 @@ function submitCLITForm(machineId) {
       clitDate: document.getElementById('f-dt').value,
       clitTime: document.getElementById('f-tm').value,
       checklistItems: items,
-      remarks: (document.getElementById('f-rmk').value || '').trim()
+      remarks: (document.getElementById('f-rmk').value || '').trim(),
+      // Annotated proof: image data URLs plus the pins placed on each. Pins stay
+      // coordinates, never burned into the JPEG, so the images stay micro.
+      photos: (_clPhotos['clit'] || []).map(function(ph){ return ph.url; }),
+      annotations: (_clPhotos['clit'] || []).map(function(ph){ return ph.pins; })
     });
 }
 
