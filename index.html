@@ -943,6 +943,123 @@ body {
 .cl-photo-box input { width:100%; padding:8px; border:2px dashed #4caf50; border-radius:4px; font-size:12px; cursor:pointer; }
 .cl-photo-box .btn-close { position:absolute; top:8px; right:8px; width:24px; height:24px; border-radius:50%; border:none; background:#f5f5f5; font-size:15px; cursor:pointer; }
 
+/* ── PHOTO ANNOTATOR ──────────────────────────────────────────────────────
+   Full-bleed photo with overlay sheets rather than a permanent side panel:
+   on a phone a fixed legend would eat the half of the screen you need to see
+   while positioning a pin. Sheets cap at 45vh so the stage never disappears. */
+.ann-modal { display:none; position:fixed; inset:0; z-index:1100; background:#0b1220; flex-direction:column; }
+.ann-modal.show { display:flex; }
+.ann-bar { display:flex; align-items:center; gap:10px; padding:10px 12px; color:#e2e8f0; font-size:13px; font-weight:700; flex-shrink:0; }
+.ann-bar span { flex:1; }
+.ann-x, .ann-del { width:34px; height:34px; border:none; border-radius:8px; background:rgba(255,255,255,0.08); color:#e2e8f0; font-size:16px; cursor:pointer; }
+/* The frame shrink-wraps the letterboxed photo so pin percentages are relative
+   to the IMAGE, not the stage. Positioning against the stage would drift a pin
+   into the black bars on any aspect ratio that does not match the viewport. */
+.ann-stage { position:relative; flex:1; min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden; touch-action:none; }
+.ann-frame { position:relative; display:inline-block; max-width:100%; max-height:100%; line-height:0; }
+.ann-frame img { display:block; max-width:100%; max-height:100%; width:auto; height:auto;
+  -webkit-user-drag:none; user-select:none; }
+.ann-pins { position:absolute; inset:0; pointer-events:none; }
+
+/* Pin: 44px hit area via padding, but a small painted body so it never hides
+   the very detail it is pointing at. The tip sits on the stored coordinate. */
+/* 44px hit area, small painted body. The body is anchored to the BOTTOM of the
+   hit box and the box is translated up by exactly its own height, so the
+   teardrop's tip lands on the stored coordinate with no magic offset. */
+.ann-pin { position:absolute; transform:translate(-50%,-100%); width:44px; height:44px;
+  padding:0; border:none; background:none; cursor:grab; pointer-events:auto;
+  display:flex; align-items:flex-end; justify-content:center; touch-action:none; }
+.ann-pin:active { cursor:grabbing; }
+/* Teardrop: three round corners and one square one. Rotating 45deg swings that
+   square corner to the bottom, so it becomes the tip. The glyph is
+   counter-rotated so it still reads upright.
+   Rotating a 26px square by 45deg makes its bounding box 26*sqrt(2) tall, and the
+   corner overhangs by (26*1.414-26)/2 = 5.4px. That overhang is exactly what puts
+   the corner on the coordinate once align-items:flex-end sits the box there — so
+   no extra nudge is correct. Verified: +5.4px and -5.4px both miss by 5.4px. */
+.ann-pin-body { width:26px; height:26px; border-radius:50% 50% 2px 50%;
+  transform:rotate(45deg);
+  display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800;
+  line-height:1; color:#fff; border:2px solid rgba(255,255,255,0.9);
+  box-shadow:0 2px 6px rgba(0,0,0,0.45); }
+.ann-pin-body > span { transform:rotate(-45deg); }
+.ann-pin.sel .ann-pin-body { outline:3px solid #38bdf8; outline-offset:2px; }
+.pin-s0 .ann-pin-body { background:#64748b; }
+.pin-s1 .ann-pin-body { background:#16a34a; }
+.pin-s2 .ann-pin-body { background:#dc2626; }
+
+.ann-dots { position:absolute; bottom:8px; left:0; right:0; display:flex; gap:5px; justify-content:center; }
+.ann-dot { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.35); }
+.ann-dot.on { background:#fff; }
+
+.ann-foot { flex-shrink:0; padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px)); background:#0f172a; }
+.ann-strip { display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; }
+.ann-thumb { position:relative; width:46px; height:46px; flex-shrink:0; border-radius:8px; overflow:hidden;
+  border:2px solid transparent; background:#1e293b; padding:0; cursor:pointer; }
+.ann-thumb.on { border-color:#38bdf8; }
+.ann-thumb img { width:100%; height:100%; object-fit:cover; }
+.ann-badge { position:absolute; right:1px; bottom:1px; min-width:15px; height:15px; border-radius:8px;
+  background:rgba(0,0,0,0.75); color:#fff; font-size:9px; font-weight:700; line-height:15px; }
+.ann-add { color:#94a3b8; font-size:20px; display:flex; align-items:center; justify-content:center; border:1px dashed #334155; }
+.ann-tallyrow { display:flex; align-items:center; gap:10px; }
+.ann-tally { flex:1; display:flex; gap:10px; font-size:11px; font-weight:700; }
+.ann-tally .t-d { color:#4ade80; } .ann-tally .t-p { color:#f87171; } .ann-tally .t-n { color:#94a3b8; }
+.ann-addpt { min-height:38px; padding:0 16px; border:none; border-radius:9px; background:#2563eb; color:#fff;
+  font-size:13px; font-weight:700; cursor:pointer; }
+
+/* Single-line drag hint — chrome-free so nothing competes while positioning. */
+.ann-hint { display:none; position:absolute; left:0; right:0; bottom:0; align-items:center; gap:8px;
+  padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px)); background:#1e293b; color:#e2e8f0;
+  font-size:12px; border-top:1px solid #334155; }
+.ann-hint.show { display:flex; }
+.ann-hint b { color:#38bdf8; }
+.ann-set { margin-left:auto; min-height:36px; padding:0 18px; border:none; border-radius:8px;
+  background:#16a34a; color:#fff; font-size:13px; font-weight:700; cursor:pointer; }
+
+.ann-sheet { display:none; position:absolute; left:0; right:0; bottom:0; max-height:45vh; overflow-y:auto;
+  background:#fff; border-radius:16px 16px 0 0; padding:0 14px calc(16px + env(safe-area-inset-bottom,0px));
+  box-shadow:0 -6px 24px rgba(0,0,0,0.35); }
+.ann-sheet.show { display:block; }
+.ann-sheet-h { display:flex; justify-content:center; padding:8px 0 4px; position:sticky; top:0; background:#fff; }
+.ann-grab { width:36px; height:4px; border-radius:2px; background:#cbd5e1; }
+.ann-sheet-t { font-size:13px; font-weight:700; color:#0f172a; padding:4px 0 10px; }
+.ann-plist { display:flex; flex-direction:column; gap:6px; }
+.ann-pitem { display:flex; align-items:center; gap:10px; width:100%; min-height:46px; padding:0 12px;
+  border:1px solid #e2e8f0; border-radius:10px; background:#f8fafc; cursor:pointer; text-align:left; }
+.ann-pitem b { font-size:12px; font-weight:800; color:#2563eb; min-width:22px; }
+.ann-pitem span { flex:1; font-size:12px; color:#334155; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ann-pitem i { font-style:normal; color:#94a3b8; font-size:12px; }
+.ann-pitem.dim { opacity:0.65; }
+.ann-empty { padding:14px 0 6px; font-size:12px; color:#16a34a; font-weight:600; }
+.ann-fold { width:100%; margin-top:10px; padding:8px 0; border:none; background:none; text-align:left;
+  font-size:12px; font-weight:600; color:#64748b; cursor:pointer; }
+.ann-foldable { display:none; }
+.ann-foldable.show { display:flex; }
+.ann-status { display:flex; flex-direction:column; gap:8px; }
+.ann-sbtn { display:flex; align-items:center; gap:10px; min-height:48px; padding:0 14px; border-radius:10px;
+  border:2px solid #e2e8f0; background:#fff; font-size:14px; font-weight:600; color:#334155; cursor:pointer; }
+.ann-sm { width:24px; height:24px; border-radius:50%; color:#fff; font-size:13px; font-weight:800;
+  display:flex; align-items:center; justify-content:center; }
+.ann-sbtn.pin-s0 .ann-sm { background:#64748b; }
+.ann-sbtn.pin-s1 .ann-sm { background:#16a34a; }
+.ann-sbtn.pin-s2 .ann-sm { background:#dc2626; }
+.ann-sbtn.on { border-color:#0f172a; background:#f1f5f9; }
+.ann-note { width:100%; margin-top:10px; min-height:42px; padding:0 12px; border:1px solid #e2e8f0;
+  border-radius:10px; font-size:13px; }
+.ann-remove { width:100%; margin-top:10px; min-height:42px; border:none; border-radius:10px;
+  background:#fee2e2; color:#b91c1c; font-size:13px; font-weight:700; cursor:pointer; }
+
+/* Desktop: same components, sheets dock as a right rail instead of covering. */
+@media (min-width:820px) {
+  .ann-modal.show { display:grid; grid-template-columns:1fr 340px; grid-template-rows:auto 1fr auto; }
+  .ann-bar { grid-column:1/3; }
+  .ann-stage { grid-column:1; }
+  .ann-foot { grid-column:1; }
+  .ann-sheet { position:static; grid-column:2; grid-row:2/4; max-height:none; border-radius:0;
+    box-shadow:none; border-left:1px solid #1e293b; }
+  .ann-hint { position:static; grid-column:2; grid-row:2/4; }
+}
+
 /* ── TAB VIEWS (BD/PM/CLIT) ── */
 .tab-view-header { display:flex; justify-content:space-between; align-items:center; padding:14px 16px 10px; }
 .tab-view-title  { font-size:15px; font-weight:700; color:#0f172a; }
@@ -2308,6 +2425,37 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
       </div>
     </div>
 
+
+  </div>
+
+  <!-- Photo Annotator (global, outside any view): the photo is the proof and
+       the pins say what it proves. It must live outside #view-checklist —
+       position:fixed does not escape an ancestor with display:none, so nesting
+       it in the view would render it a zero-height, untappable overlay. -->
+  <div class="ann-modal" id="cl-annModal">
+    <div class="ann-bar">
+      <button class="ann-x" onclick="clCloseAnnotator()" aria-label="Close annotator">&#8249;</button>
+      <span id="cl-annTitle">Task</span>
+      <button class="ann-del" onclick="clAnnDeletePhoto()" aria-label="Delete this photo">&#128465;</button>
+    </div>
+    <div class="ann-stage" id="cl-annStage">
+      <div class="ann-frame" id="cl-annFrame">
+        <img id="cl-annImg" alt="Checklist proof photo"
+          src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+        <div class="ann-pins" id="cl-annPins"></div>
+      </div>
+      <div class="ann-dots" id="cl-annDots"></div>
+    </div>
+    <div class="ann-foot">
+      <div class="ann-strip" id="cl-annStrip"></div>
+      <div class="ann-tallyrow">
+        <div class="ann-tally" id="cl-annTally"></div>
+        <button class="ann-addpt" onclick="clAnnOpenPoints()">+ Point</button>
+      </div>
+    </div>
+    <div class="ann-hint" id="cl-annHint"></div>
+    <div class="ann-sheet" id="cl-annSheetPoints"></div>
+    <div class="ann-sheet" id="cl-annSheetStatus"></div>
   </div>
 
   <!-- Dedicated image upload inputs (global, outside any view) -->
@@ -4297,6 +4445,27 @@ var _clPhotoTarget = null;
 var _clPmBatch   = '';   // persists across section submissions
 var _clBulkBatch = '';
 
+/* ── ANNOTATOR STATE ──────────────────────────────────────────────────────
+   _clPhotos[taskId] = [{ url, pins:[{p,x,y,s,n}] }, ...]
+   Pins are stored as coordinates and rendered as a DOM overlay — never burned
+   into the JPEG. Burning them in would raise the image's entropy and inflate
+   the encoded size, and would also freeze a status that the operator can still
+   change. _b64[taskId] stays in sync with photo 1 so the existing submit path
+   and preview thumbnail keep working untouched.
+   x/y are PERCENTAGES of the rendered image box, so a pin lands on the same
+   spot on any screen size. s: 0=not done, 1=done, 2=problem. */
+var _clPhotos    = {};
+var _clAnnTask   = null;  // task id currently open in the annotator
+var _clAnnPhoto  = 0;     // index of the visible photo
+var _clAnnSel    = null;  // pin index selected in the status sheet
+var _clAnnPlacing = null; // point id being dragged into position
+
+var CL_PIN_STATUS = [
+  { key:'notdone', label:'Not done', mark:'○', cls:'pin-s0' },
+  { key:'done',    label:'Done',     mark:'✓', cls:'pin-s1' },
+  { key:'problem', label:'Problem',  mark:'!',      cls:'pin-s2' }
+];
+
 var CL_STD = {
   '1':5,'2':3,'3a':5,'3b':5,'3c':7,'4':5,'5':5,'6':5,'7':3,
   '8':5,'9':3,'10':3,'11':2,'12':2,'13':2,'14':3,
@@ -4326,6 +4495,11 @@ function initChecklist(machineId) {
   _taskTimes   = {};
   _remarks     = {};
   _b64         = {};
+  _clPhotos    = {};
+  _clAnnTask   = null;
+  _clAnnPhoto  = 0;
+  _clAnnSel    = null;
+  _clAnnPlacing = null;
   _clPhotoTarget = null;
   _clPmBatch   = '';
   _clBulkBatch = '';
@@ -4635,6 +4809,10 @@ function _stampImage(ctx, w, h) {
   var line1 = time + '  |  ' + date;
   var line2 = (pmB ? 'PM: ' + pmB : '') + (pmB && blkB ? '  |  ' : '') + (blkB ? 'Bulk: ' + blkB : '');
   if (!line2) line2 = _mid || App.machineId || '';
+  // Name the task on the stamp so a photo lifted out of the app still says
+  // what it is proof of. Pin numbers stay in the overlay, not burned in —
+  // they are still editable after capture.
+  if (_clPhotoTarget) line2 += (line2 ? '  |  ' : '') + 'Task: ' + _clPhotoTarget;
   var fs = Math.max(11, Math.round(w * 0.028));
   ctx.font = 'bold ' + fs + 'px Arial';
   var pad = Math.round(fs * 0.4);
@@ -4656,22 +4834,64 @@ function clHandlePhoto() {
   reader.onload = function(e) {
     var img = new Image();
     img.onload = function() {
-      var MAX=600, w=img.width, h=img.height;
+      // Multi-photo tasks drop to 500px/q0.45 so three shots cost roughly what
+      // one used to. A lone photo keeps the original 600px/q0.50 fidelity.
+      var multi = (_clPhotos[id] || []).length > 0;
+      var MAX = multi ? 500 : 600, q = multi ? 0.45 : 0.50;
+      var w=img.width, h=img.height;
       if (w>MAX) { h=Math.round(h*MAX/w); w=MAX; }
       if (h>MAX) { w=Math.round(w*MAX/h); h=MAX; }
       var c = document.createElement('canvas'); c.width=w; c.height=h;
       var ctx = c.getContext('2d'); ctx.drawImage(img,0,0,w,h);
       _stampImage(ctx, w, h);
-      var b64 = c.toDataURL('image/jpeg',0.50);
-      _b64[id] = b64;
-      var prev = document.getElementById('prev-' + id);
-      if(prev){ prev.src=b64; prev.style.display='inline-block'; prev.style.cursor='pointer'; prev.onclick=function(){ clViewImg(b64); }; }
-      var st = document.getElementById('phst-' + id); if(st){ st.textContent='\u2705 ~'+Math.round(b64.length*0.75/1024)+'KB'; st.style.color='#2e7d32'; }
+      var b64 = c.toDataURL('image/jpeg', q);
+
+      if (!_clPhotos[id]) _clPhotos[id] = [];
+      _clPhotos[id].push({ url: b64, pins: [] });
+      _clSyncPhotoRow(id);
       clClosePhoto();
+      // Jump straight into the annotator on the shot just taken \u2014 the operator
+      // is looking at the machine right now, which is when they can place pins.
+      clOpenAnnotator(id, _clPhotos[id].length - 1);
     };
     img.src = e.target.result;
   };
   reader.readAsDataURL(file);
+}
+
+/**
+ * _clSyncPhotoRow(id) \u2014 refresh the task row's thumbnail + size readout.
+ * Keeps _b64[id] pointing at photo 1 so clSubmitSection and the existing
+ * preview/print paths need no change.
+ */
+function _clSyncPhotoRow(id) {
+  var list = _clPhotos[id] || [];
+  _b64[id] = list.length ? list[0].url : undefined;
+  if (!list.length) delete _b64[id];
+
+  var prev = document.getElementById('prev-' + id);
+  if (prev) {
+    if (list.length) {
+      prev.src = list[0].url;
+      prev.style.display = 'inline-block';
+      prev.style.cursor = 'pointer';
+      prev.onclick = function(){ clOpenAnnotator(id, 0); };
+    } else {
+      prev.removeAttribute('src');
+      prev.style.display = 'none';
+    }
+  }
+
+  var st = document.getElementById('phst-' + id);
+  if (st) {
+    if (!list.length) { st.textContent = 'No photo yet'; st.style.color = ''; return; }
+    var bytes = 0, pins = 0;
+    list.forEach(function(p){ bytes += p.url.length * 0.75; pins += p.pins.length; });
+    st.textContent = '\u2705 ' + list.length + ' photo' + (list.length>1?'s':'') +
+                     ' \u00b7 ' + pins + ' point' + (pins===1?'':'s') +
+                     ' \u00b7 ~' + Math.round(bytes/1024) + 'KB';
+    st.style.color = '#2e7d32';
+  }
 }
 
 document.getElementById('cl-photoModal').onclick = function(e) {
@@ -4683,6 +4903,325 @@ function clViewImg(src) {
   document.getElementById('cl-imgViewerSrc').src = src;
   v.style.display = 'flex';
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CLIT PHOTO ANNOTATOR
+   The photo is the proof; the pins say what it proves. A point belongs to
+   exactly one photo, so multi-shot tasks stay unambiguous. Only one overlay
+   sheet is ever open, and the sheet is capped so the photo stays visible —
+   on a phone you must see where the pin lands while you drag it.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function clOpenAnnotator(taskId, photoIdx) {
+  if (!(_clPhotos[taskId] || []).length) return;
+  _clAnnTask  = taskId;
+  _clAnnPhoto = photoIdx || 0;
+  _clAnnSel   = null;
+  _clAnnPlacing = null;
+  document.getElementById('cl-annModal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+  clAnnRender();
+}
+
+function clCloseAnnotator() {
+  document.getElementById('cl-annModal').classList.remove('show');
+  document.body.style.overflow = '';
+  if (_clAnnTask) _clSyncPhotoRow(_clAnnTask);
+  _clAnnTask = null; _clAnnSel = null; _clAnnPlacing = null;
+}
+
+function _clAnnPhotos() { return _clPhotos[_clAnnTask] || []; }
+function _clAnnCur()    { return _clAnnPhotos()[_clAnnPhoto] || null; }
+
+/** Every pin across every photo of this task, flattened for counting. */
+function _clAnnAllPins() {
+  var out = [];
+  _clAnnPhotos().forEach(function(ph, pi) {
+    ph.pins.forEach(function(pin, ix) { out.push({ pin: pin, photo: pi, idx: ix }); });
+  });
+  return out;
+}
+
+function clAnnRender() {
+  var cur = _clAnnCur();
+  if (!cur) { clCloseAnnotator(); return; }
+
+  document.getElementById('cl-annTitle').textContent = 'Task ' + _clAnnTask;
+  document.getElementById('cl-annImg').src = cur.url;
+
+  // Page dots — only meaningful with more than one shot.
+  var dots = _clAnnPhotos().map(function(_, i) {
+    return '<span class="ann-dot' + (i === _clAnnPhoto ? ' on' : '') + '"></span>';
+  }).join('');
+  document.getElementById('cl-annDots').innerHTML = _clAnnPhotos().length > 1 ? dots : '';
+
+  clAnnRenderPins();
+  clAnnRenderStrip();
+  clAnnRenderTally();
+}
+
+function clAnnRenderPins() {
+  var layer = document.getElementById('cl-annPins');
+  var cur = _clAnnCur();
+  layer.innerHTML = cur.pins.map(function(pin, i) {
+    var st = CL_PIN_STATUS[pin.s] || CL_PIN_STATUS[0];
+    return '<button class="ann-pin ' + st.cls + (i === _clAnnSel ? ' sel' : '') + '"' +
+           ' style="left:' + pin.x + '%;top:' + pin.y + '%"' +
+           ' data-i="' + i + '"' +
+           ' aria-label="Point ' + esc(String(pin.p)) + ' — ' + st.label + '">' +
+           '<span class="ann-pin-body"><span>' +
+           (pin.s === 0 ? esc(String(pin.p)) : st.mark) + '</span></span>' +
+           '</button>';
+  }).join('');
+}
+
+function clAnnRenderStrip() {
+  var strip = document.getElementById('cl-annStrip');
+  var html = _clAnnPhotos().map(function(ph, i) {
+    return '<button class="ann-thumb' + (i === _clAnnPhoto ? ' on' : '') + '"' +
+           ' onclick="clAnnGoPhoto(' + i + ')" aria-label="Photo ' + (i+1) + '">' +
+           '<img src="' + ph.url + '" alt="">' +
+           '<span class="ann-badge">' + ph.pins.length + '</span></button>';
+  }).join('');
+  strip.innerHTML = html +
+    '<button class="ann-thumb ann-add" onclick="clAnnAddPhoto()" aria-label="Add photo">+</button>';
+}
+
+function clAnnRenderTally() {
+  var all = _clAnnAllPins();
+  var d = 0, p = 0, n = 0;
+  all.forEach(function(o) {
+    if (o.pin.s === 1) d++; else if (o.pin.s === 2) p++; else n++;
+  });
+  document.getElementById('cl-annTally').innerHTML =
+    '<span class="t-d">' + d + ' done</span>' +
+    '<span class="t-p">' + p + ' problem</span>' +
+    '<span class="t-n">' + n + ' pending</span>';
+}
+
+function clAnnGoPhoto(i) {
+  _clAnnPhoto = i; _clAnnSel = null; _clAnnPlacing = null;
+  clAnnCloseSheets();
+  clAnnRender();
+}
+
+function clAnnAddPhoto() {
+  clAnnCloseSheets();
+  _clPhotoTarget = _clAnnTask;
+  document.getElementById('cl-photoTitle').textContent = 'Task ' + _clAnnTask + ' - Add Photo';
+  document.getElementById('cl-photoModal').classList.add('show');
+}
+
+function clAnnDeletePhoto() {
+  var list = _clAnnPhotos();
+  if (!confirm('Delete this photo?\n\nIts ' + (_clAnnCur().pins.length) +
+               ' point(s) will be removed with it.')) return;
+  list.splice(_clAnnPhoto, 1);
+  _clSyncPhotoRow(_clAnnTask);
+  if (!list.length) { clCloseAnnotator(); return; }
+  _clAnnPhoto = Math.max(0, _clAnnPhoto - 1);
+  _clAnnSel = null;
+  clAnnCloseSheets();
+  clAnnRender();
+}
+
+/* ── Sheets ─────────────────────────────────────────────────────────────
+   Exactly one sheet is visible at a time; opening either closes the other. */
+
+function clAnnCloseSheets() {
+  document.getElementById('cl-annSheetPoints').classList.remove('show');
+  document.getElementById('cl-annSheetStatus').classList.remove('show');
+  document.getElementById('cl-annHint').classList.remove('show');
+  document.getElementById('cl-annModal').classList.remove('sheeted');
+  _clAnnSel = null; _clAnnPlacing = null;
+  clAnnRenderPins();
+}
+
+/** Points already placed anywhere in this task — they cannot be placed twice. */
+function _clAnnPlacedIds() {
+  return _clAnnAllPins().map(function(o) { return String(o.pin.p); });
+}
+
+function clAnnOpenPoints() {
+  clAnnCloseSheets();
+  var placed = _clAnnPlacedIds();
+  var pending = [], elsewhere = [];
+
+  CL_SECTION_TASKS[_clAnnSection()].forEach(function(pid) {
+    var at = _clAnnFindPoint(pid);
+    if (at === -1) pending.push(pid);
+    else if (at !== _clAnnPhoto) elsewhere.push({ id: pid, photo: at });
+  });
+
+  var html = '';
+  html += '<div class="ann-sheet-h"><span class="ann-grab"></span></div>';
+  html += '<div class="ann-sheet-t">Place a point on this photo</div>';
+  if (pending.length) {
+    html += '<div class="ann-plist">' + pending.map(function(pid) {
+      return '<button class="ann-pitem" onclick="clAnnBeginPlace(\'' + esc(pid) + '\')">' +
+             '<b>' + esc(pid) + '</b><span>' + esc(_clPointLabel(pid)) + '</span>' +
+             '<i>&#8250;</i></button>';
+    }).join('') + '</div>';
+  } else {
+    html += '<div class="ann-empty">All points placed &#10003;</div>';
+  }
+  if (elsewhere.length) {
+    html += '<button class="ann-fold" onclick="this.nextElementSibling.classList.toggle(\'show\')">' +
+            'On other photos (' + elsewhere.length + ') &#8964;</button>';
+    html += '<div class="ann-plist ann-foldable">' + elsewhere.map(function(o) {
+      return '<button class="ann-pitem dim" onclick="clAnnGoPhoto(' + o.photo + ')">' +
+             '<b>' + esc(o.id) + '</b><span>' + esc(_clPointLabel(o.id)) + '</span>' +
+             '<i>&#9635;' + (o.photo + 1) + '</i></button>';
+    }).join('') + '</div>';
+  }
+
+  var sheet = document.getElementById('cl-annSheetPoints');
+  sheet.innerHTML = html;
+  sheet.classList.add('show');
+  document.getElementById('cl-annModal').classList.add('sheeted');
+}
+
+/** Which section the open task belongs to — drives the selectable point list. */
+function _clAnnSection() {
+  var found = 'before';
+  Object.keys(CL_SECTION_TASKS).forEach(function(sec) {
+    if (CL_SECTION_TASKS[sec].indexOf(String(_clAnnTask)) >= 0) found = sec;
+  });
+  return found;
+}
+
+/** Photo index holding this point id, or -1 if unplaced. */
+function _clAnnFindPoint(pid) {
+  var hit = -1;
+  _clAnnPhotos().forEach(function(ph, i) {
+    ph.pins.forEach(function(pin) { if (String(pin.p) === String(pid)) hit = i; });
+  });
+  return hit;
+}
+
+/** Short label for a point, read from the rendered task row. */
+function _clPointLabel(pid) {
+  var row = document.getElementById('btn-' + pid);
+  var item = row && row.closest ? row.closest('.task-item') : null;
+  var en = item ? item.querySelector('.task-en') : null;
+  return en ? en.textContent.trim() : ('Point ' + pid);
+}
+
+/** Drop a pin dead-centre, then let the operator drag it to the real spot. */
+function clAnnBeginPlace(pid) {
+  var cur = _clAnnCur();
+  cur.pins.push({ p: pid, x: 50, y: 50, s: 0, n: '' });
+  _clAnnSel = cur.pins.length - 1;
+  _clAnnPlacing = pid;
+
+  document.getElementById('cl-annSheetPoints').classList.remove('show');
+  var hint = document.getElementById('cl-annHint');
+  hint.innerHTML = '<b>' + esc(pid) + '</b> ' + esc(_clPointLabel(pid)) +
+                   ' &mdash; drag to position' +
+                   '<button class="ann-set" onclick="clAnnConfirmPlace()">Set</button>';
+  hint.classList.add('show');
+  document.getElementById('cl-annModal').classList.add('sheeted');
+  clAnnRenderPins();
+  clAnnRenderStrip();
+}
+
+function clAnnConfirmPlace() {
+  _clAnnPlacing = null;
+  document.getElementById('cl-annHint').classList.remove('show');
+  clAnnOpenStatus(_clAnnSel);
+}
+
+function clAnnOpenStatus(i) {
+  var cur = _clAnnCur();
+  var pin = cur.pins[i];
+  if (!pin) return;
+  _clAnnSel = i;
+  document.getElementById('cl-annSheetPoints').classList.remove('show');
+  document.getElementById('cl-annHint').classList.remove('show');
+
+  var html = '';
+  html += '<div class="ann-sheet-h"><span class="ann-grab"></span></div>';
+  html += '<div class="ann-sheet-t"><b>' + esc(String(pin.p)) + '</b> ' +
+          esc(_clPointLabel(pin.p)) + '</div>';
+  html += '<div class="ann-status">' + CL_PIN_STATUS.map(function(st, si) {
+    return '<button class="ann-sbtn ' + st.cls + (pin.s === si ? ' on' : '') + '"' +
+           ' onclick="clAnnSetStatus(' + si + ')">' +
+           '<span class="ann-sm">' + st.mark + '</span>' + st.label + '</button>';
+  }).join('') + '</div>';
+  html += '<input class="ann-note" id="cl-annNote" placeholder="Add a note (optional)" ' +
+          'value="' + esc(pin.n || '') + '" oninput="clAnnSetNote(this.value)">';
+  html += '<button class="ann-remove" onclick="clAnnRemovePin()">&#128465; Remove point</button>';
+
+  var sheet = document.getElementById('cl-annSheetStatus');
+  sheet.innerHTML = html;
+  sheet.classList.add('show');
+  document.getElementById('cl-annModal').classList.add('sheeted');
+  clAnnRenderPins();
+}
+
+function clAnnSetStatus(si) {
+  var pin = _clAnnCur().pins[_clAnnSel];
+  if (!pin) return;
+  pin.s = si;
+  clAnnOpenStatus(_clAnnSel);
+  clAnnRenderTally();
+  clAnnRenderStrip();
+}
+
+function clAnnSetNote(v) {
+  var pin = _clAnnCur().pins[_clAnnSel];
+  if (pin) pin.n = v;
+}
+
+function clAnnRemovePin() {
+  var cur = _clAnnCur();
+  if (_clAnnSel === null || !cur.pins[_clAnnSel]) return;
+  cur.pins.splice(_clAnnSel, 1);
+  clAnnCloseSheets();
+  clAnnRender();
+}
+
+/* ── Dragging ───────────────────────────────────────────────────────────
+   Pointer events cover mouse, touch and stylus in one path. Coordinates are
+   converted to percentages of the image box on every move, so the stored
+   position is resolution-independent. */
+(function clAnnBindDrag() {
+  var drag = null;
+
+  function pctFromEvent(e) {
+    // Measured against the frame (the photo itself), matching how pins render.
+    var box = document.getElementById('cl-annFrame').getBoundingClientRect();
+    return {
+      x: Math.min(100, Math.max(0, ((e.clientX - box.left) / box.width) * 100)),
+      y: Math.min(100, Math.max(0, ((e.clientY - box.top) / box.height) * 100))
+    };
+  }
+
+  document.addEventListener('pointerdown', function(e) {
+    var pinEl = e.target.closest ? e.target.closest('.ann-pin') : null;
+    if (!pinEl || !_clAnnTask) return;
+    drag = { i: parseInt(pinEl.dataset.i, 10), moved: false };
+    pinEl.setPointerCapture && pinEl.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+
+  document.addEventListener('pointermove', function(e) {
+    if (!drag || !_clAnnTask) return;
+    var pin = _clAnnCur().pins[drag.i];
+    if (!pin) return;
+    var pt = pctFromEvent(e);
+    pin.x = Math.round(pt.x); pin.y = Math.round(pt.y);
+    drag.moved = true;
+    clAnnRenderPins();
+  });
+
+  document.addEventListener('pointerup', function() {
+    if (!drag || !_clAnnTask) { drag = null; return; }
+    // A tap (no movement) opens the status sheet; a drag just commits position.
+    if (!drag.moved && !_clAnnPlacing) clAnnOpenStatus(drag.i);
+    drag = null;
+  });
+})();
 
 /* Large centred image preview for a checklist photo thumbnail.
    Desktop: shown on hover. Touch: shown on tap (clImgTap) and pinned. */
@@ -4892,12 +5431,19 @@ function clSubmitSection(sec) {
   if (!shift || !op) { alert('Please select Shift and Operator first.'); return; }
 
   var secTasks  = CL_SECTION_TASKS[sec] || [];
-  var taskTimes = {}, remarks = {}, images = {};
+  var taskTimes = {}, remarks = {}, images = {}, extraImages = {}, annotations = {};
   secTasks.forEach(function(id) {
     if (_taskTimes[id]) taskTimes[id] = _taskTimes[id];
     var rmk = document.getElementById('rmk-' + id);
     if (rmk && rmk.value.trim()) remarks[id] = rmk.value.trim();
     if (_b64[id]) images[id] = _b64[id];
+    // images[id] stays a single string (photo 1) so the existing backend write
+    // path is untouched. Shots 2+ and all pin coordinates ride alongside.
+    var list = _clPhotos[id] || [];
+    if (list.length > 1) extraImages[id] = list.slice(1).map(function(p){ return p.url; });
+    if (list.length) {
+      annotations[id] = list.map(function(p){ return p.pins; });
+    }
   });
 
   var pmBatchEl   = document.getElementById('pmBatch');
@@ -4915,6 +5461,7 @@ function clSubmitSection(sec) {
   var payload = {
     machineId: _mid, shift: shift, operator: op, section: sec,
     taskTimes: taskTimes, remarks: remarks, images: images,
+    extraImages: extraImages, annotations: annotations,
     pmBatchNo: pmBatch, bulkBatchNo: bulkBatch
   };
 
