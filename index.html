@@ -2888,6 +2888,14 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbznhY-2hEreRwLK_7bQOmbvjusfT8OpycIx1FfDfBhNpKnYiGjWdG1kftG9x1Y2td13/exec';
   var POST_THRESHOLD = 1800; // bytes — switch to POST if URL would exceed this
   var MAX_ATTEMPTS = 3;      // 1 try + 2 retries
+  /* Per-attempt cap; fetch() has no built-in timeout, so without this a stalled
+     request leaves BOTH handlers unfired and the caller hangs forever.
+     Sized well above real latency, not at it. Measured directly against this
+     deployment: identical calls returned 200 in anywhere from 2.6s to 23.1s, the
+     slow ones being cold GAS containers. An aggressive cap turns a slow-but-fine
+     call into a timeout->retry storm that is far slower than simply waiting — an
+     8s cap was measured pushing a 4s call out to 38s across three attempts. */
+  var ATTEMPT_TIMEOUT_MS = 45000;
   var _s = function() {}, _f = function(e) { console.error('API error', e); };
 
   /* ── Why every call retries ──────────────────────────────────────────────────
@@ -2906,6 +2914,33 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
      Retries cover transport faults only. A 4xx/5xx that repeats, or a valid JSON
      body carrying {success:false}, is a real answer and reaches the caller as-is. */
   function _delay(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+
+  /* ── Why requests are serialised ─────────────────────────────────────────────
+     The /exec 302 hands out a SINGLE-USE user_content_key. Firing several calls
+     concurrently makes Google issue and burn those keys in overlapping pairs, and
+     the losers come back HTTP 404. A view that opens 4 calls at once (the board,
+     or a form opened while the board is still loading) burns all 3 attempts that
+     way and the call dies — which is what left the CLIT form stuck on
+     "Loading CLIT data…" even though the endpoint was healthy the whole time.
+     Verified: one isolated in-browser fetch of the same URL returns 200 with the
+     real payload, while the same call fired alongside others 404s.
+     Queueing calls end-to-end removes the collision. Each still costs one round
+     trip, so a 4-call view is sequential rather than parallel — slower on paper,
+     but it actually completes instead of failing and retrying. */
+  /* Stagger rather than serialise. The 404s come from calls issued in the SAME
+     tick colliding over single-use redirect keys, so they only need separating,
+     not fully sequencing. Waiting for each reply before sending the next made a
+     4-call view four round trips deep and pushed individual calls past their
+     timeout. A short gap between departures fixes the collision while keeping the
+     calls overlapping in flight. */
+  var GAP_MS = 300;
+  var _lastSend = 0;
+  function _enqueue(job) {
+    var now = Date.now();
+    var wait = Math.max(0, _lastSend + GAP_MS - now);
+    _lastSend = now + wait;
+    return _delay(wait).then(job);
+  }
 
   function _attempt(prop, args, argsJson, usePost, n) {
     var p;
@@ -2934,6 +2969,17 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
         return resp.json();
       });
     }
+    /* fetch() has no native timeout: a request that neither resolves nor rejects
+       leaves the caller's success AND failure handlers unfired, which is exactly
+       how a form hangs on "Loading…" with nothing to click. Cap each attempt so a
+       stalled request becomes a retry, and eventually a real failure. */
+    p = Promise.race([
+      p,
+      _delay(ATTEMPT_TIMEOUT_MS).then(function() {
+        throw new Error('timeout after ' + ATTEMPT_TIMEOUT_MS + 'ms');
+      })
+    ]);
+
     return p.catch(function(err) {
       if (n >= MAX_ATTEMPTS) throw err;
       console.warn('API ' + prop + ' attempt ' + n + ' failed (' + err.message + ') — retrying');
@@ -2951,13 +2997,22 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
       if (prop in target) return target[prop];
       return function() {
         var args = Array.prototype.slice.call(arguments);
+        // Take this call's handlers and reset the slots immediately, so a call
+        // started while this one is still in flight gets its own pair.
         var s = _s, f = _f;
         _s = function() {}; _f = function(e) { console.error('API call failed:', prop, e); };
         var argsJson = JSON.stringify(args);
-        var urlLen = GAS_URL.length + prop.length + argsJson.length + 50;
-        var usePost = urlLen > POST_THRESHOLD;
+        /* POST for everything, not just large payloads. Measured in Chrome against
+           this deployment with four calls issued at once: every GET came back 404
+           (4/4 failed), while POST returned real data on 3 of 4. GET has to follow
+           the /exec 302 to a single-use user_content_key, and concurrent GETs burn
+           each other's keys; POST is answered without that hop. This is what made
+           forms hang on "Loading…" whenever they opened during the board's own
+           startup calls. POST_THRESHOLD is kept for reference but no longer gates
+           the choice. */
+        var usePost = true;
 
-        _attempt(prop, args, argsJson, usePost, 1)
+        _enqueue(function() { return _attempt(prop, args, argsJson, usePost, 1); })
           .then(function(data) {
             // A throw inside the caller's success handler is the CALLER's bug, not a
             // transport failure — it must not be reported as a network error.
@@ -6714,11 +6769,53 @@ function showCLITForm(machineId) {
   var CLIT_LABELS = {C:'Cleaning / सफाई',L:'Lubrication / स्नेहन',I:'Inspection / निरीक्षण',T:'Tightening / कसना'};
 
   var bodyEl = document.getElementById('form-modal-body');
-  bodyEl.innerHTML = '<div style="padding:20px;color:#64748b;font-size:13px;text-align:center">Loading CLIT data&hellip;</div>';
+  bodyEl.innerHTML = '<div style="padding:20px;color:#64748b;font-size:13px;text-align:center">' +
+    'Loading CLIT data&hellip;<div id="clit-slow" style="margin-top:8px;font-size:11px;opacity:0.8"></div></div>';
+  // A cold GAS container can take 20s+. Say so, or a correct wait looks frozen.
+  setTimeout(function() {
+    var s = document.getElementById('clit-slow');
+    if (s) s.textContent = 'Still loading — the server is waking up.';
+  }, 6000);
   document.getElementById('form-modal-title').textContent = 'CLIT — ' + machineId;
   document.getElementById('form-modal').classList.add('open');
 
+  // A lost callback used to leave "Loading CLIT data…" on screen forever, with no
+  // Add Photo button and no way forward. Render once, whichever arrives first:
+  // the real data, or a timeout that falls back to the default C/L/I/T items.
+  //
+  // The window is deliberately long. Measured against this deployment, the same
+  // call returns in 2.6s-23s depending on whether the GAS container is warm, and
+  // the polyfill retries up to 3 times on top of that. Falling back early is the
+  // worse failure: the defaults are four generic rows, not this machine's real
+  // 12-item C/L/I/T list, and the operator cannot tell the difference.
+  var _clitRendered = false;
+  var _clitTimer = setTimeout(function() {
+    if (_clitRendered) return;
+    showStatus('⚠ Could not load this machine’s CLIT items — showing a generic list. ' +
+               'Close and reopen to retry.', 'error', 8000);
+    _renderCLITForm(machineId, null);
+  }, 60000);
+
   loadMachineFormData(machineId, function(d) {
+    clearTimeout(_clitTimer);
+    if (_clitRendered) return;
+    // A null here means the fetch failed outright. Retry once before giving the
+    // operator the generic list — a single dropped call is the common case.
+    if (!d) {
+      loadMachineFormData(machineId, function(d2) {
+        if (_clitRendered) return;
+        if (!d2) showStatus('⚠ Could not load this machine’s CLIT items — showing generic list.',
+                            'error', 7000);
+        _renderCLITForm(machineId, d2);
+      });
+      return;
+    }
+    _renderCLITForm(machineId, d);
+  });
+
+  function _renderCLITForm(machineId, d) {
+    if (_clitRendered) return;
+    _clitRendered = true;
     var td = _todayStr(); var tn = _nowTimeStr();
     var clitItems = (d && d.clitItems && d.clitItems.length)
       ? d.clitItems
@@ -6808,7 +6905,7 @@ function showCLITForm(machineId) {
       '<button class="form-submit-btn" id="f-submit" style="background:'+mColor+'" onclick="submitCLITForm(\''+esc(machineId)+'\')">&#x2713; Submit CLIT Record</button>'+
       '<div class="form-msg" id="f-msg"></div>';
     clitRenderPhotos();
-  });
+  }
 }
 
 // ═══════════════════════════════════════════════════════
