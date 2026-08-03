@@ -966,26 +966,27 @@ body {
    `.form-row label { display:block }` rule wins on specificity and stacks every
    child vertically — a 38px row rendered at 97px. Scoping to the container
    raises specificity above it without touching the shared rule. */
-#f-clit-tasks label.clit-row { display:flex; align-items:center; gap:8px;
+#f-clit-tasks label.clit-row, #f-pm-tasks label.clit-row { display:flex; align-items:center; gap:8px;
   padding:0 10px; min-height:38px; cursor:pointer; border-top:1px solid #f1f5f9;
   flex-wrap:wrap; margin:0; text-transform:none; font-size:inherit; color:inherit; }
-#f-clit-tasks label.clit-row:first-of-type { border-top:none; }
+#f-clit-tasks label.clit-row:first-of-type,
+#f-pm-tasks   label.clit-row:first-of-type { border-top:none; }
 .clit-row input[type=checkbox] { width:18px; height:18px; flex-shrink:0; margin:0; }
 /* Tri-state control: one tap cycles not done → done → issue. A real touch target,
    since it is now the primary action on every row. */
-#f-clit-tasks .clit-state { width:26px; height:26px; flex-shrink:0; padding:0;
+#f-clit-tasks .clit-state, #f-pm-tasks .clit-state { width:26px; height:26px; flex-shrink:0; padding:0;
   border-radius:7px; font-size:13px; font-weight:800; line-height:1; cursor:pointer;
   display:flex; align-items:center; justify-content:center; transition:background .12s; }
-#f-clit-tasks .clit-state.s0 { background:#f1f5f9; border:1.5px solid #cbd5e1; color:#94a3b8; }
-#f-clit-tasks .clit-state.s1 { background:#16a34a; border:1.5px solid #16a34a; color:#fff; }
-#f-clit-tasks .clit-state.s2 { background:#dc2626; border:1.5px solid #dc2626; color:#fff; }
+#f-clit-tasks .clit-state.s0, #f-pm-tasks .clit-state.s0 { background:#f1f5f9; border:1.5px solid #cbd5e1; color:#94a3b8; }
+#f-clit-tasks .clit-state.s1, #f-pm-tasks .clit-state.s1 { background:#16a34a; border:1.5px solid #16a34a; color:#fff; }
+#f-clit-tasks .clit-state.s2, #f-pm-tasks .clit-state.s2 { background:#dc2626; border:1.5px solid #dc2626; color:#fff; }
 /* The point chip is the same number the pin and the legend show. */
 .clit-pt { width:19px; height:19px; border-radius:5px; color:#fff; font-size:10px;
   font-weight:800; display:flex; align-items:center; justify-content:center;
   flex-shrink:0; cursor:pointer; }
 /* No vertical padding: min-height on the row already sets the touch height, and
    padding here was stacking on top of it. */
-#f-clit-tasks .clit-en { flex:1; min-width:0; font-size:12.5px; font-weight:600;
+#f-clit-tasks .clit-en, #f-pm-tasks .clit-en { flex:1; min-width:0; font-size:12.5px; font-weight:600;
   color:#0f172a; line-height:1.3; padding:6px 0; }
 .clit-pinned { font-size:10px; font-weight:700; color:#94a3b8; }
 .clit-pinned.on { color:#2563eb; }
@@ -5101,8 +5102,9 @@ function clHandlePhoto(src) {
  * preview/print paths need no change.
  */
 function _clSyncPhotoRow(id) {
-  // CLIT keeps its photos in the form, not a checklist task row.
+  // CLIT and PM keep their photos in the form, not a checklist task row.
   if (id === 'clit') { clitRenderPhotos(); return; }
+  if (id === 'pm')   { pmRenderPhotos();   return; }
   var list = _clPhotos[id] || [];
   _b64[id] = list.length ? list[0].url : undefined;
   if (!list.length) delete _b64[id];
@@ -5240,6 +5242,9 @@ function clAnnRender() {
 /** Ticked items that have no pin on any photo yet — the only things worth
  *  offering in the picker, since an unticked item is not claimed as done. */
 function _clitUnpinnedTicked() {
+  // The annotator serves both CLIT and PM; each keeps its own controls and photo
+  // list, so route by which record is open rather than duplicating the engine.
+  if (_clAnnTask === 'pm') return _pmUnpinnedMarked();
   var out = [];
   (_clitItemDefs || []).forEach(function(item, idx) {
     var pt = idx + 1;
@@ -5248,6 +5253,19 @@ function _clitUnpinnedTicked() {
     out.push({ id: String(pt), item: item });
   });
   return out;
+}
+
+/** Status of a point in whichever record the annotator currently has open. */
+function _annGetState(pt) {
+  return _clAnnTask === 'pm' ? pmGetState(pt) : clitGetState(pt);
+}
+function _annSetState(pt, st, quiet) {
+  if (_clAnnTask === 'pm') pmSetState(pt, st, quiet);
+  else clitSetState(pt, st, quiet);
+}
+function _annRefresh() {
+  if (_clAnnTask === 'pm') { pmRefreshPinned(); pmRenderPhotos(); }
+  else { clitRefreshPinned(); clitRenderPhotos(); }
 }
 
 /**
@@ -5496,8 +5514,8 @@ function clAnnBeginPlace(pid) {
   var cur = _clAnnCur();
   // In legend mode the form already carries the outcome, so the pin inherits it.
   // Asking again on the photo made the operator state the same fact twice.
-  var inherited = (_clAnnMode === 'legend' && typeof clitGetState === 'function')
-    ? clitGetState(pid) : 0;
+  var inherited = (_clAnnMode === 'legend' && typeof _annGetState === 'function')
+    ? _annGetState(pid) : 0;
   cur.pins.push({ p: pid, x: 50, y: 50, s: inherited, n: '', u: 1 });
   _clAnnSel = cur.pins.length - 1;
   _clAnnPlacing = pid;
@@ -5523,7 +5541,7 @@ function clAnnConfirmPlace() {
   if (_clAnnMode === 'legend') {
     clAnnCloseSheets();
     clAnnRender();
-    if (typeof clitRefreshPinned === 'function') { clitRefreshPinned(); clitRenderPhotos(); }
+    if (typeof _annRefresh === 'function') _annRefresh();
     return;
   }
   clAnnOpenStatus(_clAnnSel);
@@ -5567,10 +5585,9 @@ function clAnnSetStatus(si) {
   clAnnRenderLegend();
   // Changing status on the pin writes back to the form control, so the two never
   // disagree — but the form remains the value that submits.
-  if (_clAnnMode === 'legend' && typeof clitSetState === 'function') {
-    clitSetState(pin.p, si, true);
-    clitRefreshPinned();
-    clitRenderPhotos();
+  if (_clAnnMode === 'legend' && typeof _annSetState === 'function') {
+    _annSetState(pin.p, si, true);
+    _annRefresh();
   }
 }
 
@@ -5589,10 +5606,7 @@ function clAnnRemovePin() {
   // Deliberately does NOT untick anything. Removing a pin is a change to the
   // photo markup, not a statement that the work was undone — conflating the two
   // silently erased completed items when a pin was deleted to reposition it.
-  if (_clAnnMode === 'legend' && typeof clitRefreshPinned === 'function') {
-    clitRefreshPinned();
-    clitRenderPhotos();
-  }
+  if (_clAnnMode === 'legend' && typeof _annRefresh === 'function') _annRefresh();
 }
 
 /* ── Dragging ───────────────────────────────────────────────────────────
@@ -6886,23 +6900,47 @@ function showPMForm(machineId) {
     var pmItems = (fd && fd.pmItems) || [];
     var machineLbl = fd ? esc(fd.name) + ' | Freq: ' + esc(fd.pmFreq||'Quarterly') : '';
 
+    // PM rows mirror CLIT: compact single-line, tri-state control, point chip
+    // that ties the row to a pin on the proof photo.
+    var FREQ_SHORT = { daily:'D', weekly:'W', monthly:'M', quarterly:'Q',
+                       'half-yearly':'H', halfyearly:'H', yearly:'Y', annually:'Y' };
+    _pmItemDefs = pmItems.map(function(it, i) {
+      return { en: it.en || '', hi: it.hi || '', freq: it.freq || '', tool: it.tool || '', _idx: i };
+    });
+    _clPhotos['pm'] = [];
+
     var taskListHtml = '';
     if (pmItems.length) {
-      taskListHtml = pmItems.map(function(item, idx) {
-        var border = idx > 0 ? 'border-top:1px solid #f1f5f9;' : '';
-        return '<div id="pmr' + idx + '" style="display:flex;align-items:flex-start;gap:10px;padding:9px 12px;' + border + 'transition:all 0.15s">' +
-          '<input type="checkbox" id="pm' + idx + '" name="pmItem" style="width:17px;height:17px;margin-top:2px;flex-shrink:0;accent-color:#1b5e20" onchange="this.closest(\'div\').style.textDecoration=this.checked?\'line-through\':\'\';this.closest(\'div\').style.opacity=this.checked?\'0.5\':\'1\'">' +
-          '<label for="pm' + idx + '" style="cursor:pointer;flex:1">' +
-            '<div style="font-size:13px;font-weight:600;color:#0f172a">' + esc(item.en) + '</div>' +
-            (item.hi ? '<div style="font-size:11px;color:#64748b;margin-top:1px">' + esc(item.hi) + '</div>' : '') +
-          '</label>' +
-        '</div>';
+      taskListHtml = _pmItemDefs.map(function(item, i) {
+        var pt = i + 1;
+        var freq = String(item.freq || '');
+        var fShort = FREQ_SHORT[freq.toLowerCase()] || (freq ? freq.charAt(0).toUpperCase() : '');
+        var hasMore = !!(item.hi || item.tool);
+        return '<label class="clit-row" id="pm-row-' + pt + '">' +
+          '<button type="button" class="clit-state s0" id="f-pm-' + pt + '" name="pmItem" ' +
+            'data-st="0" onclick="event.preventDefault();pmCycleState(' + pt + ')" ' +
+            'aria-label="Status for point ' + pt + '">&#9675;</button>' +
+          '<span class="clit-pt" style="background:#1b5e20" ' +
+            'onclick="event.preventDefault();pmJumpToPoint(' + pt + ')">' + pt + '</span>' +
+          '<span class="clit-en">' + esc(item.en) + '</span>' +
+          '<span class="clit-pinned" id="pm-pinned-' + pt + '"></span>' +
+          (fShort ? '<span class="clit-freq" title="' + esc(freq) + '">' + esc(fShort) + '</span>' : '') +
+          (hasMore ? '<span class="clit-more" onclick="event.preventDefault();' +
+              'this.closest(\'.clit-row\').classList.toggle(\'open\')">&#9432;</span>' : '') +
+          (hasMore ? '<span class="clit-detail">' +
+              (item.hi ? '<span class="clit-hi">' + esc(item.hi) + '</span>' : '') +
+              (item.tool ? '<span class="clit-tool">&#128295; ' + esc(item.tool) + '</span>' : '') +
+            '</span>' : '') +
+        '</label>';
       }).join('');
     } else {
       taskListHtml = '<div style="padding:12px;color:#64748b;font-size:12px">No PM tasks configured for this machine.</div>';
     }
-    // Store items for submit
-    var tasksJson = JSON.stringify(pmItems.map(function(it){ return {label:it.en}; }));
+    // Store items for submit — label kept for backward compatibility with the
+    // existing submitPMRecord reader, which maps checklistItems[].label.
+    var tasksJson = JSON.stringify(_pmItemDefs.map(function(it){
+      return { label: it.en, en: it.en, hi: it.hi };
+    }));
 
     bodyEl.innerHTML =
       '<div style="background:#f0fdf4;border:1.5px solid #86efac;padding:8px 12px;border-radius:6px;margin-bottom:12px;font-size:12px;color:#14532d;font-weight:600">' +
@@ -6923,11 +6961,135 @@ function showPMForm(machineId) {
           taskListHtml +
         '</div>' +
       '</div>' +
+      '<div class="form-row"><label>Photos &amp; Points / फ़ोटो और बिंदु</label>' +
+        '<div class="clit-photos" id="f-pm-photos"></div>' +
+        '<button type="button" class="clit-addphoto" onclick="pmAddPhoto(\''+esc(machineId)+'\')">' +
+          '&#128247; Add Photo' +
+        '</button>' +
+        '<div class="clit-photo-hint">Tap each item to set <b>&#9675; not done</b> &rarr; <b>&#10003; done</b> &rarr; <b>! issue</b>. Then open a photo and use <b>+ Point</b> to pin any marked item onto it — the pin carries the status you already set. Tap a pin&rsquo;s &#10005; to remove it.</div>' +
+      '</div>' +
       '<div class="form-row"><label>Remarks <span style="color:#64748b;font-weight:400">(टिप्पणी)</span></label>' +
         '<textarea id="f-rmk" placeholder="Parts replaced, observations…"></textarea></div>' +
       '<button class="form-submit-btn" id="f-submit" style="background:#1b5e20" onclick="submitPMForm(\''+esc(machineId)+'\')">&#x1F7E2; Submit PM</button>' +
       '<div class="form-msg" id="f-msg"></div>';
+    pmRenderPhotos();
+    pmRefreshPinned();
   });
+}
+
+// ═══════════════════════════════════════════════════════
+// PM PHOTOS & POINTS — same annotator in 'legend' mode as CLIT, keyed 'pm' in
+// the shared _clPhotos store so the whole pin/drag/status engine is reused.
+// ═══════════════════════════════════════════════════════
+
+var _pmItemDefs = [];
+
+function pmGetState(pt) {
+  var el = document.getElementById('f-pm-' + pt);
+  return el ? (parseInt(el.dataset.st, 10) || 0) : 0;
+}
+
+function pmSetState(pt, st, quiet) {
+  var el = document.getElementById('f-pm-' + pt);
+  if (!el) return;
+  st = ((st % 3) + 3) % 3;
+  el.dataset.st = st;
+  el.className = 'clit-state ' + CLIT_STATE[st].cls;
+  el.innerHTML = CLIT_STATE[st].mark;
+  el.setAttribute('aria-label', 'Point ' + pt + ' — ' + CLIT_STATE[st].label);
+
+  var at = _pmFindPin(pt);
+  if (st === 0) { if (at) at.photo.pins.splice(at.idx, 1); }
+  else if (at) { at.pin.s = st; }
+
+  if (!quiet) {
+    pmRenderPhotos();
+    pmRefreshPinned();
+    if (_clAnnTask === 'pm' &&
+        document.getElementById('cl-annModal').classList.contains('show')) clAnnRender();
+  }
+}
+
+function pmCycleState(pt) { pmSetState(pt, pmGetState(pt) + 1); }
+
+function _pmFindPin(pt) {
+  var list = _clPhotos['pm'] || [];
+  for (var i = 0; i < list.length; i++) {
+    for (var j = 0; j < list[i].pins.length; j++) {
+      if (String(list[i].pins[j].p) === String(pt)) {
+        return { photo: list[i], pin: list[i].pins[j], idx: j, at: i };
+      }
+    }
+  }
+  return null;
+}
+
+/** Marked-but-unpinned PM items — what the picker offers. */
+function _pmUnpinnedMarked() {
+  var out = [];
+  (_pmItemDefs || []).forEach(function(item, idx) {
+    var pt = idx + 1;
+    if (pmGetState(pt) === 0) return;
+    if (_pmFindPin(pt)) return;
+    out.push({ id: String(pt), item: item });
+  });
+  return out;
+}
+
+function pmAddPhoto(machineId) {
+  _clPhotoTarget = 'pm';
+  _clPhotoMode   = 'legend';
+  _clPhotoItems  = _pmItemDefs;
+  document.getElementById('cl-photoTitle').textContent = 'PM — ' + machineId + ' Photo';
+  document.getElementById('cl-photoModal').classList.add('show');
+}
+
+function pmRenderPhotos() {
+  var box = document.getElementById('f-pm-photos');
+  if (!box) return;
+  var list = _clPhotos['pm'] || [];
+  if (!list.length) { box.innerHTML = ''; return; }
+  box.innerHTML = list.map(function(ph, i) {
+    var d = 0, p = 0;
+    ph.pins.forEach(function(pin){ if (pin.s===1) d++; else if (pin.s===2) p++; });
+    return '<button type="button" class="clit-ph" onclick="pmOpenPhoto(' + i + ')">' +
+      '<img src="' + ph.url + '" alt="PM photo ' + (i+1) + '">' +
+      '<span class="clit-ph-meta"><b>' + ph.pins.length + ' pt</b>' +
+        (d ? '<i class="ok">' + d + '✓</i>' : '') +
+        (p ? '<i class="bad">' + p + '!</i>' : '') +
+      '</span></button>';
+  }).join('');
+}
+
+function pmRefreshPinned() {
+  var list = _clPhotos['pm'] || [];
+  var where = {};
+  list.forEach(function(ph, i) {
+    ph.pins.forEach(function(pin){ if (where[pin.p] === undefined) where[pin.p] = i; });
+  });
+  (_pmItemDefs || []).forEach(function(_, idx) {
+    var pt = idx + 1;
+    var el = document.getElementById('pm-pinned-' + pt);
+    if (!el) return;
+    if (where[pt] === undefined) { el.textContent = ''; el.className = 'clit-pinned'; }
+    else { el.textContent = '⚙' + (where[pt] + 1); el.className = 'clit-pinned on'; }
+  });
+}
+
+function pmOpenPhoto(i) { clOpenAnnotator('pm', i, 'legend', _pmItemDefs); }
+
+function pmJumpToPoint(pt) {
+  var list = _clPhotos['pm'] || [];
+  var at = _pmFindPin(pt);
+  if (at) {
+    clOpenAnnotator('pm', at.at, 'legend', _pmItemDefs);
+    setTimeout(function(){ clAnnOpenStatus(at.idx); }, 250);
+    return;
+  }
+  if (!list.length) { showStatus('Add a photo first, then pin this point.', 'info', 3500); return; }
+  if (pmGetState(pt) === 0) { showStatus('Mark this item done or as an issue first.', 'info', 3500); return; }
+  clOpenAnnotator('pm', list.length - 1, 'legend', _pmItemDefs);
+  setTimeout(function(){ clAnnBeginPlace(String(pt)); }, 250);
 }
 
 function submitPMForm(machineId) {
@@ -6944,12 +7106,18 @@ function submitPMForm(machineId) {
   var tasksEl = document.getElementById('f-pm-tasks');
   var taskDefs = [];
   try { taskDefs = JSON.parse(tasksEl.dataset.items || '[]'); } catch(e) {}
-  var checkboxes = tasksEl.querySelectorAll('input[name="pmItem"]');
-  var anyPMDone = Array.prototype.some.call(checkboxes, function(c){return c.checked;});
-  if (taskDefs.length > 0 && !anyPMDone) { msg.className='form-msg err'; msg.textContent='Check at least one PM task. / कम से कम एक कार्य पूर्ण करें।'; return; }
+  var stateEls = tasksEl.querySelectorAll('[name="pmItem"]');
+  var anyPMDone = Array.prototype.some.call(stateEls, function(c){
+    return (parseInt(c.dataset.st, 10) || 0) !== 0;
+  });
+  if (taskDefs.length > 0 && !anyPMDone) { msg.className='form-msg err'; msg.textContent='Mark at least one PM task done or as an issue. / कम से कम एक कार्य चुनें।'; return; }
   btn.disabled = true; btn.textContent = 'Submitting…';
+  // status: 0 not done, 1 done, 2 issue. `done` stays for existing readers;
+  // `status` carries the third state so an issue is not filed as "not done".
   var checklistItems = taskDefs.map(function(item, idx) {
-    return { label: item.label || '', done: checkboxes[idx] ? checkboxes[idx].checked : false };
+    var s = stateEls[idx] ? (parseInt(stateEls[idx].dataset.st, 10) || 0) : 0;
+    return { label: item.label || '', en: item.en || item.label || '', hi: item.hi || '',
+             done: s === 1, status: s };
   });
   var _pmSnap = {
     machineId: machineId, machineName: App.machineName || machineId,
@@ -6974,7 +7142,11 @@ function submitPMForm(machineId) {
     .submitPMRecord({ machineId:machineId, technician:tech,
       startDate:sd, startTime:st, endDate:ed, endTime:et,
       checklistItems:checklistItems,
-      remarks:(document.getElementById('f-rmk').value||'').trim() });
+      remarks:(document.getElementById('f-rmk').value||'').trim(),
+      // Annotated proof, same shape CLIT sends: pins stay coordinates so the
+      // stored images remain small and re-annotatable.
+      photos: (_clPhotos['pm'] || []).map(function(ph){ return ph.url; }),
+      annotations: (_clPhotos['pm'] || []).map(function(ph){ return ph.pins; }) });
 }
 
 function showCLITForm(machineId) {
