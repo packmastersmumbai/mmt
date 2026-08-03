@@ -6902,10 +6902,19 @@ function showPMForm(machineId) {
 
     // PM rows mirror CLIT: compact single-line, tri-state control, point chip
     // that ties the row to a pin on the proof photo.
-    var FREQ_SHORT = { daily:'D', weekly:'W', monthly:'M', quarterly:'Q',
-                       'half-yearly':'H', halfyearly:'H', yearly:'Y', annually:'Y' };
+    // Covers every value in PMFREQ_OPTIONS. 'Half Yearly' carries a space, so it
+    // needs its own key — without it the code fell through to the first letter
+    // and only produced 'H' by luck. Fortnightly → F keeps it distinct from M.
+    var FREQ_SHORT = { daily:'D', weekly:'W', fortnightly:'F', monthly:'M',
+                       quarterly:'Q', 'half yearly':'H', 'half-yearly':'H',
+                       halfyearly:'H', yearly:'Y', annually:'Y', shift:'S' };
+    // An item with no interval of its own inherits the machine's PM frequency.
+    // The backend applies the same fallback, but a blank here would silently
+    // render a row with no interval at all, which reads as "unscheduled".
+    var _pmDefaultFreq = (fd && fd.pmFreq) || '';
     _pmItemDefs = pmItems.map(function(it, i) {
-      return { en: it.en || '', hi: it.hi || '', freq: it.freq || '', tool: it.tool || '', _idx: i };
+      return { en: it.en || '', hi: it.hi || '',
+               freq: it.freq || _pmDefaultFreq, tool: it.tool || '', _idx: i };
     });
     _clPhotos['pm'] = [];
 
@@ -7251,8 +7260,11 @@ function showCLITForm(machineId) {
 
     // Point number = position in allItems + 1, the same number the pin and the
     // legend show, so "3" means one thing across form, photo and legend.
-    var FREQ_SHORT = { daily:'D', weekly:'W', monthly:'M', quarterly:'Q',
-                       yearly:'Y', annually:'Y', shift:'S' };
+    // Same mapping as the PM form — 'Half Yearly' has a space and would
+    // otherwise fall through to a bare first-letter abbreviation.
+    var FREQ_SHORT = { daily:'D', weekly:'W', fortnightly:'F', monthly:'M',
+                       quarterly:'Q', 'half yearly':'H', 'half-yearly':'H',
+                       halfyearly:'H', yearly:'Y', annually:'Y', shift:'S' };
     var taskRows = '';
     var seenType = null;
     allItems.forEach(function(item, i) {
