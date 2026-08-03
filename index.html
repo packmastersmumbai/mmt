@@ -950,6 +950,46 @@ body {
 .cl-photo-hint { margin-top:10px; font-size:11px; color:#64748b; min-height:14px; }
 .cl-photo-box .btn-close { position:absolute; top:8px; right:8px; width:24px; height:24px; border-radius:50%; border:none; background:#f5f5f5; font-size:15px; cursor:pointer; }
 
+/* ── CLIT COMPACT CHECKLIST ──────────────────────────────────────────────
+   One line per item instead of a four-line stack. Hindi and tool move behind
+   the ⓘ toggle and frequency shrinks to a single letter, which takes 12 items
+   from ~770px to ~460px — the difference between three scrolls and one before
+   Add Photo comes into reach. */
+.clit-grp { display:flex; align-items:center; gap:7px; padding:6px 10px;
+  background:#f8fafc; border-bottom:1px solid #e2e8f0; }
+.clit-grp-l { width:18px; height:18px; border-radius:4px; color:#fff; font-size:10px;
+  font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.clit-grp-t { flex:1; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
+.clit-grp-n { font-size:10px; font-weight:700; color:#94a3b8; }
+
+/* The rows are <label>s inside a .form-row, where the generic
+   `.form-row label { display:block }` rule wins on specificity and stacks every
+   child vertically — a 38px row rendered at 97px. Scoping to the container
+   raises specificity above it without touching the shared rule. */
+#f-clit-tasks label.clit-row { display:flex; align-items:center; gap:8px;
+  padding:0 10px; min-height:38px; cursor:pointer; border-top:1px solid #f1f5f9;
+  flex-wrap:wrap; margin:0; text-transform:none; font-size:inherit; color:inherit; }
+#f-clit-tasks label.clit-row:first-of-type { border-top:none; }
+.clit-row input[type=checkbox] { width:18px; height:18px; flex-shrink:0; margin:0; }
+/* The point chip is the same number the pin and the legend show. */
+.clit-pt { width:19px; height:19px; border-radius:5px; color:#fff; font-size:10px;
+  font-weight:800; display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; cursor:pointer; }
+/* No vertical padding: min-height on the row already sets the touch height, and
+   padding here was stacking on top of it. */
+#f-clit-tasks .clit-en { flex:1; min-width:0; font-size:12.5px; font-weight:600;
+  color:#0f172a; line-height:1.3; padding:6px 0; }
+.clit-pinned { font-size:10px; font-weight:700; color:#94a3b8; }
+.clit-pinned.on { color:#2563eb; }
+.clit-freq { width:17px; height:17px; border-radius:4px; background:#f1f5f9; color:#64748b;
+  font-size:9px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.clit-more { width:22px; height:22px; display:flex; align-items:center; justify-content:center;
+  color:#94a3b8; font-size:13px; flex-shrink:0; cursor:pointer; }
+.clit-detail { display:none; width:100%; padding:0 0 8px 45px; }
+.clit-row.open .clit-detail { display:block; }
+.clit-hi { display:block; font-size:11.5px; color:#475569; }
+.clit-tool { display:block; font-size:10px; color:#64748b; margin-top:2px; }
+
 /* ── CLIT FORM PHOTOS ── */
 .clit-photos { display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 0; }
 .clit-ph { position:relative; width:76px; height:76px; padding:0; border:1px solid #e2e8f0;
@@ -5112,10 +5152,12 @@ function clOpenAnnotator(taskId, photoIdx, mode, items) {
 }
 
 function clCloseAnnotator() {
+  var wasLegend = _clAnnMode === 'legend';
   document.getElementById('cl-annModal').classList.remove('show');
   document.body.style.overflow = '';
   if (_clAnnTask) _clSyncPhotoRow(_clAnnTask);
   _clAnnTask = null; _clAnnSel = null; _clAnnPlacing = null;
+  if (wasLegend && typeof clitSyncChecksFromPins === 'function') clitSyncChecksFromPins();
 }
 
 function _clAnnPhotos() { return _clPhotos[_clAnnTask] || []; }
@@ -5439,6 +5481,10 @@ function clAnnSetStatus(si) {
   clAnnRenderTally();
   clAnnRenderStrip();
   clAnnRenderLegend();
+  // Keep the CLIT form's checkboxes in step — pin and checkbox are one fact.
+  if (_clAnnMode === 'legend' && typeof clitSyncChecksFromPins === 'function') {
+    clitSyncChecksFromPins();
+  }
 }
 
 function clAnnSetNote(v) {
@@ -5450,9 +5496,19 @@ function clAnnSetNote(v) {
 function clAnnRemovePin() {
   var cur = _clAnnCur();
   if (_clAnnSel === null || !cur.pins[_clAnnSel]) return;
+  var removed = cur.pins[_clAnnSel].p;
   cur.pins.splice(_clAnnSel, 1);
   clAnnCloseSheets();
   clAnnRender();
+  // Removing the evidence must not leave the checkbox ticked on its own.
+  if (_clAnnMode === 'legend' && typeof clitSyncChecksFromPins === 'function') {
+    var still = _clAnnAllPins().some(function(o){ return String(o.pin.p) === String(removed); });
+    if (!still) {
+      var box = document.getElementById('f-clit-' + removed);
+      if (box) box.checked = false;
+    }
+    clitSyncChecksFromPins();
+  }
 }
 
 /* ── Dragging ───────────────────────────────────────────────────────────
@@ -6910,41 +6966,57 @@ function showCLITForm(machineId) {
       groups[t].push(item);
     });
 
-    var taskRows = '';
+    /* allItems MUST be built in the same order the rows render. submitCLITForm
+       pairs checkboxes[idx] with taskDefs[idx] positionally, so a flat list in
+       source order against grouped rows would record each tick against the wrong
+       item whenever the source is not already sorted by C/L/I/T. Flattening the
+       groups here makes render order, point number and submit index one sequence. */
+    var allItems = [];
     ['C','L','I','T'].forEach(function(letter) {
-      var groupItems = groups[letter];
-      if (!groupItems || !groupItems.length) return;
-      var color = CLIT_COLORS[letter] || '#64748b';
-      var groupLabel = CLIT_LABELS[letter] || letter;
-      // Group header
-      taskRows += '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;">'+
-        '<span style="width:22px;height:22px;background:'+color+';color:white;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0">'+letter+'</span>'+
-        '<span style="font-size:11px;font-weight:700;color:'+color+';text-transform:uppercase;letter-spacing:0.5px">'+esc(groupLabel)+'</span>'+
-      '</div>';
-      groupItems.forEach(function(item, idx) {
-        var enLabel = item.en || '';
-        var hiLabel = item.hi || '';
-        var freq    = item.freq || '';
-        var tool    = item.tool || '';
-        var itemId  = 'f-clit-'+letter+'-'+idx;
-        var border  = idx > 0 ? 'border-top:1px solid #f1f5f9;' : '';
-        taskRows += '<label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;cursor:pointer;'+border+'transition:background 0.1s" onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'\'">'+
-          '<input type="checkbox" id="'+itemId+'" name="clitItem" style="width:18px;height:18px;margin-top:2px;accent-color:'+color+';flex-shrink:0">'+
-          '<span style="flex:1;min-width:0">'+
-            '<span style="font-size:13px;font-weight:600;color:#0f172a;display:block">'+esc(enLabel)+'</span>'+
-            (hiLabel ? '<span style="font-size:12px;color:#64748b;display:block;margin-top:1px">'+esc(hiLabel)+'</span>' : '')+
-            ((freq||tool) ? '<span style="font-size:10px;color:#64748b;display:block;margin-top:2px">'+
-              (freq?'&#x23F1; '+esc(freq):'')+(freq&&tool?' &nbsp;·&nbsp; ':'')+
-              (tool?esc(tool):'')+
-            '</span>' : '')+
-          '</span>'+
-        '</label>';
+      (groups[letter] || []).forEach(function(item) {
+        allItems.push({ type: letter, en: item.en || '', hi: item.hi || '',
+                        freq: item.freq || '', tool: item.tool || '',
+                        _idx: allItems.length });
       });
     });
 
-    var allItems = clitItems.map(function(item,idx){
-      var t = (item.type||'C').toUpperCase().charAt(0);
-      return {type:t, en:item.en||'', hi:item.hi||'', freq:item.freq||'', tool:item.tool||'', _idx:idx};
+    // Point number = position in allItems + 1, the same number the pin and the
+    // legend show, so "3" means one thing across form, photo and legend.
+    var FREQ_SHORT = { daily:'D', weekly:'W', monthly:'M', quarterly:'Q',
+                       yearly:'Y', annually:'Y', shift:'S' };
+    var taskRows = '';
+    var seenType = null;
+    allItems.forEach(function(item, i) {
+      var letter = item.type;
+      var color  = CLIT_COLORS[letter] || '#64748b';
+      if (letter !== seenType) {
+        seenType = letter;
+        var count = allItems.filter(function(x){ return x.type === letter; }).length;
+        taskRows += '<div class="clit-grp">' +
+          '<span class="clit-grp-l" style="background:' + color + '">' + letter + '</span>' +
+          '<span class="clit-grp-t" style="color:' + color + '">' +
+            esc(CLIT_LABELS[letter] || letter) + '</span>' +
+          '<span class="clit-grp-n">' + count + '</span></div>';
+      }
+      var pt   = i + 1;
+      var freq = String(item.freq || '');
+      var fShort = FREQ_SHORT[freq.toLowerCase()] || (freq ? freq.charAt(0).toUpperCase() : '');
+      var hasMore = !!(item.hi || item.tool);
+      taskRows += '<label class="clit-row" id="clit-row-' + pt + '">' +
+        '<input type="checkbox" id="f-clit-' + pt + '" name="clitItem" ' +
+          'style="accent-color:' + color + '" onchange="clitOnCheck(' + pt + ',this.checked)">' +
+        '<span class="clit-pt" style="background:' + color + '" ' +
+          'onclick="event.preventDefault();clitJumpToPoint(' + pt + ')">' + pt + '</span>' +
+        '<span class="clit-en">' + esc(item.en || '') + '</span>' +
+        '<span class="clit-pinned" id="clit-pinned-' + pt + '"></span>' +
+        (fShort ? '<span class="clit-freq" title="' + esc(freq) + '">' + esc(fShort) + '</span>' : '') +
+        (hasMore ? '<span class="clit-more" onclick="event.preventDefault();' +
+            'this.closest(\'.clit-row\').classList.toggle(\'open\')">&#9432;</span>' : '') +
+        (hasMore ? '<span class="clit-detail">' +
+            (item.hi ? '<span class="clit-hi">' + esc(item.hi) + '</span>' : '') +
+            (item.tool ? '<span class="clit-tool">&#128295; ' + esc(item.tool) + '</span>' : '') +
+          '</span>' : '') +
+      '</label>';
     });
     // Photo state for this form instance. Keyed 'clit' in the shared _clPhotos
     // store so the annotator, which is task-keyed, can drive it unchanged.
@@ -6979,6 +7051,7 @@ function showCLITForm(machineId) {
       '<button class="form-submit-btn" id="f-submit" style="background:'+mColor+'" onclick="submitCLITForm(\''+esc(machineId)+'\')">&#x2713; Submit CLIT Record</button>'+
       '<div class="form-msg" id="f-msg"></div>';
     clitRenderPhotos();
+    clitRefreshPinned();
   }
 }
 
@@ -7020,6 +7093,83 @@ function clitRenderPhotos() {
 
 function clitOpenPhoto(i) {
   clOpenAnnotator('clit', i, 'legend', _clitItemDefs);
+}
+
+/* ── Form ⇄ photo linkage ───────────────────────────────────────────────────
+   The checkbox and the pin record the same fact, so they are kept as one value
+   rather than two that can disagree. Ticking a box marks its pin Done; marking
+   a pin Done ticks the box; a Problem pin unticks it, because a problem is not
+   a completed item and must not submit as one. */
+
+/** Checkbox → pin. Silent if the item has no pin yet; the tick still stands. */
+function clitOnCheck(pt, checked) {
+  var list = _clPhotos['clit'] || [];
+  list.forEach(function(ph) {
+    ph.pins.forEach(function(pin) {
+      if (String(pin.p) !== String(pt)) return;
+      // Never overwrite a Problem by ticking — that would hide a real finding.
+      if (checked && pin.s !== 2) pin.s = 1;
+      else if (!checked && pin.s === 1) pin.s = 0;
+    });
+  });
+  clitRenderPhotos();
+  clitRefreshPinned();
+}
+
+/** Pin → checkbox. Called whenever pin statuses change in the annotator. */
+function clitSyncChecksFromPins() {
+  var list = _clPhotos['clit'] || [];
+  var state = {};   // point → best status seen across photos
+  list.forEach(function(ph) {
+    ph.pins.forEach(function(pin) {
+      var cur = state[pin.p];
+      // Problem outranks Done outranks Not-done: if any photo flags a problem,
+      // the item is not complete.
+      if (cur === 2) return;
+      if (pin.s === 2) state[pin.p] = 2;
+      else if (pin.s === 1 && cur !== 2) state[pin.p] = 1;
+      else if (cur === undefined) state[pin.p] = pin.s;
+    });
+  });
+  Object.keys(state).forEach(function(pt) {
+    var box = document.getElementById('f-clit-' + pt);
+    if (box) box.checked = state[pt] === 1;
+  });
+  clitRefreshPinned();
+}
+
+/** Show which photo each point is pinned on, right in the form row. */
+function clitRefreshPinned() {
+  var list = _clPhotos['clit'] || [];
+  var where = {};
+  list.forEach(function(ph, i) {
+    ph.pins.forEach(function(pin) { if (where[pin.p] === undefined) where[pin.p] = i; });
+  });
+  (_clitItemDefs || []).forEach(function(_, idx) {
+    var pt = idx + 1;
+    var el = document.getElementById('clit-pinned-' + pt);
+    if (!el) return;
+    if (where[pt] === undefined) { el.textContent = ''; el.className = 'clit-pinned'; }
+    else { el.textContent = '⚙' + (where[pt] + 1); el.className = 'clit-pinned on'; }
+  });
+}
+
+/** Form point chip → the pin on its photo. */
+function clitJumpToPoint(pt) {
+  var list = _clPhotos['clit'] || [];
+  for (var i = 0; i < list.length; i++) {
+    for (var j = 0; j < list[i].pins.length; j++) {
+      if (String(list[i].pins[j].p) === String(pt)) {
+        clOpenAnnotator('clit', i, 'legend', _clitItemDefs);
+        setTimeout(function(){ clAnnOpenStatus(j); }, 250);
+        return;
+      }
+    }
+  }
+  // Not pinned yet — open the newest photo so it can be placed, or prompt.
+  if (!list.length) { showStatus('Add a photo first, then pin this point.', 'info', 3500); return; }
+  clOpenAnnotator('clit', list.length - 1, 'legend', _clitItemDefs);
+  setTimeout(function(){ clAnnBeginPlace(String(pt)); }, 250);
 }
 
 function submitCLITForm(machineId) {
