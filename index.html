@@ -941,6 +941,13 @@ body {
    heading silently loses its styling. */
 .cl-photo-box h2 { font-size:13px; color:#333; margin-bottom:10px; }
 .cl-photo-box input { width:100%; padding:8px; border:2px dashed #4caf50; border-radius:4px; font-size:12px; cursor:pointer; }
+/* Camera and gallery as separate targets, both a comfortable 48px tap height. */
+.cl-photo-actions { display:flex; flex-direction:column; gap:10px; }
+.cl-photo-btn { min-height:48px; width:100%; border-radius:10px; border:none;
+  font-size:14px; font-weight:700; cursor:pointer; touch-action:manipulation; }
+.cl-photo-btn.cam { background:#2563eb; color:#fff; }
+.cl-photo-btn.lib { background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; }
+.cl-photo-hint { margin-top:10px; font-size:11px; color:#64748b; min-height:14px; }
 .cl-photo-box .btn-close { position:absolute; top:8px; right:8px; width:24px; height:24px; border-radius:50%; border:none; background:#f5f5f5; font-size:15px; cursor:pointer; }
 
 /* ── CLIT FORM PHOTOS ── */
@@ -2481,7 +2488,23 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
       <!-- h2, not h3: this is a modal title sitting directly under the page
            h1, so h3 skipped a level in the heading outline. -->
       <h2 id="cl-photoTitle">Upload Photo</h2>
-      <input type="file" id="cl-photoInput" accept="image/*" capture="environment" onchange="clHandlePhoto()">
+      <!-- Two inputs, not one. A single input with capture="environment" forces
+           the camera and hides the gallery on most phones, so an existing photo
+           cannot be attached — and if camera permission is denied the picker
+           silently does nothing, which reads as a dead button. -->
+      <div class="cl-photo-actions">
+        <button type="button" class="cl-photo-btn cam" onclick="document.getElementById('cl-photoInput').click()">
+          &#128247; Take Photo
+        </button>
+        <button type="button" class="cl-photo-btn lib" onclick="document.getElementById('cl-photoPick').click()">
+          &#128194; Choose Existing
+        </button>
+      </div>
+      <input type="file" id="cl-photoInput" accept="image/*" capture="environment"
+             onchange="clHandlePhoto()" style="display:none">
+      <input type="file" id="cl-photoPick" accept="image/*"
+             onchange="clHandlePhoto('pick')" style="display:none">
+      <div class="cl-photo-hint" id="cl-photoHint"></div>
     </div>
   </div>
 
@@ -4907,7 +4930,13 @@ function clOpenPhoto(id) {
 
 function clClosePhoto() {
   document.getElementById('cl-photoModal').classList.remove('show');
+  // Clear BOTH inputs: a stale value means picking the same file twice in a row
+  // fires no change event, so the second attempt looks like a dead button.
   document.getElementById('cl-photoInput').value = '';
+  var pick = document.getElementById('cl-photoPick');
+  if (pick) pick.value = '';
+  var hint = document.getElementById('cl-photoHint');
+  if (hint) hint.textContent = '';
   _clPhotoTarget = null;
 }
 
@@ -4943,13 +4972,24 @@ function _stampImage(ctx, w, h) {
   if (line2) ctx.fillText(line2, pad, h - barH + pad + fs + lineH);
 }
 
-function clHandlePhoto() {
-  var file = document.getElementById('cl-photoInput').files[0];
+function clHandlePhoto(src) {
+  var inputId = src === 'pick' ? 'cl-photoPick' : 'cl-photoInput';
+  var file = document.getElementById(inputId).files[0];
   if (!file || !_clPhotoTarget) return;
   var id = _clPhotoTarget;
+  var hint = document.getElementById('cl-photoHint');
+  if (hint) hint.textContent = 'Processing photo…';
   var reader = new FileReader();
+  // A corrupt or unreadable file used to fail silently, leaving the modal open
+  // with no explanation — indistinguishable from a broken button.
+  reader.onerror = function() {
+    if (hint) hint.textContent = '⚠ Could not read that file. Try another.';
+  };
   reader.onload = function(e) {
     var img = new Image();
+    img.onerror = function() {
+      if (hint) hint.textContent = '⚠ That file is not a readable image.';
+    };
     img.onload = function() {
       // Multi-photo tasks drop to 500px/q0.45 so three shots cost roughly what
       // one used to. A lone photo keeps the original 600px/q0.50 fidelity.
