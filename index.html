@@ -1003,6 +1003,8 @@ body {
 .clit-addphoto { margin-top:8px; min-height:42px; width:100%; border:1px dashed #94a3b8;
   border-radius:9px; background:#f8fafc; color:#334155; font-size:13px; font-weight:700; cursor:pointer; }
 .clit-photo-hint { margin-top:6px; font-size:10px; color:#64748b; line-height:1.5; }
+.clit-unplaced { margin-top:8px; padding:7px 10px; border-radius:8px; background:#eff6ff;
+  border:1px solid #bfdbfe; color:#1d4ed8; font-size:11px; font-weight:600; }
 
 /* ── PHOTO ANNOTATOR ──────────────────────────────────────────────────────
    Full-bleed photo with overlay sheets rather than a permanent side panel:
@@ -1045,6 +1047,14 @@ body {
   box-shadow:0 2px 6px rgba(0,0,0,0.45); }
 .ann-pin-body > span { transform:rotate(-45deg); }
 .ann-pin.sel .ann-pin-body { outline:3px solid #38bdf8; outline-offset:2px; }
+/* A pin that was dropped by ticking its box but never dragged. It pulses so the
+   operator can see at a glance that it is sitting at the centre placeholder
+   rather than on the part it is meant to point at. */
+.ann-pin.unplaced .ann-pin-body { animation:annPulse 1.4s ease-in-out infinite;
+  box-shadow:0 0 0 3px rgba(56,189,248,0.5), 0 2px 6px rgba(0,0,0,0.45); }
+@keyframes annPulse { 0%,100% { transform:rotate(45deg) scale(1); }
+                      50% { transform:rotate(45deg) scale(1.12); } }
+@media (prefers-reduced-motion:reduce) { .ann-pin.unplaced .ann-pin-body { animation:none; } }
 .pin-s0 .ann-pin-body { background:#64748b; }
 .pin-s1 .ann-pin-body { background:#16a34a; }
 .pin-s2 .ann-pin-body { background:#dc2626; }
@@ -2579,7 +2589,9 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
       <div class="ann-strip" id="cl-annStrip"></div>
       <div class="ann-tallyrow">
         <div class="ann-tally" id="cl-annTally"></div>
-        <button class="ann-addpt" onclick="clAnnOpenPoints()">+ Point</button>
+        <!-- CLIT drives pins from the form's checkboxes, so there is nothing to
+             add here; Checklist (free mode) still needs a way to drop a pin. -->
+        <button class="ann-addpt" id="cl-annAddPt" onclick="clAnnOpenPoints()">+ Point</button>
       </div>
     </div>
     <div class="ann-hint" id="cl-annHint"></div>
@@ -5053,6 +5065,10 @@ function clHandlePhoto(src) {
 
       if (!_clPhotos[id]) _clPhotos[id] = [];
       _clPhotos[id].push({ url: b64, pins: [] });
+      // CLIT: a second photo exists to cover what the first could not show, so
+      // it opens carrying the pins for every ticked item that has no pin yet.
+      // Items already pinned elsewhere are NOT re-offered — one point, one photo.
+      if (id === 'clit') _clitSeedPins(_clPhotos[id].length - 1);
       _clSyncPhotoRow(id);
       clClosePhoto();
       // Jump straight into the annotator on the shot just taken \u2014 the operator
@@ -5190,6 +5206,10 @@ function clAnnRender() {
   clAnnRenderStrip();
   clAnnRenderTally();
   clAnnRenderLegend();
+  // In legend mode the ticked checkboxes decide which pins exist, so the manual
+  // "+ Point" picker would be a second, competing way to do the same thing.
+  var addBtn = document.getElementById('cl-annAddPt');
+  if (addBtn) addBtn.style.display = _clAnnMode === 'legend' ? 'none' : '';
 }
 
 /**
@@ -5242,7 +5262,8 @@ function clAnnRenderPins() {
     // indistinguishable. Status now rides as a corner badge instead.
     // Pin colour tracks STATUS only; the C/L/I/T hue lives in the legend, since
     // green-for-Tightening on an unmarked pin misread as green-for-Done.
-    return '<button class="ann-pin ' + st.cls + (i === _clAnnSel ? ' sel' : '') + '"' +
+    return '<button class="ann-pin ' + st.cls + (pin.u ? ' unplaced' : '') +
+           (i === _clAnnSel ? ' sel' : '') + '"' +
            ' style="left:' + pin.x + '%;top:' + pin.y + '%"' +
            ' data-i="' + i + '"' +
            ' aria-label="Point ' + esc(String(pin.p)) + ' — ' + st.label + '">' +
@@ -5542,7 +5563,11 @@ function clAnnRemovePin() {
     var pt = pctFromEvent(e);
     pin.x = Math.round(pt.x); pin.y = Math.round(pt.y);
     drag.moved = true;
+    delete pin.u;              // positioned by hand — no longer "at centre"
     clAnnRenderPins();
+    if (_clAnnMode === 'legend' && typeof clitRefreshUnplaced === 'function') {
+      clitRefreshUnplaced();
+    }
   });
 
   document.addEventListener('pointerup', function() {
@@ -7043,7 +7068,8 @@ function showCLITForm(machineId) {
         '<button type="button" class="clit-addphoto" onclick="clitAddPhoto(\''+esc(machineId)+'\')">'+
           '&#128247; Add Photo'+
         '</button>'+
-        '<div class="clit-photo-hint">Add a photo, then pin the C/L/I/T items on it and mark each Done, Not done or Problem.</div>'+
+        '<div class="clit-unplaced" id="clit-unplaced" style="display:none"></div>'+
+        '<div class="clit-photo-hint">Tick an item and its numbered pin appears on the photo — drag it to the right spot. Tap a pin to flag a problem.</div>'+
       '</div>'+
       '<div class="form-row"><label>Remarks / Observations</label>'+
         '<textarea id="f-rmk" rows="3" placeholder="Consumables used, oil type, parts replaced, observations…&#10;उपयोग किए गए सामान, टिप्पणियाँ…"></textarea>'+
@@ -7104,16 +7130,102 @@ function clitOpenPhoto(i) {
 /** Checkbox → pin. Silent if the item has no pin yet; the tick still stands. */
 function clitOnCheck(pt, checked) {
   var list = _clPhotos['clit'] || [];
-  list.forEach(function(ph) {
-    ph.pins.forEach(function(pin) {
-      if (String(pin.p) !== String(pt)) return;
-      // Never overwrite a Problem by ticking — that would hide a real finding.
-      if (checked && pin.s !== 2) pin.s = 1;
-      else if (!checked && pin.s === 1) pin.s = 0;
-    });
-  });
+  var at = _clitFindPin(pt);
+
+  if (checked) {
+    if (at) {
+      // Already pinned somewhere — just mark it done, unless it is flagged as a
+      // Problem, which must not be silently overwritten by a tick.
+      if (at.pin.s !== 2) at.pin.s = 1;
+    } else if (list.length) {
+      // Not pinned yet: drop it on the CURRENT photo, centre, ready to drag.
+      // The tick is the act; positioning it on the image says where.
+      var target = _clitCurrentPhoto();
+      list[target].pins.push({ p: String(pt), x: 50, y: 50, s: 1, n: '', u: 1 });
+    }
+    // With no photo at all the tick still stands — not every item needs one.
+  } else if (at) {
+    // Unticking removes the pin entirely. Leaving a stray pin behind would put
+    // a mark on the proof photo for work the operator just said was not done.
+    at.photo.pins.splice(at.idx, 1);
+  }
+
   clitRenderPhotos();
   clitRefreshPinned();
+  clitRefreshUnplaced();
+  if (_clAnnTask === 'clit' && document.getElementById('cl-annModal').classList.contains('show')) {
+    clAnnRender();
+  }
+}
+
+/**
+ * _clitSeedPins(photoIdx) — drop pins for every ticked item that is not pinned
+ * on any photo yet. Called when a new photo is added, so the remaining points
+ * are waiting on it rather than having to be picked from a list.
+ */
+function _clitSeedPins(photoIdx) {
+  var list = _clPhotos['clit'] || [];
+  var ph = list[photoIdx];
+  if (!ph) return 0;
+  var n = 0;
+
+  /* Pins still sitting at the centre placeholder move to the new photo. The
+     operator added a second shot precisely because those points were not
+     visible in the first, so leaving them stranded there would force a manual
+     re-pin. Anything already dragged into position stays where it was put. */
+  list.forEach(function(other, oi) {
+    if (oi === photoIdx) return;
+    for (var i = other.pins.length - 1; i >= 0; i--) {
+      if (!other.pins[i].u) continue;
+      ph.pins.push(other.pins.splice(i, 1)[0]);
+      n++;
+    }
+  });
+
+  (_clitItemDefs || []).forEach(function(_, idx) {
+    var pt = idx + 1;
+    var box = document.getElementById('f-clit-' + pt);
+    if (!box || !box.checked) return;      // only ticked items
+    if (_clitFindPin(pt)) return;          // already pinned somewhere
+    ph.pins.push({ p: String(pt), x: 50, y: 50, s: 1, n: '', u: 1 });
+    n++;
+  });
+  return n;
+}
+
+/** Locate a point's pin across all photos. Returns {photo, pin, idx, at} or null. */
+function _clitFindPin(pt) {
+  var list = _clPhotos['clit'] || [];
+  for (var i = 0; i < list.length; i++) {
+    for (var j = 0; j < list[i].pins.length; j++) {
+      if (String(list[i].pins[j].p) === String(pt)) {
+        return { photo: list[i], pin: list[i].pins[j], idx: j, at: i };
+      }
+    }
+  }
+  return null;
+}
+
+/** Which photo a newly ticked item lands on: the one being viewed, else the last. */
+function _clitCurrentPhoto() {
+  var list = _clPhotos['clit'] || [];
+  if (_clAnnTask === 'clit' && _clAnnPhoto < list.length) return _clAnnPhoto;
+  return list.length - 1;
+}
+
+/** Count of pins dropped but never dragged off centre, shown so an operator can
+ *  see there is still positioning to do without being blocked by it. */
+function clitRefreshUnplaced() {
+  var n = 0;
+  (_clPhotos['clit'] || []).forEach(function(ph) {
+    ph.pins.forEach(function(pin) { if (pin.u) n++; });
+  });
+  var el = document.getElementById('clit-unplaced');
+  if (el) {
+    el.textContent = n ? (n + ' pin' + (n>1?'s':'') + ' still at centre — drag into place') : '';
+    el.style.display = n ? '' : 'none';
+  }
+  return n;
 }
 
 /** Pin → checkbox. Called whenever pin statuses change in the annotator. */
@@ -7133,9 +7245,13 @@ function clitSyncChecksFromPins() {
   });
   Object.keys(state).forEach(function(pt) {
     var box = document.getElementById('f-clit-' + pt);
-    if (box) box.checked = state[pt] === 1;
+    // Only a Problem clears the tick. Pins now exist BECAUSE the box was ticked,
+    // so treating any non-Done status as "untick" would undo the operator's own
+    // action the moment they opened the pin to look at it.
+    if (box && state[pt] === 2) box.checked = false;
   });
   clitRefreshPinned();
+  clitRefreshUnplaced();
 }
 
 /** Show which photo each point is pinned on, right in the form row. */
