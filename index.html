@@ -2465,18 +2465,24 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 
     </div><!-- /cl-content-wrap -->
 
-    <!-- Photo Modal -->
-    <div class="cl-photo-modal" id="cl-photoModal">
-      <div class="cl-photo-box">
-        <button class="btn-close" onclick="clClosePhoto()">&#x2715;</button>
-        <!-- h2, not h3: this is a modal title sitting directly under the page
-             h1, so h3 skipped a level in the heading outline. -->
-        <h2 id="cl-photoTitle">Upload Photo</h2>
-        <input type="file" id="cl-photoInput" accept="image/*" capture="environment" onchange="clHandlePhoto()">
-      </div>
+
+
+  </div>
+
+  <!-- Photo capture modal (global, outside any view). It lived inside
+       #view-checklist, which works only while that view is on screen: CLIT opens
+       from a different view, so #view-checklist is display:none and the modal —
+       position:fixed but inside a hidden ancestor — rendered at height 0 and
+       never appeared. That is why "Add Photo" looked dead: the click ran, the
+       class was added, but nothing painted. Same trap as the annotator below. -->
+  <div class="cl-photo-modal" id="cl-photoModal">
+    <div class="cl-photo-box">
+      <button class="btn-close" onclick="clClosePhoto()">&#x2715;</button>
+      <!-- h2, not h3: this is a modal title sitting directly under the page
+           h1, so h3 skipped a level in the heading outline. -->
+      <h2 id="cl-photoTitle">Upload Photo</h2>
+      <input type="file" id="cl-photoInput" accept="image/*" capture="environment" onchange="clHandlePhoto()">
     </div>
-
-
   </div>
 
   <!-- Photo Annotator (global, outside any view): the photo is the proof and
