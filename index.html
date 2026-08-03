@@ -971,6 +971,14 @@ body {
   flex-wrap:wrap; margin:0; text-transform:none; font-size:inherit; color:inherit; }
 #f-clit-tasks label.clit-row:first-of-type { border-top:none; }
 .clit-row input[type=checkbox] { width:18px; height:18px; flex-shrink:0; margin:0; }
+/* Tri-state control: one tap cycles not done → done → issue. A real touch target,
+   since it is now the primary action on every row. */
+#f-clit-tasks .clit-state { width:26px; height:26px; flex-shrink:0; padding:0;
+  border-radius:7px; font-size:13px; font-weight:800; line-height:1; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; transition:background .12s; }
+#f-clit-tasks .clit-state.s0 { background:#f1f5f9; border:1.5px solid #cbd5e1; color:#94a3b8; }
+#f-clit-tasks .clit-state.s1 { background:#16a34a; border:1.5px solid #16a34a; color:#fff; }
+#f-clit-tasks .clit-state.s2 { background:#dc2626; border:1.5px solid #dc2626; color:#fff; }
 /* The point chip is the same number the pin and the legend show. */
 .clit-pt { width:19px; height:19px; border-radius:5px; color:#fff; font-size:10px;
   font-weight:800; display:flex; align-items:center; justify-content:center;
@@ -5235,8 +5243,7 @@ function _clitUnpinnedTicked() {
   var out = [];
   (_clitItemDefs || []).forEach(function(item, idx) {
     var pt = idx + 1;
-    var box = document.getElementById('f-clit-' + pt);
-    if (!box || !box.checked) return;
+    if (clitGetState(pt) === 0) return;   // untouched items are not claimed
     if (_clitFindPin(pt)) return;
     out.push({ id: String(pt), item: item });
   });
@@ -5487,7 +5494,11 @@ function _clPointType(pid) {
 /** Drop a pin dead-centre, then let the operator drag it to the real spot. */
 function clAnnBeginPlace(pid) {
   var cur = _clAnnCur();
-  cur.pins.push({ p: pid, x: 50, y: 50, s: 0, n: '' });
+  // In legend mode the form already carries the outcome, so the pin inherits it.
+  // Asking again on the photo made the operator state the same fact twice.
+  var inherited = (_clAnnMode === 'legend' && typeof clitGetState === 'function')
+    ? clitGetState(pid) : 0;
+  cur.pins.push({ p: pid, x: 50, y: 50, s: inherited, n: '', u: 1 });
   _clAnnSel = cur.pins.length - 1;
   _clAnnPlacing = pid;
 
@@ -5505,6 +5516,16 @@ function clAnnBeginPlace(pid) {
 function clAnnConfirmPlace() {
   _clAnnPlacing = null;
   document.getElementById('cl-annHint').classList.remove('show');
+  var cur = _clAnnCur();
+  if (cur && cur.pins[_clAnnSel]) delete cur.pins[_clAnnSel].u;
+  // Legend mode already knows the status from the form, so setting it here would
+  // be asking the same question twice. Free mode still needs the sheet.
+  if (_clAnnMode === 'legend') {
+    clAnnCloseSheets();
+    clAnnRender();
+    if (typeof clitRefreshPinned === 'function') { clitRefreshPinned(); clitRenderPhotos(); }
+    return;
+  }
   clAnnOpenStatus(_clAnnSel);
 }
 
@@ -5544,9 +5565,12 @@ function clAnnSetStatus(si) {
   clAnnRenderTally();
   clAnnRenderStrip();
   clAnnRenderLegend();
-  // Keep the CLIT form's checkboxes in step — pin and checkbox are one fact.
-  if (_clAnnMode === 'legend' && typeof clitSyncChecksFromPins === 'function') {
-    clitSyncChecksFromPins();
+  // Changing status on the pin writes back to the form control, so the two never
+  // disagree — but the form remains the value that submits.
+  if (_clAnnMode === 'legend' && typeof clitSetState === 'function') {
+    clitSetState(pin.p, si, true);
+    clitRefreshPinned();
+    clitRenderPhotos();
   }
 }
 
@@ -7075,9 +7099,15 @@ function showCLITForm(machineId) {
       var freq = String(item.freq || '');
       var fShort = FREQ_SHORT[freq.toLowerCase()] || (freq ? freq.charAt(0).toUpperCase() : '');
       var hasMore = !!(item.hi || item.tool);
+      /* Tri-state control, not a checkbox. The record has three outcomes —
+         not done, done, issue — so a binary tick forced the operator to state
+         the outcome a second time on the pin. One tap cycles ○ → ✓ → ! → ○,
+         and that single value drives both the submission and the pin. */
       taskRows += '<label class="clit-row" id="clit-row-' + pt + '">' +
-        '<input type="checkbox" id="f-clit-' + pt + '" name="clitItem" ' +
-          'style="accent-color:' + color + '" onchange="clitOnCheck(' + pt + ',this.checked)">' +
+        '<button type="button" class="clit-state s0" id="f-clit-' + pt + '" ' +
+          'name="clitItem" data-st="0" ' +
+          'onclick="event.preventDefault();clitCycleState(' + pt + ')" ' +
+          'aria-label="Status for point ' + pt + '">&#9675;</button>' +
         '<span class="clit-pt" style="background:' + color + '" ' +
           'onclick="event.preventDefault();clitJumpToPoint(' + pt + ')">' + pt + '</span>' +
         '<span class="clit-en">' + esc(item.en || '') + '</span>' +
@@ -7117,7 +7147,7 @@ function showCLITForm(machineId) {
           '&#128247; Add Photo'+
         '</button>'+
         '<div class="clit-unplaced" id="clit-unplaced" style="display:none"></div>'+
-        '<div class="clit-photo-hint">Tick the items you did. Then open a photo and use <b>+ Point</b> to pin any of them onto it — one at a time. Tap a pin to flag a problem, or tap its &#10005; to remove it.</div>'+
+        '<div class="clit-photo-hint">Tap each item to set <b>&#9675; not done</b> &rarr; <b>&#10003; done</b> &rarr; <b>! issue</b>. Then open a photo and use <b>+ Point</b> to pin any marked item onto it — the pin carries the status you already set. Tap a pin&rsquo;s &#10005; to remove it.</div>'+
       '</div>'+
       '<div class="form-row"><label>Remarks / Observations</label>'+
         '<textarea id="f-rmk" rows="3" placeholder="Consumables used, oil type, parts replaced, observations…&#10;उपयोग किए गए सामान, टिप्पणियाँ…"></textarea>'+
@@ -7188,20 +7218,51 @@ function clitOpenPhoto(i) {
    Now: ticking only records the work. Pins are added deliberately, one at a
    time, and deleting one never touches the checklist. */
 
-function clitOnCheck(pt, checked) {
-  // Unticking an item removes its pin too — a mark on the proof photo for work
-  // the operator just said was NOT done would be a false record. Ticking adds
-  // nothing to the photo; pins are placed explicitly.
-  if (!checked) {
-    var at = _clitFindPin(pt);
+/* State is 0 = not done, 1 = done, 2 = issue — the same numbering the pins use,
+   so the value passes straight through with no translation and no second prompt. */
+var CLIT_STATE = [
+  { mark:'○', cls:'s0', label:'Not done' },
+  { mark:'✓', cls:'s1', label:'Done' },
+  { mark:'!',      cls:'s2', label:'Issue' }
+];
+
+function clitGetState(pt) {
+  var el = document.getElementById('f-clit-' + pt);
+  return el ? (parseInt(el.dataset.st, 10) || 0) : 0;
+}
+
+function clitSetState(pt, st, quiet) {
+  var el = document.getElementById('f-clit-' + pt);
+  if (!el) return;
+  st = ((st % 3) + 3) % 3;
+  el.dataset.st = st;
+  el.className = 'clit-state ' + CLIT_STATE[st].cls;
+  el.innerHTML = CLIT_STATE[st].mark;
+  el.setAttribute('aria-label', 'Point ' + pt + ' — ' + CLIT_STATE[st].label);
+
+  var at = _clitFindPin(pt);
+  if (st === 0) {
+    // Back to not-done: the pin must go, or the photo carries evidence for work
+    // the operator has just said was not performed.
     if (at) at.photo.pins.splice(at.idx, 1);
+  } else if (at) {
+    // The form is the single source of truth for status; push it to the pin so
+    // the operator is never asked to state the same outcome twice.
+    at.pin.s = st;
   }
-  clitRenderPhotos();
-  clitRefreshPinned();
-  if (_clAnnTask === 'clit' && document.getElementById('cl-annModal').classList.contains('show')) {
-    clAnnRender();
+
+  if (!quiet) {
+    clitRenderPhotos();
+    clitRefreshPinned();
+    if (_clAnnTask === 'clit' &&
+        document.getElementById('cl-annModal').classList.contains('show')) {
+      clAnnRender();
+    }
   }
 }
+
+/** One tap cycles not done → done → issue → not done. */
+function clitCycleState(pt) { clitSetState(pt, clitGetState(pt) + 1); }
 
 /** Locate a point's pin across all photos. Returns {photo, pin, idx, at} or null. */
 function _clitFindPin(pt) {
@@ -7288,13 +7349,19 @@ function submitCLITForm(machineId) {
   if (!taskDefs.length) {
     taskDefs = [{type:'C',en:'Cleaning',hi:'सफाई'},{type:'L',en:'Lubrication',hi:'स्नेहन'},{type:'I',en:'Inspection',hi:'निरीक्षण'},{type:'T',en:'Tightening',hi:'कसना'}];
   }
-  var checkboxes = tasksEl.querySelectorAll('input[name="clitItem"]');
-  var anyChecked = Array.prototype.some.call(checkboxes, function(c){return c.checked;});
-  if (!anyChecked) { msg.className='form-msg err'; msg.textContent='Check at least one CLIT task. / कम से कम एक कार्य चुनें।'; return; }
+  var stateEls = tasksEl.querySelectorAll('[name="clitItem"]');
+  var anySet = Array.prototype.some.call(stateEls, function(c){
+    return (parseInt(c.dataset.st, 10) || 0) !== 0;
+  });
+  if (!anySet) { msg.className='form-msg err'; msg.textContent='Mark at least one CLIT task done or as an issue. / कम से कम एक कार्य चुनें।'; return; }
   btn.disabled = true; btn.textContent = 'Submitting…';
+  // status: 0 not done, 1 done, 2 issue. `done` stays for every existing reader
+  // (slip, WhatsApp, board, dashboards); `status` carries the third state so an
+  // item flagged as an issue is not silently recorded as merely "not done".
   var items = taskDefs.map(function(item, idx) {
-    var chk = checkboxes[idx];
-    return { type:item.type||'C', en:item.en||'', hi:item.hi||'', done: chk ? chk.checked : false };
+    var st = stateEls[idx] ? (parseInt(stateEls[idx].dataset.st, 10) || 0) : 0;
+    return { type:item.type||'C', en:item.en||'', hi:item.hi||'',
+             done: st === 1, status: st };
   });
   var _clitSnap = {
     machineId: machineId, machineName: App.machineName || machineId,
