@@ -2894,8 +2894,10 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
      deployment: identical calls returned 200 in anywhere from 2.6s to 23.1s, the
      slow ones being cold GAS containers. An aggressive cap turns a slow-but-fine
      call into a timeout->retry storm that is far slower than simply waiting — an
-     8s cap was measured pushing a 4s call out to 38s across three attempts. */
-  var ATTEMPT_TIMEOUT_MS = 45000;
+     8s cap was measured pushing a 4s call out to 38s across three attempts.
+     35s sits above the measured 23s worst case with headroom, while leaving room
+     for a retry inside the caller's own patience window. */
+  var ATTEMPT_TIMEOUT_MS = 35000;
   var _s = function() {}, _f = function(e) { console.error('API error', e); };
 
   /* ── Why every call retries ──────────────────────────────────────────────────
@@ -6771,11 +6773,21 @@ function showCLITForm(machineId) {
   var bodyEl = document.getElementById('form-modal-body');
   bodyEl.innerHTML = '<div style="padding:20px;color:#64748b;font-size:13px;text-align:center">' +
     'Loading CLIT data&hellip;<div id="clit-slow" style="margin-top:8px;font-size:11px;opacity:0.8"></div></div>';
-  // A cold GAS container can take 20s+. Say so, or a correct wait looks frozen.
-  setTimeout(function() {
-    var s = document.getElementById('clit-slow');
-    if (s) s.textContent = 'Still loading — the server is waking up.';
-  }, 6000);
+  // A cold GAS container can take 20s+, and a dropped request pushes that past a
+  // minute. Escalate the wording instead of leaving a silent spinner, or a wait
+  // that is working looks like a freeze and the operator force-closes the form.
+  var _clitSlowMsgs = [
+    [6000,  'Still loading — the server is waking up.'],
+    [20000, 'Taking longer than usual. Still trying…'],
+    [45000, 'Slow connection — retrying in the background.']
+  ];
+  var _clitSlowTimers = _clitSlowMsgs.map(function(m) {
+    return setTimeout(function() {
+      var s = document.getElementById('clit-slow');
+      if (s) s.textContent = m[1];
+    }, m[0]);
+  });
+  function _clitClearSlow() { _clitSlowTimers.forEach(clearTimeout); }
   document.getElementById('form-modal-title').textContent = 'CLIT — ' + machineId;
   document.getElementById('form-modal').classList.add('open');
 
@@ -6783,18 +6795,21 @@ function showCLITForm(machineId) {
   // Add Photo button and no way forward. Render once, whichever arrives first:
   // the real data, or a timeout that falls back to the default C/L/I/T items.
   //
-  // The window is deliberately long. Measured against this deployment, the same
-  // call returns in 2.6s-23s depending on whether the GAS container is warm, and
-  // the polyfill retries up to 3 times on top of that. Falling back early is the
-  // worse failure: the defaults are four generic rows, not this machine's real
-  // 12-item C/L/I/T list, and the operator cannot tell the difference.
+  // The window is deliberately long, and must outlast the transport's own retries
+  // or it pre-empts a call that was about to succeed. Measured against this
+  // deployment: a warm call returns in ~3s, a cold one up to 23s, and a dropped
+  // POST costs a full 35s attempt before the retry that then succeeds (observed
+  // landing at 60s). 90s clears two attempts plus backoff.
+  // Falling back early is the worse failure: the defaults are four generic rows,
+  // not this machine's real 12-item C/L/I/T list, and the operator cannot tell
+  // the difference — they would tick generic boxes believing they logged the job.
   var _clitRendered = false;
   var _clitTimer = setTimeout(function() {
     if (_clitRendered) return;
     showStatus('⚠ Could not load this machine’s CLIT items — showing a generic list. ' +
                'Close and reopen to retry.', 'error', 8000);
     _renderCLITForm(machineId, null);
-  }, 60000);
+  }, 90000);
 
   loadMachineFormData(machineId, function(d) {
     clearTimeout(_clitTimer);
@@ -6816,6 +6831,7 @@ function showCLITForm(machineId) {
   function _renderCLITForm(machineId, d) {
     if (_clitRendered) return;
     _clitRendered = true;
+    _clitClearSlow();
     var td = _todayStr(); var tn = _nowTimeStr();
     var clitItems = (d && d.clitItems && d.clitItems.length)
       ? d.clitItems
