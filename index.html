@@ -1008,6 +1008,16 @@ body {
 .pin-s0 .ann-pin-body { background:#64748b; }
 .pin-s1 .ann-pin-body { background:#16a34a; }
 .pin-s2 .ann-pin-body { background:#dc2626; }
+/* Status badge — a separate chip on the pin's shoulder, so the point number in
+   the body is never overwritten. Sits outside the rotated body so it stays
+   upright, and is pointer-events:none so it cannot steal the drag. */
+.ann-pin-badge { position:absolute; top:-1px; right:1px; width:15px; height:15px;
+  border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:10px; font-weight:800; line-height:1; color:#fff;
+  border:1.5px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,0.5);
+  pointer-events:none; }
+.ann-pin-badge.pin-s1 { background:#16a34a; }
+.ann-pin-badge.pin-s2 { background:#dc2626; }
 
 .ann-dots { position:absolute; bottom:8px; left:0; right:0; display:flex; gap:5px; justify-content:center; }
 .ann-dot { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.35); }
@@ -1033,14 +1043,12 @@ body {
 .ann-leg-s.pin-s0 { background:#64748b; } .ann-leg-s.pin-s1 { background:#16a34a; } .ann-leg-s.pin-s2 { background:#dc2626; }
 .ann-leg-empty { font-size:11px; color:#64748b; padding:6px 2px; }
 
-/* C/L/I/T identity colours — same hues the CLIT form already uses. Applied to
-   the legend chip and to unmarked pins; a marked pin keeps its status colour. */
+/* C/L/I/T identity colours — same hues the CLIT form already uses. These tint the
+   LEGEND chip only, never the pin on the photo: T/Tightening is green, so an
+   unmarked Tightening pin rendered green and read as "Done" at a glance while its
+   real status was Not-done. On the image, colour means status and nothing else. */
 .ann-leg-n.t-C { background:#0ea5e9; } .ann-leg-n.t-L { background:#f97316; }
 .ann-leg-n.t-I { background:#8b5cf6; } .ann-leg-n.t-T { background:#10b981; }
-.ann-pin.t-C .ann-pin-body { background:#0ea5e9; }
-.ann-pin.t-L .ann-pin-body { background:#f97316; }
-.ann-pin.t-I .ann-pin-body { background:#8b5cf6; }
-.ann-pin.t-T .ann-pin-body { background:#10b981; }
 .ann-pitem b.t-C { background:none !important; color:#0ea5e9; }
 .ann-pitem b.t-L { background:none !important; color:#f97316; }
 .ann-pitem b.t-I { background:none !important; color:#8b5cf6; }
@@ -5186,15 +5194,19 @@ function clAnnRenderPins() {
   var cur = _clAnnCur();
   layer.innerHTML = cur.pins.map(function(pin, i) {
     var st = CL_PIN_STATUS[pin.s] || CL_PIN_STATUS[0];
-    // An unmarked CLIT pin wears its C/L/I/T colour so the discipline reads off
-    // the photo; once marked, status colour wins because that is the finding.
-    var t = pin.s === 0 ? _clPointType(pin.p) : '';
-    return '<button class="ann-pin ' + st.cls + (t ? ' t-' + t : '') + (i === _clAnnSel ? ' sel' : '') + '"' +
+    // The number ALWAYS stays in the pin body. It used to be replaced by the
+    // status glyph, which erased the one thing identifying which item the pin
+    // referred to — on a photo with several marked pins they became
+    // indistinguishable. Status now rides as a corner badge instead.
+    // Pin colour tracks STATUS only; the C/L/I/T hue lives in the legend, since
+    // green-for-Tightening on an unmarked pin misread as green-for-Done.
+    return '<button class="ann-pin ' + st.cls + (i === _clAnnSel ? ' sel' : '') + '"' +
            ' style="left:' + pin.x + '%;top:' + pin.y + '%"' +
            ' data-i="' + i + '"' +
            ' aria-label="Point ' + esc(String(pin.p)) + ' — ' + st.label + '">' +
-           '<span class="ann-pin-body"><span>' +
-           (pin.s === 0 ? esc(String(pin.p)) : st.mark) + '</span></span>' +
+           '<span class="ann-pin-body"><span>' + esc(String(pin.p)) + '</span></span>' +
+           (pin.s === 0 ? '' :
+             '<span class="ann-pin-badge ' + st.cls + '">' + st.mark + '</span>') +
            '</button>';
   }).join('');
 }
