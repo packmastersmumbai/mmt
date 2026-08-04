@@ -106,24 +106,13 @@ body {
    orange in the interface (nav active state moved to teal), so it reads as
    brand rather than as another UI accent competing with the app's palette. */
 /* The real lockup: the navy P/M monogram on white, exactly as the company logo is
-   drawn. The previous mark was an invented carton glyph on an orange gradient tile —
-   a mark this company does not use. Orange is freed to mean "needs action" only.
-   A white tile on the navy bar reproduces the asset and keeps the mark legible at
-   34px without a bevel pretending to be a physical object. */
-.logo-mark {
-  width: 34px; height: 34px;
-  background: #fff;
-  color: var(--navy);
-  border-radius: 6px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(0,0,0,.30);
-}
-.logo-mark svg { width:24px; height:24px; display:block; }
-@media (min-width:1101px){
-  .logo-mark { width:36px; height:36px; }
-  .logo-mark svg { width:26px; height:26px; }
-}
+/* The supplied wordmark ("company name.png"), which already contains the PM monogram —
+   so the separate .logo-mark tile it used to sit beside is gone rather than duplicating
+   the mark. Height-driven so it scales with the header; width auto so the 9.26:1 aspect
+   is never distorted. */
+.pm-wordmark { height:19px; width:auto; display:block; flex:0 0 auto; }
+@media (min-width:1101px){ .pm-wordmark { height:22px; } }
+@media (max-width:360px){ .pm-wordmark { height:16px; } }
 
 /* App title — "Pack Masters" carries the weight, "MMS" recedes. Hierarchy by
    weight and colour rather than by size (the skill's rule). */
@@ -155,9 +144,11 @@ body {
   flex-shrink: 0;
   line-height: 1.1;
   display: flex;
-  align-items: baseline;
-  gap: 1px;
-  transform: translateY(-0.5px);
+  /* center, not baseline: the title is now an IMAGE plus a text sub-label, and an
+     image has no baseline to align "MMS" against. */
+  align-items: center;
+  gap: 7px;
+  margin: 0;
 }
 @media (min-width:1101px){ .header-title { font-size: 17.5px; } }
 /* A 1px vertical rule between the wordmark and "MMS": it separates the company from
@@ -1366,11 +1357,19 @@ body {
   /* Only the doughnut is capped and centred; the section bars set their own
      height from the row count and must not be squeezed by a shared row
      height — align-items:start lets each card be as tall as it needs. */
-  .sf-row-work > .sf-card:first-child .sf-canvas-box { height:210px; max-width:300px; margin:0 auto; }
+  /* sf-row-work now holds TWO doughnuts (Action Status + Incidents by Type), so both
+     are capped and centred rather than the first one only — an uncapped ring drew at
+     full card height and stranded whitespace either side. Equal columns, since the
+     two charts are the same kind of object. */
+  .sf-row-work .sf-canvas-box { height:210px; max-width:290px; margin:0 auto; }
+  .sf-row-work { grid-template-columns:1fr 1fr; align-items:start; }
+  /* The "where" row is two horizontal bar charts; each sets its own height from its
+     row count, so they must not share a stretched row height. */
+  .sf-row-where { grid-template-columns:1fr 1fr; align-items:start; }
+  .sf-row-where .sf-canvas-box { height:260px; }
   /* Paired rows. The matrix + its readout is a fixed-width object, so the
      risk row gives the remaining width to the classification bars. */
   .sf-row-risk { grid-template-columns:minmax(0,auto) minmax(0,1fr); align-items:start; }
-  .sf-row-work { grid-template-columns:minmax(0,340px) minmax(0,1fr); align-items:start; }
   .sf-grid2 > .sf-card { margin-top:0; }
   .sf-row-risk .sf-canvas-box { height:300px; }
   /* The readout sits beside the matrix; without a cap it stretched to fill
@@ -1795,9 +1794,14 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   display:flex; align-items:center; justify-content:center; text-align:center;
   padding:2px; line-height:1.05; }
 .hf-mx-rhead { writing-mode:initial; }
-.hf-mx-cell { aspect-ratio:1.45/1; min-height:30px; border-radius:6px; border:2px solid transparent;
+/* Height is CAPPED, not purely aspect-driven. With aspect-ratio alone each cell grew
+   to ~52px on a 412px modal, so the 5×5 grid claimed ~300px of vertical space for a
+   control the operator taps once. 34px still clears the 44px-with-gap touch target
+   across a row and halves the block. */
+.hf-mx-cell { aspect-ratio:1.45/1; min-height:28px; max-height:36px;
+  border-radius:5px; border:2px solid transparent;
   display:flex; align-items:center; justify-content:center; cursor:pointer;
-  font-size:13px; font-weight:800; color:#fff; user-select:none;
+  font-size:12px; font-weight:800; color:#fff; user-select:none;
   transition:transform .1s, box-shadow .1s, outline .1s; }
 .hf-mx-cell:hover { transform:scale(1.06); z-index:2; }
 .hf-mx-cell:active { transform:scale(.96); }
@@ -1842,12 +1846,17 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   display:flex; align-items:center; justify-content:center; padding:0 5px; }
 .hz-photo-none { font-size:11px; color:#64748b; padding:6px 0; }
 .hz-photo-meta { font-size:10.5px; color:#64748b; align-self:center; margin-left:2px; }
-.hf-coc-levels { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:6px; }
-.hf-coc-lvl { flex:1 1 0; min-width:62px; text-align:center; cursor:pointer;
-  font-size:10px; font-weight:800; padding:6px 3px; border-radius:7px;
-  border:1.5px solid #cbd5e1; background:#fff; color:#64748b; line-height:1.15;
-  user-select:none; transition:all .12s; }
-.hf-coc-lvl small { display:block; font-size:8px; font-weight:600; opacity:.8; }
+/* Five levels on ONE row. min-width:62px forced a wrap to two rows on a 412px modal,
+   and each row also carried an 8px description line — so every control measure cost
+   ~120px of chrome before its text. The descriptions move to title= (still available
+   on hover/long-press) and the labels abbreviate, so the picker is one 30px strip. */
+.hf-coc-levels { display:flex; gap:3px; margin-bottom:5px; }
+.hf-coc-lvl { flex:1 1 0; min-width:0; text-align:center; cursor:pointer;
+  font-size:9.5px; font-weight:800; padding:7px 2px; border-radius:5px;
+  border:1.5px solid #cbd5e1; background:#fff; color:#64748b; line-height:1.1;
+  user-select:none; transition:all .12s; white-space:nowrap; overflow:hidden;
+  text-overflow:ellipsis; }
+.hf-coc-lvl small { display:none; }
 .hf-coc-lvl.on { color:#fff; border-color:transparent; }
 .hf-coc-inrow { display:flex; gap:6px; align-items:flex-start; }
 .hf-coc-inrow textarea { flex:1; }
@@ -1864,6 +1873,16 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   gap:8px; overflow-x:auto; }
 @media (max-width:720px){ .sf-kanban { grid-auto-flow:column;
   grid-template-columns:none; grid-auto-columns:78vw; } }
+.sf-kcol-h { font-size:11px; font-weight:800; letter-spacing:.4px; text-transform:uppercase;
+  padding:8px 9px 6px; display:flex; gap:6px; align-items:baseline; }
+.sf-kempty { font-size:11px; color:#94a3b8; padding:6px 9px 10px; }
+.sf-kcard { background:#fff; border:1px solid #e2e8f0; border-radius:7px; padding:7px 9px;
+  margin:0 7px 6px; cursor:pointer; }
+.sf-kcard.od { border-color:#fecaca; background:#fff7f7; }
+.sf-kcard-t { font-size:12px; font-weight:700; color:#0f172a; line-height:1.25; }
+.sf-kcard-m { display:flex; gap:8px; flex-wrap:wrap; margin-top:3px;
+  font-size:10px; color:#64748b; font-weight:600; }
+.sf-kcard-m .od { color:#b91c1c; }
 .sf-kcol { background:#f1f5f9; border-radius:10px; min-height:120px; display:flex;
   flex-direction:column; }
 .sf-khead { color:#fff; font-size:12px; font-weight:800; padding:8px 10px;
@@ -2398,23 +2417,15 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 
 <!-- ══════ FIXED HEADER ══════ -->
 <header class="app-header" id="app-header">
-  <!-- The real Pack Masters mark: the P/M monogram from the company logo, drawn as
-       paths so it needs no image request. It replaces an invented carton glyph that
-       was not the brand. aria-hidden because the <h1> beside it already names the
-       product; announcing the mark too would just repeat it. -->
-  <div class="logo-mark" aria-hidden="true">
-    <svg viewBox="0 0 180 160" fill="currentColor">
-      <path d="M0 0h62c26 0 44 15 44 38s-18 39-44 39H36v-30h20c9 0 15-4 15-9s-6-9-15-9H0z"/>
-      <path d="M74 84h34l19 42 19-42h34v76h-28v-38l-16 38h-18l-16-38v38H74z"/>
-    </svg>
-  </div>
-  <!-- The wordmark is the document's h1. There was no h1 at all, so the
-       accessibility tree had no title. .header-title carries every style, so
-       the element swap is visually inert. -->
-  <!-- The space before <span> is deliberate: without it the accessible name and any
-       text extraction read "Pack MastersMMS" as one word. The visual gap comes from
-       the .ht-sub divider rule, so the space costs nothing on screen. -->
-  <h1 class="header-title">Pack Masters <span class="ht-sub">MMS</span></h1>
+  <!-- The company wordmark itself, exactly as supplied ("company name.png"), not a
+       redrawn approximation. Cropped to its ink bounds and rebuilt with a transparent
+       background and white ink, so it sits on the navy bar without a filter hack and
+       needs no network request. 55% smaller than the source PNG.
+       It IS the document h1 — alt carries the accessible name. -->
+  <h1 class="header-title">
+    <img class="pm-wordmark" alt="Pack Masters" src="data:image/png;base64,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">
+    <span class="ht-sub">MMS</span>
+  </h1>
   <div class="header-machine" id="header-machine"></div>
   <div class="header-right">
     <button class="back-btn" id="back-btn" onclick="navigateToBoard()">&#x2190; Board</button>
@@ -2795,7 +2806,8 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
     <div class="sf-tabs" id="sf-tabs">
       <button class="sf-tab active" data-sftab="dashboard">Dashboard</button>
       <button class="sf-tab" data-sftab="hira">HIRA</button>
-      <button class="sf-tab" data-sftab="actions">Actions</button>
+      <!-- "Actions" was a sibling tab here, but it is the SAME hazard records grouped
+           by status — not separate data. It now lives beside List/Board inside HIRA. -->
       <button class="sf-tab" data-sftab="incidents">Incidents</button>
     </div>
     <div id="safety-content">
@@ -7853,7 +7865,7 @@ function sfRender(){
   sfDestroyCharts();
   if(SF.tab==='dashboard') sfRenderDashboard();
   else if(SF.tab==='hira') sfRenderHira();
-  else if(SF.tab==='actions') sfRenderActions();
+  
   else if(SF.tab==='incidents') sfRenderIncidents();
 }
 
@@ -7876,9 +7888,30 @@ function sfRenderDashboard(){
       kpi(k.completedActions,'Completed Actions','green','actions')+
       kpi(k.totalIncidents,'Total Incidents','teal','incidents')+
     '</div>'+
-    /* Row 1 — the two risk views side by side: the matrix says WHERE risk
-       sits on the L×C grid, the bars say HOW MUCH sits in each band. Reading
-       them together is the point; stacked, you had to scroll between them. */
+    /* Row 1 — the two compact "state of play" doughnuts sit beside the tiles they
+       explain: Action Status breaks down the Open/Overdue/Completed counts above it,
+       Incidents by Type breaks down Total Incidents. Both are small categorical
+       charts, so they share a row instead of each claiming full width. */
+    '<div class="sf-grid2 sf-row-work">'+
+      '<div class="sf-card"><h4>Action Status '+
+        '<span class="sf-hint">click a segment</span></h4>'+
+        '<div class="sf-canvas-box"><canvas id="sfc-status"></canvas></div></div>'+
+      '<div class="sf-card"><h4>Incidents by Type '+
+        '<span class="sf-hint">click a segment</span></h4>'+
+        '<div class="sf-canvas-box"><canvas id="sfc-inctype"></canvas></div></div>'+
+    '</div>'+
+    /* Row 2 — the two "where" views paired: hazards by plant section beside incidents
+       by zone. Same question (which area), two data sets, so they read together. */
+    '<div class="sf-grid2 sf-row-where">'+
+      '<div class="sf-card"><h4>Hazards by Section '+
+        '<span class="sf-hint">click a bar</span></h4>'+
+        '<div class="sf-canvas-box"><canvas id="sfc-section"></canvas></div></div>'+
+      '<div class="sf-card"><h4>Incidents by Zone '+
+        '<span class="sf-hint">click a bar</span></h4>'+
+        '<div class="sf-canvas-box"><canvas id="sfc-inczone"></canvas></div></div>'+
+    '</div>'+
+    /* Row 3 — the two risk views side by side: the matrix says WHERE risk sits on the
+       L×C grid, the bars say HOW MUCH sits in each band. */
     '<div class="sf-grid2 sf-row-risk">'+
       '<div class="sf-card"><h4>Risk Heatmap '+
         '<span class="sf-hint">hover a cell &middot; click to open</span></h4>'+
@@ -7886,15 +7919,6 @@ function sfRenderDashboard(){
       '<div class="sf-card"><h4>Risk Classification '+
         '<span class="sf-hint">click a bar</span></h4>'+
         '<div class="sf-canvas-box"><canvas id="sfc-class"></canvas></div></div>'+
-    '</div>'+
-    /* Row 2 — action state beside where the hazards are. */
-    '<div class="sf-grid2 sf-row-work">'+
-      '<div class="sf-card"><h4>Action Status '+
-        '<span class="sf-hint">click a segment</span></h4>'+
-        '<div class="sf-canvas-box"><canvas id="sfc-status"></canvas></div></div>'+
-      '<div class="sf-card"><h4>Hazards by Section '+
-        '<span class="sf-hint">click a bar</span></h4>'+
-        '<div class="sf-canvas-box"><canvas id="sfc-section"></canvas></div></div>'+
     '</div>'+
     '</div>';
   box.innerHTML = html;
@@ -7910,6 +7934,12 @@ function sfRenderDashboard(){
      buttons and links, so the app's accent is unchanged. */
   sfChartHBar('sfc-section', SF.charts.bySection, '#0d9488',
     function(label){ sfOpenRecords('hira', {section:label}); });
+  // Incident pair — same data the Incidents tab charts, surfaced on the dashboard so
+  // hazards and incidents can be compared by area without switching tabs.
+  sfChartDoughnut('sfc-inctype', SF.charts.incidentType, null,
+    function(label){ sfOpenRecords('incidents', {type:label}); });
+  sfChartHBar('sfc-inczone', SF.charts.incidentZone, '#0369a1',
+    function(label){ sfOpenRecords('incidents', {zone:label}); });
 }
 
 /* ── Chart → records ──────────────────────────────────────────────────────
@@ -7952,6 +7982,10 @@ function sfOpenRecords(tab, filter){
 
 function sfGoTab(t){
   if(!t) return;
+  /* 'actions' is no longer a tab — it is a HIRA view. The KPI tiles and the Action
+     Status chart still ask for it by that name, so the request is translated here
+     rather than rewriting every call site (and any deep link that used it). */
+  if(t==='actions'){ SF_VIEW.hira='actions'; t='hira'; }
   SF.tab = t;
   document.querySelectorAll('#sf-tabs .sf-tab').forEach(function(x){
     x.classList.toggle('active', x.dataset.sftab===t); });
@@ -8291,9 +8325,37 @@ function sfHiraFilter(opt){
       act.length?'sfHiraClearAll()':'');
     return;
   }
+  if(SF_VIEW.hira==='actions'){ sfRenderActionsInto(listEl); return; }
   listEl.innerHTML = SF_VIEW.hira==='board'
     ? sfHiraBoard(filtered)
     : sfHiraList(filtered, rows.length);
+}
+/* Action tracker rendered INSIDE the HIRA tab. It is the same hazard set grouped by
+   status, so it reuses SF.hira rather than issuing getActionsKanban again — one less
+   round trip, and the board can never disagree with the list beside it. */
+function sfRenderActionsInto(box){
+  var rows=SF.hira||[];
+  var cols=['Open','In Progress','Completed','Verified'];
+  var colColor={'Open':'#b45309','In Progress':'#0369a1','Completed':'#15803d','Verified':'#0f766e'};
+  var html='<div class="sf-kanban">';
+  cols.forEach(function(c){
+    var items=rows.filter(function(r){ return (r.kanban||r.status)===c; });
+    // data-kcol is what sfOpenRecords('actions',{status}) scrolls to and highlights.
+    html+='<div class="sf-kcol" data-kcol="'+sfEsc(c)+'"><div class="sf-kcol-h" style="color:'+colColor[c]+'">'+
+      sfEsc(c)+' <span class="num">'+items.length+'</span></div>';
+    if(!items.length) html+='<div class="sf-kempty">None</div>';
+    items.slice(0,40).forEach(function(r){
+      html+='<div class="sf-kcard'+(r.overdue?' od':'')+'" tabindex="0" role="button" '+
+        'onclick="sfHazardDetail('+JSON.stringify(r.sr)+')">'+
+        '<div class="sf-kcard-t">'+sfEsc(r.activity||r.hazard||('Hazard '+r.sr))+'</div>'+
+        '<div class="sf-kcard-m"><span>#'+sfEsc(String(r.sr))+'</span>'+
+        (r.responsible?'<span>'+sfEsc(r.responsible)+'</span>':'')+
+        (r.overdue?'<span class="od">Overdue</span>':'')+'</div></div>';
+    });
+    if(items.length>40) html+='<div class="sf-kempty">+'+(items.length-40)+' more</div>';
+    html+='</div>';
+  });
+  box.innerHTML=html+'</div>';
 }
 function sfHiraClearOne(id){
   var e=document.getElementById(id); if(e) e.value=''; sfHiraFilter();
@@ -8519,13 +8581,22 @@ function sfViewSwitch(tab){
   var v = SF_VIEW[tab];
   var drift = SF_HEALTH ? ((SF_HEALTH.zoneDrift||[]).length +
     (SF_HEALTH.statusDrift||[]).length + (SF_HEALTH.typeDrift||[]).length) : 0;
+  /* HIRA gets a third view: Actions. The action tracker is the SAME hazard records
+     grouped by status, so it belongs beside List and Board rather than as a sibling
+     of HIRA in the top tab bar, where it read as separate data. */
   return '<div class="sf-vsw" role="group" aria-label="View mode">'+
     '<button class="'+(v==='list'?'on':'')+'" aria-pressed="'+(v==='list')+'" '+
       'onclick="sfSetView(\''+tab+'\',\'list\')" title="List view">'+
       sfIcon('list')+'List</button>'+
     '<button class="'+(v==='board'?'on':'')+'" aria-pressed="'+(v==='board')+'" '+
       'onclick="sfSetView(\''+tab+'\',\'board\')" title="Board view">'+
-      sfIcon('board')+'Board</button></div>'+
+      sfIcon('board')+'Board</button>'+
+    (tab==='hira'
+      ? '<button class="'+(v==='actions'?'on':'')+'" aria-pressed="'+(v==='actions')+'" '+
+        'onclick="sfSetView(\'hira\',\'actions\')" title="Action tracker">'+
+        sfIcon('board')+'Actions</button>'
+      : '')+
+    '</div>'+
     '<button class="sf-gear" onclick="sfSettings()" title="Safety settings" '+
       'aria-label="Safety settings">'+sfIcon('gear')+
       (drift?'<span class="dot" aria-label="'+drift+' data issues"></span>':'')+
@@ -8754,12 +8825,14 @@ function hzUploadPhotos(sr, section, done){
 }
 
 /* ── Hierarchy of Controls (ISO 45001 8.1.2) ── */
+/* `s` is the compact label shown in the one-row picker; `k` remains the stored value
+   and `d` moves to the tooltip. Abbreviating the label does NOT change what is saved. */
 var SF_COC_LEVELS=[
-  {k:'Elimination',   d:'Remove the hazard',        c:'#15803d'},
-  {k:'Substitution',  d:'Replace with safer',       c:'#65a30d'},
-  {k:'Engineering',   d:'Isolate / guard',          c:'#ca8a04'},
-  {k:'Administrative',d:'Procedure / training',     c:'#ea580c'},
-  {k:'PPE',           d:'Protective equipment',     c:'#dc2626'}
+  {k:'Elimination',   s:'Elim',   d:'Remove the hazard',    c:'#15803d'},
+  {k:'Substitution',  s:'Subst',  d:'Replace with safer',   c:'#65a30d'},
+  {k:'Engineering',   s:'Engg',   d:'Isolate / guard',      c:'#ca8a04'},
+  {k:'Administrative',s:'Admin',  d:'Procedure / training', c:'#ea580c'},
+  {k:'PPE',           s:'PPE',    d:'Protective equipment', c:'#dc2626'}
 ];
 function sfCocColor(k){
   for(var i=0;i<SF_COC_LEVELS.length;i++) if(SF_COC_LEVELS[i].k===k) return SF_COC_LEVELS[i].c;
@@ -8832,8 +8905,9 @@ function sfCocRow(level,text){
   var lvls=SF_COC_LEVELS.map(function(L){
     var on=(L.k===level);
     return '<div class="hf-coc-lvl'+(on?' on':'')+'" data-lvl="'+L.k+'" '+
+      'title="'+L.k+' — '+L.d+'" '+
       (on?'style="background:'+L.c+'"':'')+' onclick="sfCocPick(this)">'+
-      L.k+'<small>'+L.d+'</small></div>';
+      (L.s||L.k)+'</div>';
   }).join('');
   wrap.innerHTML='<div class="hf-coc-head">'+
       '<span class="hf-coc-n num">1</span>'+
@@ -9001,8 +9075,7 @@ function sfReloadAfterWrite(){
   SF.dash=null; SF.charts=null; SF.hira=null; SF.heatmap=null;
   SF.kanban=null; SF.incidents=null; SF.lists=SF.lists; // keep lists cache
   setTimeout(function(){
-    if(SF.tab==='actions') sfRenderActions();
-    else if(SF.tab==='hira'){ SF.hira=null; sfRenderHira(); }
+    if(SF.tab==='hira'){ SF.hira=null; sfRenderHira(); }
     // Without this branch an incident save fell through to loadSafety(), which
     // re-rendered the dashboard instead of the register the user was working in.
     else if(SF.tab==='incidents'){ SF.incidents=null; sfRenderIncidents(); }
