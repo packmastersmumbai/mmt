@@ -8293,7 +8293,13 @@ function sfInitials(n){
 }
 /* ---------- FULL HAZARD EDIT FORM ---------- */
 function sfPersonOptions(sel){
-  var p=(SF.lists&&SF.lists.PERSONS)||[];
+  return sfListOptions('PERSONS', sel);
+}
+/* Options for any OHS_LISTS column. An existing value that is not on the list is
+   prepended rather than dropped — editing an old record must never silently blank
+   a field just because the master has since changed. */
+function sfListOptions(listName, sel){
+  var p=(SF.lists&&SF.lists[listName])||[];
   if(sel && p.indexOf(sel)===-1) p=[sel].concat(p);
   return '<option value="">— select —</option>'+p.map(function(x){
     return '<option'+(x===sel?' selected':'')+'>'+sfEsc(x)+'</option>';}).join('');
@@ -8564,7 +8570,7 @@ function sfHazardDetail(sr){
   else if(st==='Ongoing') st='In Progress';
   if(SF_STATUSES.indexOf(st)===-1) st='Open';
   var body='<div class="sf-form">'+
-    '<label for="hf-section">Section</label><input id="hf-section" value="'+sfEsc(r.section)+'">'+
+    '<label for="hf-section">Section</label><select id="hf-section">'+sfListOptions('ZONES',r.section)+'</select>'+
     '<label for="hf-activity">Activity / Job Step</label><input id="hf-activity" value="'+sfEsc(r.activity)+'">'+
     '<div class="hf-2"><div><label>D/I</label>'+sfSeg('hf-di',['D','I'],r.di)+'</div>'+
       '<div><label>R/NR</label>'+sfSeg('hf-rnr',['R','NR','E'],r.rnr)+'</div></div>'+
@@ -9228,15 +9234,25 @@ function sfCloseModal(){
    register grows. Values are NOT filtered against a hardcoded list: zone naming in the
    sheet genuinely mixes three schemes (HIRA sections "A:", zone codes "Z-01", and plain
    names like "Security Gate") and dropping any of them would hide real rows. */
+var SF_INC_MASTER = { zone:'ZONES', location:'LOCATIONS', shift:'SHIFTS' };
 function sfIncOptionsFor(field){
-  var f = SF.incFacets||{};
-  if(f[field] && f[field].length) return f[field].slice();
   var seen={}, out=[];
-  (SF.incidents||[]).forEach(function(r){
-    var v=String(r[field]==null?'':r[field]).trim();
+  function add(v){
+    v=String(v==null?'':v).trim();
     if(v && !seen[v]){ seen[v]=1; out.push(v); }
-  });
-  return out.sort(function(a,b){ return a.localeCompare(b); });
+  }
+  /* Master first: OHS_LISTS is the configured vocabulary, so its values are offered
+     even when no incident has used them yet. Previously the master was ignored
+     entirely and the dropdown only ever showed what the register already held —
+     which is why LOCATIONS (7 configured) never reconciled with the 13 in use. */
+  var m = SF_INC_MASTER[field];
+  if(m) ((SF.lists&&SF.lists[m])||[]).forEach(add);
+  /* Then values actually present, from facets or the loaded register. These are real
+     records; a value in use must stay selectable even if it is not on the master. */
+  var f = SF.incFacets||{};
+  if(f[field] && f[field].length) f[field].forEach(add);
+  else (SF.incidents||[]).forEach(function(r){ add(r[field]); });
+  return out;
 }
 /* A <select> over known values plus an "Other…" escape hatch. A closed list would block
    the first genuinely new zone or location from ever being logged, so picking "Other…"
