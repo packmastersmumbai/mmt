@@ -82,9 +82,13 @@ body {
      a machined surface catching light rather than as a gradient effect. The bottom
      hairline is warmed toward the brand orange so the header terminates on a
      deliberate edge instead of a generic slate rule. */
-  background: linear-gradient(180deg,#111a29 0%,#0b1220 100%);
-  border-bottom: 1px solid #202c40;
-  box-shadow: 0 1px 0 rgba(234,108,10,.20), 0 2px 12px rgba(4,8,15,.28);
+  /* Brand navy, sampled from the company logo (#001361). The header was a generic
+     near-black slate that belonged to no brand; this is Pack Masters' own colour and
+     still carries white at 16.6:1. The orange hairline stays — it is the mark's
+     colour terminating the bar. */
+  background: linear-gradient(180deg,var(--navy-2) 0%,var(--navy) 100%);
+  border-bottom: 1px solid #0a1f6e;
+  box-shadow: 0 1px 0 rgba(234,108,10,.20), 0 2px 12px rgba(0,8,40,.30);
   color: white;
   height: var(--hdr-h);
   display: flex;
@@ -101,33 +105,24 @@ body {
 /* Logo mark. The orange is the company mark and stays — but it is now the ONLY
    orange in the interface (nav active state moved to teal), so it reads as
    brand rather than as another UI accent competing with the app's palette. */
-/* The mark was the letters "PM" set in the body font inside an orange square — the
-   placeholder every app ships with. It is now a drawn glyph: a sealed carton seen
-   corner-on, which is the thing this company actually makes and the thing every
-   machine in the plant is there to produce. Two top faces meeting at a centre seam
-   read as a box lid; the vertical below it is the closure.
-   The gradient runs across the brand orange only (#f0822a → #ea6c0a → #d15f05), so
-   the mark stays one colour with a lit top-left corner rather than becoming a
-   two-colour badge. */
+/* The real lockup: the navy P/M monogram on white, exactly as the company logo is
+   drawn. The previous mark was an invented carton glyph on an orange gradient tile —
+   a mark this company does not use. Orange is freed to mean "needs action" only.
+   A white tile on the navy bar reproduces the asset and keeps the mark legible at
+   34px without a bevel pretending to be a physical object. */
 .logo-mark {
   width: 34px; height: 34px;
-  background: linear-gradient(145deg,#f0822a 0%,#ea6c0a 52%,#d15f05 100%);
-  border-radius: 9px;
+  background: #fff;
+  color: var(--navy);
+  border-radius: 6px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  /* Inset top highlight + inset bottom shade = a bevelled physical tile.
-     The outer cast is NEUTRAL, not orange-tinted: a coloured blurred shadow on a dark
-     surface is the "colored glow" pattern, and the detector flagged the earlier
-     rgba(180,80,10,.34) version. A neutral shadow separates the tile from the header
-     just as well without lighting it from inside. */
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.34),
-              inset 0 -1px 0 rgba(120,52,0,.30),
-              0 2px 5px rgba(0,0,0,.34);
+  box-shadow: 0 1px 3px rgba(0,0,0,.30);
 }
-.logo-mark svg { width:19px; height:19px; display:block; }
+.logo-mark svg { width:24px; height:24px; display:block; }
 @media (min-width:1101px){
   .logo-mark { width:36px; height:36px; }
-  .logo-mark svg { width:20px; height:20px; }
+  .logo-mark svg { width:26px; height:26px; }
 }
 
 /* App title — "Pack Masters" carries the weight, "MMS" recedes. Hierarchy by
@@ -1875,6 +1870,30 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
    The status washes carry their own ink at ≥4.5:1 too (good 4.6 · R 4.9 · Y 4.6 ·
    acc 4.9). Note --flfaint is #5b6a80 not the app's usual #64748b: on #f6f8fb that
    lighter grey measured 4.47:1, just under the floor. */
+/* ── Token promotion ────────────────────────────────────────────────────────
+   This block was scoped to `.fl`, so the sf-* Safety/HIRA/Incidents rules could
+   not reach it and hardcoded their own values across ~130 rules. The same
+   declarations now sit on :root as well, so any module can consume them; `.fl`
+   keeps its own copy below purely for the font/colour it sets on itself.
+   Nothing here changes a rendered value — identical tokens, wider scope.
+
+   --navy is new: sampled from the real Pack Masters logo (#001361, 16.6:1 on
+   white). It is the brand's own colour and now carries app chrome. The three
+   oranges stay exactly as they were and remain reserved for "needs action". */
+:root{
+  --navy:#001361; --navy-2:#0a1f6e; --navy-9:#f2f4fa; --navy-on:#8b9dd4;
+  --flbg:#f6f8fb; --flpanel:#ffffff; --flpanel2:#f8fafc; --flfield:#ffffff;
+  --fledge:#e2e8f0; --fledge2:#cbd5e1; --fledge3:#94a3b8;
+  --flink:#0f172a; --fldim:#475569; --flfaint:#5b6a80;
+  --flacc:#0f766e; --flacc2:#0e6b63; --flaccd:#0b5b54; --flaccw:#e6f5f3;
+  --flR:#c62828; --flRw:#fdecec; --flY:#a16207; --flYw:#fdf6e3;
+  --flB:#0369a1; --flgood:#15803d; --flgoodw:#eafaf0; --flwarn:#b45309;
+  --flgoodb:#a7dcbc; --flRb:#f2b8b8; --flYb:#e6cf95; --flBb:#a8cbe6;
+  --flon:#ffffff; --flbrand:#ea6c0a;
+  --t-xs:11px; --t-sm:12.5px; --t-md:14px; --t-lg:16px; --t-xl:20px; --t-2xl:25px;
+  --sp:4px; --r-sm:7px; --r-md:10px; --r-lg:13px;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
 .fl{
   /* surfaces — panel is pure white so it lifts off the page tint */
   --flbg:#f6f8fb; --flpanel:#ffffff; --flpanel2:#f8fafc; --flfield:#ffffff;
@@ -2076,7 +2095,34 @@ select.fl-ctrl{ font-weight:600; cursor:pointer;
 .fl-warnbar.show{ display:flex; }
 .fl-warnbar b{ color:var(--flink); font-weight:600; }
 .fl-warnbar svg{ width:15px; height:15px; color:var(--flwarn); flex:none; }
-.fl-cov{ display:flex; gap:7px; align-items:center; flex-wrap:wrap; margin-bottom:13px; }
+.fl-cov{ display:block; margin-bottom:13px; }
+/* Housekeeping summary — one panel replacing the four restating pills.
+   Segments are drawn against the CONFIGURED total, so the bar's empty remainder is
+   literally the work still owed; the legend names every segment so no colour has to
+   be decoded. */
+.hk-sum{ background:var(--flpanel); border:1px solid var(--fledge);
+  border-radius:var(--r-md); padding:11px 13px; }
+.hk-sum-t{ display:flex; align-items:baseline; gap:8px; margin-bottom:9px; }
+.hk-sum-big{ font-size:var(--t-2xl); line-height:1; color:var(--flink); }
+.hk-sum-of{ font:600 var(--t-sm) 'Archivo',sans-serif; color:var(--flfaint); }
+.hk-sum-pct{ margin-left:auto; font:700 var(--t-sm) 'PMMono',ui-monospace,monospace;
+  font-variant-numeric:tabular-nums; color:var(--fldim); }
+.hk-sum-pct.ok{ color:var(--flgood); }
+.hk-sum-pct.warn{ color:var(--flwarn); }
+.hk-sum-pct.bad{ color:var(--flR); }
+.hk-track{ height:8px; background:var(--fledge); border-radius:3px;
+  overflow:hidden; display:flex; }
+.hk-track i{ height:100%; display:block; }
+.hk-legend{ display:flex; gap:12px; flex-wrap:wrap; margin-top:8px;
+  font:600 var(--t-xs) 'Archivo',sans-serif; color:var(--fldim); }
+.hk-legend i{ width:8px; height:8px; border-radius:2px; display:inline-block;
+  margin-right:5px; vertical-align:-1px; }
+.hk-legend .hk-score{ margin-left:auto; color:var(--flfaint); }
+.hk-legend .hk-score b{ color:var(--flink); font-family:'PMMono',ui-monospace,monospace; }
+.s-pass{ background:var(--flgood); }
+.s-fail{ background:var(--flR); }
+.s-na{ background:var(--fledge3); }
+.s-pend{ background:var(--fledge); }
 .fl-covpill{ font:600 var(--t-sm) 'Archivo',sans-serif; padding:0 12px; min-height:34px;
   border-radius:99px; border:1px solid var(--fledge); background:var(--flfield);
   color:var(--fldim); display:inline-flex; align-items:center; gap:6px; }
@@ -2181,6 +2227,14 @@ select.fl-ctrl{ font-weight:600; cursor:pointer;
 .fl-lh{ font-size:var(--t-sm); color:var(--fldim); font-family:'PMDev','Archivo',sans-serif; }
 .fl-llast{ font-size:var(--t-sm); color:var(--flfaint); margin-top:6px;
   font-family:'PMMono',ui-monospace,monospace; font-variant-numeric:tabular-nums; }
+.fl-llast b{ color:var(--flink); }
+/* Reading state. Only the OUTSTANDING card is tinted — earned colour: if every
+   reading is in, the launcher carries no warm pixels at all. */
+.rd-state{ font:700 var(--t-xs) 'Archivo',sans-serif; padding:1px 7px; border-radius:3px;
+  margin-left:2px; white-space:nowrap; display:inline-block; }
+.rd-state.ok{ background:var(--flgoodw); color:var(--flgood); }
+.rd-state.due{ background:var(--flYw); color:var(--flwarn); }
+.fl-launchbtn.is-due{ border-color:var(--flbrand); box-shadow:inset 0 0 0 1px var(--flbrand); }
 /* Report is a peer action, not a footnote — solid panel, not a dashed hint. */
 /* max-width so this does not become a 1180px-wide button for four words. */
 .fl-linkbtn{ width:100%; max-width:420px; background:var(--flpanel); border:1px solid var(--fledge2); color:var(--flink);
@@ -2320,15 +2374,14 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 
 <!-- ══════ FIXED HEADER ══════ -->
 <header class="app-header" id="app-header">
-  <!-- A sealed carton seen corner-on: two top faces meeting at a centre seam, with the
-       closure running down the front. aria-hidden because the <h1> beside it already
-       names the product; announcing the mark too would just repeat it. -->
+  <!-- The real Pack Masters mark: the P/M monogram from the company logo, drawn as
+       paths so it needs no image request. It replaces an invented carton glyph that
+       was not the brand. aria-hidden because the <h1> beside it already names the
+       product; announcing the mark too would just repeat it. -->
   <div class="logo-mark" aria-hidden="true">
-    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9"
-         stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 3.2 3.4 7.4v9.2L12 20.8l8.6-4.2V7.4z"/>
-      <path d="M3.4 7.4 12 11.6l8.6-4.2"/>
-      <path d="M12 11.6v9.2"/>
+    <svg viewBox="0 0 180 160" fill="currentColor">
+      <path d="M0 0h62c26 0 44 15 44 38s-18 39-44 39H36v-30h20c9 0 15-4 15-9s-6-9-15-9H0z"/>
+      <path d="M74 84h34l19 42 19-42h34v76h-28v-38l-16 38h-18l-16-38v38H74z"/>
     </svg>
   </div>
   <!-- The wordmark is the document's h1. There was no h1 at all, so the
@@ -9571,11 +9624,33 @@ function hkUpdateSummary(){
   var cov=document.getElementById('hk-cov'); if(!cov) return;
   var scoreCls=!tot?'':score===100?'ok':score>=80?'warn':'bad';
   var covCls=missed===0?'ok':covPct>=60?'warn':'bad';
+  /* One bar, not four pills. "Audit 0%", "Coverage 0/53" and "53 not checked" were
+     three restatements of the same two numbers, and the bar that showed progress sat
+     detached from the count that explained it. A single segmented track carries
+     passed / failed / N-A / pending against the configured total, with a legend that
+     names each segment — the same information in one object instead of four. */
+  var na=Math.max(0, tot-pass-fail);
+  var pctOf=function(n){ return configured? (n/configured*100) : 0; };
   cov.innerHTML=
-    '<span class="fl-covpill '+scoreCls+'">Audit <b>'+(tot?score+'%':'—')+'</b>'+(tot?' <small>('+pass+'/'+tot+')</small>':'')+'</span>'+
-    '<span class="fl-covpill '+covCls+'">Coverage <b>'+tot+'/'+configured+'</b></span>'+
-    (fail?'<span class="fl-covpill bad">✗ <b>'+fail+'</b> failed</span>':'')+
-    (missed?'<span class="fl-covpill warn">'+missed+' not checked</span>':'');
+    '<div class="hk-sum">'+
+      '<div class="hk-sum-t">'+
+        '<span class="num hk-sum-big">'+tot+'</span>'+
+        '<span class="hk-sum-of">/ '+configured+' parameters</span>'+
+        '<span class="hk-sum-pct '+covCls+'">'+covPct+'%</span>'+
+      '</div>'+
+      '<div class="hk-track">'+
+        (pass?'<i class="s-pass" style="width:'+pctOf(pass)+'%"></i>':'')+
+        (fail?'<i class="s-fail" style="width:'+pctOf(fail)+'%"></i>':'')+
+        (na  ?'<i class="s-na"   style="width:'+pctOf(na)+'%"></i>':'')+
+      '</div>'+
+      '<div class="hk-legend">'+
+        '<span><i class="s-pass"></i>'+pass+' passed</span>'+
+        (fail?'<span><i class="s-fail"></i>'+fail+' failed</span>':'')+
+        (na?'<span><i class="s-na"></i>'+na+' N/A</span>':'')+
+        (missed?'<span><i class="s-pend"></i>'+missed+' pending</span>':'')+
+        (tot?'<span class="hk-score">Audit <b>'+score+'%</b></span>':'')+
+      '</div>'+
+    '</div>';
 
   // Wide-screen sidebar. Same numbers, given room to breathe instead of being
   // crammed into pills — and it fills the column that used to be dead space.
@@ -9685,12 +9760,13 @@ function rdInit(){
   document.getElementById('rd-datesub').textContent=_flToday();
   rdBack();
   flLoadPeople(function(){});
-  // One call for all three meter lists + solar config (was four).
+  // One call for all three meter lists + solar config + today's status (was four).
   google.script.run.withSuccessHandler(function(b){
     if(b&&b.meters){ FL.meters.elec=b.meters.elec||[]; FL.meters.water=b.meters.water||[];
                      FL.meters.solar=b.meters.solar||[]; }
     if(b&&b.solarCfg) FL.solarCfg=b.solarCfg;
     rdFillMeters(); slLive();
+    if(b&&b.today) rdPaintStatus(b.today);
   }).withFailureHandler(function(){ rdFillMeters(); slLive(); }).getReadingsBootstrap();
 }
 function rdFillMeters(){
@@ -9701,6 +9777,36 @@ function rdFillMeters(){
     var keep=el.value;
     el.innerHTML=list.map(function(m){return '<option>'+esc(m)+'</option>';}).join('');
     if(keep && list.indexOf(keep)>-1) el.value=keep;
+  });
+}
+/* Fill each launcher card's last-reading line. The markup and CSS for this slot
+   (.fl-llast) already existed but nothing ever wrote to it, so all three cards
+   showed a name and empty space. A card now states its meter, last value, time and
+   whether today's reading is still owed — and "due" is the only card that carries
+   the warning tint, so the one action outstanding is the one thing that stands out. */
+function rdPaintStatus(t){
+  [['elec','rd-elec-last','kWh'],['water','rd-water-last','m³'],['solar','rd-solar-last','kWh']]
+  .forEach(function(row){
+    var kind=row[0], el=document.getElementById(row[1]), unit=row[2];
+    if(!el) return;
+    var s=t[kind]||{};
+    var btn=el.closest? el.closest('.fl-launchbtn') : null;
+    if(!s.date){
+      el.textContent='No readings yet';
+      if(btn) btn.classList.remove('is-due','is-done');
+      return;
+    }
+    var val=(s.value===''||s.value==null)?'—':String(s.value);
+    if(s.logged){
+      el.innerHTML='<b class="num">'+esc(val)+'</b> '+unit+
+        (s.time?' · <span class="num">'+esc(s.time)+'</span>':'')+
+        ' <span class="rd-state ok">Logged</span>';
+      if(btn){ btn.classList.add('is-done'); btn.classList.remove('is-due'); }
+    } else {
+      el.innerHTML='Last <b class="num">'+esc(val)+'</b> '+unit+' on '+esc(s.date)+
+        ' <span class="rd-state due">Due today</span>';
+      if(btn){ btn.classList.add('is-due'); btn.classList.remove('is-done'); }
+    }
   });
 }
 function rdBack(){ ['rd-elec-form','rd-water-form','rd-solar-form','rd-report'].forEach(function(id){var e=document.getElementById(id); if(e) e.style.display='none';}); document.getElementById('rd-launch').style.display='block'; }
