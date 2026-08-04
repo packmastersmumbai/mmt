@@ -2181,8 +2181,16 @@ select.fl-ctrl{ font-weight:600; cursor:pointer;
   appearance:none; -webkit-appearance:none; padding-right:32px;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%23475569' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat:no-repeat; background-position:right 12px center; }
+/* "By / नाम…" sat on its OWN line under the Log/Report tabs: at 390px the tabs
+   (~205px) plus a 230px select cannot share a row, so flex-wrap dropped it and
+   a single dropdown claimed a full band of the screen. It now takes whatever
+   width is left beside the tabs and stays on the same line. */
 .fl-by,.fl-sup{ max-width:230px; }
+.fl-toolbar .fl-by{ flex:1 1 120px; min-width:0; max-width:none; }
+@media(min-width:560px){ .fl-toolbar .fl-by{ flex:0 1 230px; } }
 /* ── progress summary ───────────────────────────────────────────────────── */
+/* display:flex overrides the `hidden` attribute — see .sf-tabs[hidden]. */
+.fl-summary[hidden]{ display:none; }
 .fl-summary{ display:flex; align-items:center; gap:12px; font-size:var(--t-md);
   color:var(--fldim); margin-bottom:12px; flex-wrap:wrap; }
 .fl-summary b{ color:var(--flink); font-family:'PMMono',ui-monospace,monospace;
@@ -2215,7 +2223,10 @@ select.fl-ctrl{ font-weight:600; cursor:pointer;
 /* ── bulk action ────────────────────────────────────────────────────────── */
 /* Flat fill + inner highlight. The old gradient + 20px coloured drop shadow was
    the single loudest element on the screen; "no neon/outer glows" applies. */
-.fl-allok{ width:100%; margin-bottom:12px; padding:0 16px; min-height:50px;
+/* Stays full-width and accent-filled — it IS the primary shortcut when the round
+   is clean, and that emphasis is deliberate. Only the box is trimmed: 50px plus
+   a 12px margin pushed the first activity below the fold on a 390px screen. */
+.fl-allok{ width:100%; margin-bottom:9px; padding:0 16px; min-height:44px;
   border-radius:var(--r-lg); cursor:pointer;
   font:700 var(--t-lg) 'Archivo','PMDev',sans-serif; color:var(--flon); border:0;
   background:var(--flacc);
@@ -2388,7 +2399,7 @@ select.fl-ctrl{ font-weight:600; cursor:pointer;
    a ~380px card holding one word plus a glyph. These are three choices, not a data grid,
    so each tile stops at 300px and the group sits left rather than stretching. */
 .fl-launch{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,300px));
-  gap:12px; margin-bottom:16px; justify-content:start; }
+  gap:9px; margin-bottom:12px; justify-content:start; }
 @media(max-width:560px){ .fl-launch{ grid-template-columns:1fr; } }
 /* Left-aligned tiles: the icon sits in a tinted chip at top-left and the text
    ranges left, so the three tiles scan as a list rather than three centred
@@ -3043,7 +3054,15 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 
     <div id="hk-form-pane">
       <div class="fl-warnbar" id="hk-warnbar"></div>
-      <div class="fl-summary">
+      <!-- The "Activities n/11 + progress bar" row that used to sit here is gone.
+           The hk-cov bar directly below already carries the count, the percentage
+           and a segmented track, so the two together stated the same progress
+           twice with two different denominators (11 activities vs 53 parameters)
+           — which read as conflicting numbers rather than one status.
+           The activity count now rides in the ACTIVITIES section header, beside
+           the list it counts. hk-actcount/hk-progbar are kept as hidden nodes so
+           hkUpdateSummary can keep writing to them without a null check. -->
+      <div class="fl-summary" hidden>
         <span>Activities <b id="hk-actcount">0/0</b></span>
         <span class="fl-prog"><i id="hk-progbar"></i></span>
       </div>
@@ -9039,7 +9058,14 @@ function sfPersonOptions(sel){
    a field just because the master has since changed. */
 function sfListOptions(listName, sel){
   var p=(SF.lists&&SF.lists[listName])||[];
-  if(sel && p.indexOf(sel)===-1) p=[sel].concat(p);
+  /* Case-insensitive match, mirroring the server-side dedupe. An exact-match
+     test would prepend a stored "mr. anuj pathak" as a SECOND option beside the
+     list's "Mr. Anuj Pathak" — the same duplicate this is meant to prevent. */
+  if(sel){
+    var lc=String(sel).toLowerCase(), found=false;
+    for(var i=0;i<p.length;i++){ if(String(p[i]).toLowerCase()===lc){ sel=p[i]; found=true; break; } }
+    if(!found) p=[sel].concat(p);
+  }
   return '<option value="">— select —</option>'+p.map(function(x){
     return '<option'+(x===sel?' selected':'')+'>'+sfEsc(x)+'</option>';}).join('');
 }
@@ -10376,9 +10402,12 @@ function hkRenderForm(){
   });
   // Wrap the rows in one bordered panel so they read as a grouped list rather
   // than 11 free-floating cards.
+  /* The count here is now "done / total", not just the total — it absorbs the
+     "Activities n/11" row that used to sit above the summary bar, so progress
+     stays visible beside the list it describes instead of in a separate band. */
   document.getElementById('hk-acts').innerHTML=
     '<div class="fl-group"><div class="fl-grouphd">Activities'+
-    '<span class="n">'+FL.hkCfg.length+'</span></div>'+h+'</div>';
+    '<span class="n" id="hk-grpn">0/'+FL.hkCfg.length+'</span></div>'+h+'</div>';
   var ab=document.getElementById('hk-allok');
   if(ab){ ab.classList.remove('undo'); ab.innerHTML='✓ Mark ALL activities OK / सब ठीक'; }
   hkUpdateSummary();
@@ -10474,6 +10503,8 @@ function hkUpdateSummary(){
       if(st[k]==='Y'||st[k]==='NA') pass++; else if(st[k]==='N') fail++; }); }
   });
   document.getElementById('hk-actcount').textContent=acts+'/'+FL.hkCfg.length;
+  var grpn=document.getElementById('hk-grpn');
+  if(grpn) grpn.textContent=acts+'/'+FL.hkCfg.length;
   // scaleX, not width — the CSS animates transform to stay off the layout path.
   var pb=document.getElementById('hk-progbar');
   if(pb){ pb.style.transform='scaleX('+(configured?tot/configured:0)+')';
