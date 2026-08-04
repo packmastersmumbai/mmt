@@ -7765,33 +7765,37 @@ function loadSafety(){
      times and then gives up silently.
      Each stage now falls through to a safe empty default and continues, so a
      failed chart call costs the charts and nothing else. */
-  function _sfLists(){
-    google.script.run.withSuccessHandler(function(ls){
-      SF.lists = ls && ls.success ? ls.lists : {};
-      sfRender();
-    }).withFailureHandler(function(){
-      SF.lists = SF.lists || {}; sfRender();
-    }).getSafetyLists();
-  }
-  function _sfHeatmap(){
-    google.script.run.withSuccessHandler(function(h){
-      SF.heatmap = h && h.success ? h : {cells:[],total:0};
-      _sfLists();
-    }).withFailureHandler(function(){
-      SF.heatmap = {cells:[],total:0}; _sfLists();
-    }).getHeatmap();
-  }
-  function _sfCharts(){
+  /* The three follow-up calls are INDEPENDENT of each other — only the dashboard
+     has to land first (it gates the initial paint). Chaining them end-to-end cost
+     the sum of their latencies: measured 4–37s each, so the tab took up to 141s to
+     render. They now fire together and the render happens when the last one lands,
+     so the wait is the SLOWEST call rather than their total.
+     _sfDone is the barrier: every branch, success or failure, must call it or the
+     tab would never render at all. */
+  var _sfPending = 3;
+  function _sfDone(){ if(--_sfPending <= 0) sfRender(); }
+  function _sfRest(){
     google.script.run.withSuccessHandler(function(c){
-      SF.charts = c && c.success ? c.charts : {};
-      _sfHeatmap();
+      SF.charts = c && c.success ? c.charts : {}; _sfDone();
     }).withFailureHandler(function(){
-      SF.charts = {}; _sfHeatmap();
+      SF.charts = SF.charts || {}; _sfDone();
     }).getOhsChartData();
+
+    google.script.run.withSuccessHandler(function(h){
+      SF.heatmap = h && h.success ? h : {cells:[],total:0}; _sfDone();
+    }).withFailureHandler(function(){
+      SF.heatmap = SF.heatmap || {cells:[],total:0}; _sfDone();
+    }).getHeatmap();
+
+    google.script.run.withSuccessHandler(function(ls){
+      SF.lists = ls && ls.success ? ls.lists : {}; _sfDone();
+    }).withFailureHandler(function(){
+      SF.lists = SF.lists || {}; _sfDone();
+    }).getSafetyLists();
   }
   google.script.run.withSuccessHandler(function(d){
     SF.dash = d && d.success ? d.kpis : {};
-    _sfCharts();
+    _sfRest();
   }).withFailureHandler(function(err){
     box.innerHTML = '<div class="sf-wrap"><div class="sf-card">Failed to load: '+
       sfEsc(err && err.message || err)+
