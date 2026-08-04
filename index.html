@@ -571,6 +571,32 @@ body {
 .dash-card { background:#fff; border:1px solid #e4e9f0; border-radius:13px;
   padding:13px 14px; margin-top:10px;
   box-shadow:0 1px 1px rgba(15,23,42,.04), 0 2px 6px rgba(15,23,42,.045); }
+/* ── Collapsed charts (details/summary) ─────────────────────────────────────
+   The four charts occupied ~600px of a ~1000px page, pushing Reliability and
+   Safety below the fold on the most-opened screen. They are now summaries that
+   expand on tap: the headline figure — the thing worth glancing at — stays
+   visible, the chart itself is one tap away.
+   Native <details>, not a JS toggle: it carries its own expanded/collapsed
+   semantics for assistive tech, is keyboard-operable for free, and there is no
+   open/closed state to keep in sync across a re-render.
+   ≥1100px there is room for all four side by side, so they are forced open and
+   the marker is hidden (see .dash-chartrow below). */
+.dash-card.dc-fold { padding:0; }
+.dash-card.dc-fold > summary { list-style:none; cursor:pointer;
+  padding:11px 14px; display:flex; align-items:center; gap:8px;
+  min-height:44px;                    /* one-handed touch target */
+  border-radius:13px; }
+.dash-card.dc-fold > summary::-webkit-details-marker { display:none; }
+.dash-card.dc-fold > summary .dc-title { margin:0; flex:1; }
+/* The figure that makes the collapsed row worth reading on its own. */
+.dc-peek { font-size:13px; font-weight:800; color:#0f172a;
+  font-variant-numeric:tabular-nums; white-space:nowrap; }
+.dc-caret { width:9px; height:9px; border-right:2px solid #94a3b8;
+  border-bottom:2px solid #94a3b8; transform:rotate(45deg); flex-shrink:0;
+  transition:transform .18s cubic-bezier(.16,1,.3,1); margin-right:2px; }
+.dash-card.dc-fold[open] > summary .dc-caret { transform:rotate(-135deg); }
+@media (prefers-reduced-motion:reduce){ .dc-caret { transition:none; } }
+.dash-card.dc-fold > .dc-body { padding:0 14px 13px; }
 .dash-2col { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
 .dash-2col .dash-card { margin-top:0; }
 /* Card titles were uppercase + .5px tracking, the same treatment as the KPI labels and
@@ -696,10 +722,23 @@ body {
   /* display:contents on the wrapper below 1100px means the cards inherit the stack's
      own margin-top; inside the grid that margin would double the gap. */
   .dash-chartrow > .dash-card { margin-top:0; display:flex; flex-direction:column; }
+  /* Wide enough for all four at once, so the fold is not needed: force them open,
+     drop the affordance, and restore the card's own padding. The peek figure is
+     redundant once the chart it summarises is visible. */
+  .dash-chartrow > .dash-card.dc-fold { padding:13px 14px; }
+  .dash-chartrow > .dash-card.dc-fold > summary { padding:0; min-height:0;
+    cursor:default; pointer-events:none; }
+  .dash-chartrow > .dash-card.dc-fold > summary .dc-title { margin-bottom:10px; }
+  .dash-chartrow > .dash-card.dc-fold > summary .dc-caret,
+  .dash-chartrow > .dash-card.dc-fold > summary .dc-peek { display:none; }
+  .dash-chartrow > .dash-card.dc-fold > .dc-body { padding:0; display:flex;
+    flex-direction:column; flex:1; }
   /* Equal-height cards: the plot area absorbs the slack so all four bottom edges line
      up regardless of how many bars each one has. */
   .dash-chartrow > .dash-card > .dc-hbars,
-  .dash-chartrow > .dash-card > .dc-donut-wrap { flex:1; }
+  .dash-chartrow > .dash-card > .dc-donut-wrap,
+  .dash-chartrow > .dash-card > .dc-body > .dc-hbars,
+  .dash-chartrow > .dash-card > .dc-body > .dc-donut-wrap { flex:1; }
   /* At ~330px the label column and the value both need to shrink, or a 6-bar chart
      leaves the track about 90px wide. */
   .dash-chartrow .hb-lbl { flex:0 0 78px; font-size:10px; }
@@ -3930,6 +3969,36 @@ function renderDashboard() {
      than 0 — "0 overdue actions" is a safety claim, and showing it before the
      data arrives would be asserting something unverified. */
   function _sfv(n) { return (n == null) ? '—' : n; }
+
+  /* A chart card that collapses to its headline figure. Open by default only on
+     screens wide enough to show all four charts at once (the ≥1100px row); on a
+     phone they start closed so the tiles below stay reachable without scrolling
+     past ~600px of charts.
+     The [open] attribute is set here rather than in CSS because <details> is
+     driven by an attribute, not a style. */
+  var _wideCharts = window.matchMedia && window.matchMedia('(min-width:1100px)').matches;
+  function fold(title, peek, bodyHtml) {
+    return '<details class="dash-card dc-fold"'+(_wideCharts ? ' open' : '')+'>'+
+      '<summary><span class="dc-caret"></span>'+
+        '<span class="dc-title">'+title+'</span>'+
+        '<span class="dc-peek">'+(peek||'')+'</span>'+
+      '</summary>'+
+      '<div class="dc-body">'+bodyHtml+'</div>'+
+    '</details>';
+  }
+  /* Peek text: the single fact the collapsed card is worth glancing at — the
+     leader and its count, or the period total. Not a restatement of the title. */
+  function _peekTop(map, fmt) {
+    var keys = Object.keys(map||{}).filter(function(k){ return map[k] > 0; });
+    if (!keys.length) return 'none';
+    keys.sort(function(a,b){ return map[b]-map[a]; });
+    var k = keys[0];
+    return (fmt ? fmt(k, 14) : _catAbbr(k)) + ' ' + map[k];
+  }
+  function _peekSum(arr, suffix) {
+    var n = (arr||[]).reduce(function(s,v){ return s + (typeof v==='number' ? v : (v&&v.n)||0); }, 0);
+    return n + (suffix ? ' ' + suffix : '');
+  }
   function hbars(map, keys, color, fmtKey) {
     if (!keys.length) return '<div class="dc-empty">No data</div>';
     /* Scale against the max OR 4, whichever is larger. Scaling purely to the max meant
@@ -3992,33 +4061,28 @@ function renderDashboard() {
        bar still means something. Below that the cards stack full-width: four charts
        across a 412px phone would be ~95px each, which is not a chart. */
     '<div class="dash-chartrow">' +
-      '<div class="dash-card">' +
-        '<div class="dc-title">Open BD by Category</div>' +
+      fold('Open BD by Category', _peekTop(catBD),
         '<div class="dc-hbars">' +
           hbars(catBD, Object.keys(catBD).filter(function(k){return catBD[k]>0;})
             .sort(function(a,b){return catBD[b]-catBD[a];}).slice(0,6), '#dc2626', _catAbbr) +
-        '</div></div>' +
+        '</div>') +
 
-      '<div class="dash-card">' +
-        '<div class="dc-title">Breakdown Trend &middot; 12 weeks</div>' +
-        '<div class="dc-bars" id="dc-trend">'+_trendBars(trend)+'</div>' +
-      '</div>' +
+      fold('Breakdown Trend &middot; 12 weeks', _peekSum(trend, 'in 12w'),
+        '<div class="dc-bars" id="dc-trend">'+_trendBars(trend)+'</div>') +
 
-      '<div class="dash-card">' +
-        '<div class="dc-title">Top Machines &middot; Breakdowns</div>' +
+      fold('Top Machines &middot; Breakdowns',
+        (recLoaded ? _peekTop(machBD, _machShort) : 'loading…'),
         '<div class="dc-hbars">' +
           (recLoaded ? hbars(machBD, topMach, '#ea580c', function(k){ return _machShort(k,17); })
                      : '<div class="dc-empty">loading…</div>') +
-        '</div></div>' +
+        '</div>') +
 
-      '<div class="dash-card">' +
-        '<div class="dc-title">Activity Mix &middot; 30d</div>' +
+      fold('Activity Mix &middot; 30d', (a30[0]+a30[1]+a30[2]) + ' events',
         '<div class="dc-donut-wrap">'+donutMix+
           '<div class="dc-leg">' +
             _legRow(MIX_COLORS[0],'BD',a30[0]) + _legRow(MIX_COLORS[1],'PM',a30[1]) +
             _legRow(MIX_COLORS[2],'CLIT',a30[2]) +
-          '</div></div>' +
-      '</div>' +
+          '</div></div>') +
     '</div>' +
 
     /* ── Reliability — a row of tiles, not a card of stats ──
