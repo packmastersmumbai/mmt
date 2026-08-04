@@ -3720,42 +3720,42 @@ function loadDashboard() {
   document.getElementById('dash-body').innerHTML =
     '<div class="dash-wrap"><div class="loading-spinner" style="padding:40px">' +
     '<div class="spinner-ring"></div>Loading dashboard&hellip;</div></div>';
-  // chained fetches — parallel JSONP collides; retry kanban up to 3x
-  function step1(attempt) {
+  /* ONE round trip for kanban + metrics + config. This was three calls chained
+     through each other's success handlers with 250ms gaps between them; on this
+     platform the round trip itself is the cost (~2.5-4.5s even for a no-op), so
+     three serial calls meant three floors paid back to back.
+
+     The server guards each part independently, so a partial result still renders —
+     the old chain issued step 2 only if step 1 succeeded. */
+  function fetchAll(attempt) {
     attempt = attempt || 1;
-    if (_boardData && _boardData.success) { step2(); return; }
+    function done(d) {
+      if (d) {
+        if (d.kanban && d.kanban.success) _boardData = d.kanban;
+        if (d.metrics) _dashMetrics = d.metrics;
+        // Seed the personnel cache the BD/PM/CLIT forms read, so opening a
+        // checklist later does not pay another round trip for getAppConfig.
+        if (d.config && d.config.personnelList && !(App.personnelList || []).length) {
+          App.personnelList = d.config.personnelList;
+        }
+      }
+      if (!_boardData)  _boardData  = {success:false};
+      if (!_dashMetrics) _dashMetrics = {};
+      renderDashboard();                                // render with what we have
+      if (!_boardRecordsCache.bd) _prefetchRecords();   // fills charts when ready
+    }
+    function retryOr(d) {
+      if (attempt < 3) { setTimeout(function(){ fetchAll(attempt+1); }, 400); return; }
+      done(d);
+    }
     google.script.run
       .withSuccessHandler(function(d){
-        if (d && d.success) { _boardData=d; setTimeout(step2,250); }
-        else if (attempt < 3) setTimeout(function(){ step1(attempt+1); }, 400);
-        else { _boardData={success:false}; setTimeout(step2,250); }
+        if (d && d.success) done(d); else retryOr(d);
       })
-      .withFailureHandler(function(){
-        if (attempt < 3) setTimeout(function(){ step1(attempt+1); }, 400);
-        else { _boardData={success:false}; setTimeout(step2,250); }
-      })
-      .getKanbanData();
+      .withFailureHandler(function(){ retryOr(null); })
+      .getDashboardBootstrap();
   }
-  function step2(attempt) {
-    attempt = attempt || 1;
-    if (_dashMetrics) { step3(); return; }
-    google.script.run
-      .withSuccessHandler(function(m){
-        if (m && m.success) { _dashMetrics=m; setTimeout(step3,250); }
-        else if (attempt < 3) setTimeout(function(){ step2(attempt+1); }, 400);
-        else { _dashMetrics=m||{}; setTimeout(step3,250); }
-      })
-      .withFailureHandler(function(){
-        if (attempt < 3) setTimeout(function(){ step2(attempt+1); }, 400);
-        else { _dashMetrics={}; setTimeout(step3,250); }
-      })
-      .getDashboardMetrics();
-  }
-  function step3() {
-    renderDashboard();             // render with what we have
-    if (!_boardRecordsCache.bd) _prefetchRecords();  // fills charts when ready
-  }
-  step1();
+  fetchAll();
 }
 
 /* Re-render dashboard once records finish prefetching (called by _prefetchRecords). */
@@ -4891,16 +4891,27 @@ function clLoadOperatorOptions(callback) {
   // Keep the placeholder, clear others
   while (sel.options.length > 1) sel.remove(1);
 
+  // The dashboard bootstrap already carries the personnel list. If it is cached,
+  // fill from memory — a round trip here costs ~3s for data we already hold.
+  function fill(list) {
+    list.forEach(function(name) {
+      var opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      sel.appendChild(opt);
+    });
+  }
+  if (App.personnelList && App.personnelList.length) {
+    fill(App.personnelList);
+    if (callback) callback();
+    return;
+  }
+
   google.script.run
     .withSuccessHandler(function(cfg) {
       var list = (cfg && cfg.personnelList) ? cfg.personnelList : [];
       App.personnelList = list; // cache for BD/PM/CLIT forms
-      list.forEach(function(name) {
-        var opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name;
-        sel.appendChild(opt);
-      });
+      fill(list);
       if (callback) callback();
     })
     .withFailureHandler(function(e) {
