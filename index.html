@@ -1544,7 +1544,12 @@ body {
 .sf-filterbar select, .sf-filterbar input { font-size:13px; padding:9px 10px;
   border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#0f172a;
   min-height:44px; font-family:inherit; }
-.sf-filterbar input.sf-q { flex:1 1 120px; min-width:0; }
+/* min-width, not just a flex basis. `flex:1 1 120px` is only a STARTING size —
+   with the 230px view switcher, "Filters" and the gear all inflexible on the
+   same line, the shrink factor squeezed the input to 22px and its "Search
+   hazards" placeholder was completely invisible: the control read as an empty
+   white box. A hard floor makes the row wrap instead of starving the field. */
+.sf-filterbar input.sf-q { flex:1 1 140px; min-width:140px; }
 .sf-filterbar select { cursor:pointer; }
 /* MOBILE: search + a "Filters (n)" toggle stay on ONE row; the selects collapse
    into a panel. Five controls wrapping to four ragged rows pushed the register
