@@ -2339,23 +2339,33 @@ select.fl-ctrl{ font-weight:600; cursor:pointer;
 /* Left-aligned tiles: the icon sits in a tinted chip at top-left and the text
    ranges left, so the three tiles scan as a list rather than three centred
    posters. Centred stacks are the generic default the skill warns against. */
-.fl-launchbtn{ display:flex; flex-direction:column; align-items:flex-start; gap:3px;
-  padding:15px 15px 14px; border-radius:var(--r-lg); cursor:pointer;
+/* Horizontal rows, not stacked posters. Each card carried ONE line of content in
+   a 118px-tall column-stacked box, so three of them cost ~354px before a reading
+   could be entered. Laying the icon beside the text — the same change that took
+   .rec-row from 195px to 71px — puts all three in about a third of that, and
+   they still scan as a list. */
+.fl-launchbtn{ display:flex; flex-direction:row; align-items:center; gap:11px;
+  padding:10px 13px; border-radius:var(--r-lg); cursor:pointer;
   background:var(--flpanel); border:1px solid var(--fledge); color:var(--flink);
-  min-height:118px; justify-content:flex-start; text-align:left;
+  min-height:60px; justify-content:flex-start; text-align:left;
   transition:border-color .18s var(--ease),background .18s var(--ease); }
 .fl-launchbtn:hover{ border-color:var(--fledge3); background:var(--flpanel2); }
 .fl-launchbtn:active{ transform:scale(.99); }
+/* The name/hint/last-reading stack becomes the flexible middle column. */
+.fl-launchbtn > .fl-ltext{ display:flex; flex-direction:column; gap:1px;
+  min-width:0; flex:1; }
 .fl-lg{ width:34px; height:34px; border-radius:var(--r-md); display:grid;
-  place-items:center; margin-bottom:8px; border:1px solid var(--fledge2);
+  place-items:center; margin-bottom:0; flex-shrink:0; border:1px solid var(--fledge2);
   background:var(--flfield); }
 .fl-lg .pmi{ width:18px; height:18px; }
 .fl-launchbtn.elec  .fl-lg{ color:var(--flY); border-color:var(--flYb); background:var(--flYw); }
 .fl-launchbtn.water .fl-lg{ color:var(--flB); border-color:var(--flBb); background:#eaf4fb; }
 .fl-launchbtn.solar .fl-lg{ color:var(--flwarn); border-color:var(--flYb); background:var(--flYw); }
+/* EN name and Hindi gloss on one baseline. */
+.fl-lnrow{ display:flex; align-items:baseline; gap:7px; min-width:0; }
 .fl-ln{ font-weight:600; font-size:var(--t-lg); letter-spacing:-.01em; }
 .fl-lh{ font-size:var(--t-sm); color:var(--fldim); font-family:'PMDev','Archivo',sans-serif; }
-.fl-llast{ font-size:var(--t-sm); color:var(--flfaint); margin-top:6px;
+.fl-llast{ font-size:var(--t-sm); color:var(--flfaint); margin-top:0;
   font-family:'PMMono',ui-monospace,monospace; font-variant-numeric:tabular-nums; }
 .fl-llast b{ color:var(--flink); }
 /* Reading state. Only the OUTSTANDING card is tinted — earned colour: if every
@@ -2978,8 +2988,11 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
         <span class="fl-prog"><i id="hk-progbar"></i></span>
       </div>
       <div class="fl-cov" id="hk-cov"></div>
+      <!-- "Mark ALL" acts on the activity list, so it sits directly on top of it
+           with nothing in between. The supervisor select used to split the two;
+           it is optional (only `by` is required to submit) and is read at submit
+           time, so it now sits beside the submit button where it is used. -->
       <button class="fl-allok" id="hk-allok" onclick="hkAllOk()">&#x2713; Mark ALL activities OK / सब ठीक</button>
-      <select class="fl-ctrl fl-sup" id="hk-sup"><option value="">Supervisor / पर्यवेक्षक (verify)…</option></select>
       <div id="hk-acts"><div class="fl-skel" aria-busy="true" aria-label="Loading activities">
         <div style="--i:0"><i style="width:46%"></i></div>
         <div style="--i:1"><i style="width:62%"></i></div>
@@ -2987,6 +3000,9 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
         <div style="--i:3"><i style="width:55%"></i></div>
         <div style="--i:4"><i style="width:44%"></i></div>
       </div></div>
+      <!-- Optional supervisor verification, read by hkSubmit(). Sits with the
+           submit action it belongs to rather than above the activity list. -->
+      <select class="fl-ctrl fl-sup" id="hk-sup"><option value="">Supervisor / पर्यवेक्षक (verify)…</option></select>
       <button class="fl-submit" id="hk-submit" onclick="hkSubmit()">Submit Housekeeping / जमा करें</button>
     </div>
 
@@ -3017,17 +3033,29 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
     <!-- launcher -->
     <div id="rd-launch">
       <div class="fl-launch">
+        <!-- Icon beside the text, and the EN name and its Hindi gloss share one
+             line: they are the same label twice, so stacking them spent a whole
+             row on a translation. Bilingual pairing is preserved. -->
         <button class="fl-launchbtn elec" onclick="rdOpen('elec')">
-          <span class="fl-lg" data-i="bolt"></span><span class="fl-ln">Electricity</span>
-          <span class="fl-lh">बिजली</span><span class="fl-llast" id="rd-elec-last"></span>
+          <span class="fl-lg" data-i="bolt"></span>
+          <span class="fl-ltext">
+            <span class="fl-lnrow"><span class="fl-ln">Electricity</span><span class="fl-lh">बिजली</span></span>
+            <span class="fl-llast" id="rd-elec-last"></span>
+          </span>
         </button>
         <button class="fl-launchbtn water" onclick="rdOpen('water')">
-          <span class="fl-lg" data-i="water"></span><span class="fl-ln">Water</span>
-          <span class="fl-lh">पानी</span><span class="fl-llast" id="rd-water-last"></span>
+          <span class="fl-lg" data-i="water"></span>
+          <span class="fl-ltext">
+            <span class="fl-lnrow"><span class="fl-ln">Water</span><span class="fl-lh">पानी</span></span>
+            <span class="fl-llast" id="rd-water-last"></span>
+          </span>
         </button>
         <button class="fl-launchbtn solar" onclick="rdOpen('solar')">
-          <span class="fl-lg" data-i="sun"></span><span class="fl-ln">Solar</span>
-          <span class="fl-lh">सौर ऊर्जा</span><span class="fl-llast" id="rd-solar-last"></span>
+          <span class="fl-lg" data-i="sun"></span>
+          <span class="fl-ltext">
+            <span class="fl-lnrow"><span class="fl-ln">Solar</span><span class="fl-lh">सौर ऊर्जा</span></span>
+            <span class="fl-llast" id="rd-solar-last"></span>
+          </span>
         </button>
       </div>
       <button class="fl-linkbtn" onclick="rdReport('elec')"><span data-i="chart" style="display:inline-flex;vertical-align:-4px;margin-right:6px"></span>View monthly report / मासिक रिपोर्ट</button>
@@ -3990,10 +4018,13 @@ function renderDashboard() {
      leader and its count, or the period total. Not a restatement of the title. */
   function _peekTop(map, fmt) {
     var keys = Object.keys(map||{}).filter(function(k){ return map[k] > 0; });
-    if (!keys.length) return 'none';
+    if (!keys.length) return '0';
     keys.sort(function(a,b){ return map[b]-map[a]; });
     var k = keys[0];
-    return (fmt ? fmt(k, 14) : _catAbbr(k)) + ' ' + map[k];
+    /* Count FIRST, then the name. The number is the glanceable part and it stays
+       at a fixed position down the row of cards; a truncated machine name ahead
+       of it ("Load C…hine 04 3") buried the figure and read as one token. */
+    return map[k] + ' · ' + (fmt ? fmt(k, 12) : _catAbbr(k));
   }
   function _peekSum(arr, suffix) {
     var n = (arr||[]).reduce(function(s,v){ return s + (typeof v==='number' ? v : (v&&v.n)||0); }, 0);
