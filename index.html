@@ -726,6 +726,33 @@ body {
    Stacked by default; one row of four only from 1100px. Below that a quarter-column is
    under ~250px, where the section names and machine names these charts carry cannot be
    read, so the phone keeps the full-width stack. */
+/* ── Grouped fold rows ──
+   These hold COLLAPSED cards (a 44px summary bar), not live charts, so they can
+   sit side by side far below the 1100px the four-chart row needs — a title plus
+   its peek figure reads fine in a third of a phone, where a plotted axis would
+   not. Expanding one lets it take the full row width so the chart itself is
+   never squeezed into a third of the screen.
+   The trio drops to 2-up under 360px rather than 1-up: three 44px bars stacked
+   is the layout this replaced. */
+.dash-mixrow, .dash-pairrow { display:grid; gap:8px; margin-top:12px;
+  align-items:start; }
+.dash-mixrow  { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.dash-pairrow { grid-template-columns:repeat(2,minmax(0,1fr)); }
+@media (max-width:359px){ .dash-mixrow { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+.dash-mixrow > .dash-card, .dash-pairrow > .dash-card { margin-top:0; min-width:0; }
+/* An open card spans its whole row: a doughnut in a 110px column is a dot. */
+.dash-mixrow > .dash-card[open]  { grid-column:1/-1; }
+.dash-pairrow > .dash-card[open] { grid-column:1/-1; }
+/* Stacked title over figure — side by side they would each get ~50px. */
+.dash-mixrow .dc-fold > summary, .dash-pairrow .dc-fold > summary {
+  flex-wrap:wrap; padding:9px 10px; gap:2px 6px; }
+.dash-mixrow .dc-title, .dash-pairrow .dc-title {
+  font-size:11.5px; line-height:1.25; flex:1 1 100%; order:1; }
+.dash-mixrow .dc-peek, .dash-pairrow .dc-peek {
+  font-size:12px; flex:1 1 100%; order:2;
+  overflow:hidden; text-overflow:ellipsis; }
+.dash-mixrow .dc-caret, .dash-pairrow .dc-caret { order:0; align-self:flex-start;
+  margin-top:3px; }
 .dash-chartrow { display:contents; }
 @media (min-width:1100px){
   .dash-chartrow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr));
@@ -4410,12 +4437,6 @@ function renderDashboard() {
                      : '<div class="dc-empty">loading…</div>') +
         '</div>') +
 
-      fold('Activity Mix &middot; 30d', (a30[0]+a30[1]+a30[2]) + ' events',
-        '<div class="dc-donut-wrap">'+donutMix+
-          '<div class="dc-leg">' +
-            _legRow(MIX_COLORS[0],'BD',a30[0]) + _legRow(MIX_COLORS[1],'PM',a30[1]) +
-            _legRow(MIX_COLORS[2],'CLIT',a30[2]) +
-          '</div></div>') +
     '</div>' +
 
     /* ── Reliability — a row of tiles, not a card of stats ──
@@ -4456,14 +4477,39 @@ function renderDashboard() {
        Each collapses to the one figure worth a glance and opens on tap.
        Charts are painted lazily on first open (see _dashPaintSfChart) — building
        six Chart.js instances that nobody expands is wasted work on a phone. */
+    /* ── Composition trio ──
+       Action Status, Incidents by Type and Activity Mix are the three "what is
+       this made of" charts — all doughnuts over a single total — so they share a
+       row and read as one comparison rather than three separate cards.
+       Collapsed they are 44px summary bars, which is why three fit across a
+       phone here when the four-chart row below still needs 1100px. */
     (_dashSfCharts ?
+      '<div class="dash-mixrow">' +
+        sfold('Action Status',     _peekChart('actionStatus'), '<div class="dc-cv"><canvas id="dsf-status"></canvas></div>', 'status') +
+        sfold('Incidents by Type', _peekChart('incidentType'), '<div class="dc-cv"><canvas id="dsf-inctype"></canvas></div>', 'inctype') +
+        fold('Activity Mix &middot; 30d', (a30[0]+a30[1]+a30[2]) + ' events',
+          '<div class="dc-donut-wrap">'+donutMix+
+            '<div class="dc-leg">' +
+              _legRow(MIX_COLORS[0],'BD',a30[0]) + _legRow(MIX_COLORS[1],'PM',a30[1]) +
+              _legRow(MIX_COLORS[2],'CLIT',a30[2]) +
+            '</div></div>') +
+      '</div>' +
+
+      /* ── "Which area" pair ──
+         Hazards by Section and Incidents by Zone ask the same question of two
+         different registers, so they sit side by side to be read against each
+         other. Both are horizontal bar charts over plant areas. */
+      '<div class="dash-pairrow">' +
+        sfold('Hazards by Section', _peekChart('bySection'),    '<div class="dc-cv"><canvas id="dsf-section"></canvas></div>', 'section') +
+        sfold('Incidents by Zone',  _peekChart('incidentZone'), '<div class="dc-cv"><canvas id="dsf-inczone"></canvas></div>', 'inczone') +
+      '</div>' +
+
+      /* The two risk views keep the full-width stack: the heatmap is a 5x5 grid
+         that cannot shrink below its cell size, and the classification bars carry
+         long band names. */
       '<div class="dash-chartrow dash-sfcharts">' +
-        sfold('Risk Heatmap',        _peekHeat(),                  '<div id="dsf-heat"></div>', 'heat') +
-        sfold('Risk Classification', _peekChart('classification'),  '<div class="dc-cv"><canvas id="dsf-class"></canvas></div>', 'class') +
-        sfold('Action Status',       _peekChart('actionStatus'),    '<div class="dc-cv"><canvas id="dsf-status"></canvas></div>', 'status') +
-        sfold('Hazards by Section',  _peekChart('bySection'),       '<div class="dc-cv"><canvas id="dsf-section"></canvas></div>', 'section') +
-        sfold('Incidents by Type',   _peekChart('incidentType'),    '<div class="dc-cv"><canvas id="dsf-inctype"></canvas></div>', 'inctype') +
-        sfold('Incidents by Zone',   _peekChart('incidentZone'),    '<div class="dc-cv"><canvas id="dsf-inczone"></canvas></div>', 'inczone') +
+        sfold('Risk Heatmap',        _peekHeat(),                 '<div id="dsf-heat"></div>', 'heat') +
+        sfold('Risk Classification', _peekChart('classification'), '<div class="dc-cv"><canvas id="dsf-class"></canvas></div>', 'class') +
       '</div>' : '') +
 
     /* The fleet strip that used to sit here is gone — the "Machines" KPI at the top
