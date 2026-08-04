@@ -1522,7 +1522,7 @@ body {
    A visible tint plus a dashed border says "this cell exists and is empty",
    which is a different statement from "this cell is a low risk band". Ink at
    #64748b on #eef2f7 clears 4.5:1, so the 0 is legible. */
-.sf-heat .hc.z { color:#64748b; background:#eef2f7 !important;
+.sf-heat .hc.z { color:#64748b !important; background:#eef2f7 !important;
   box-shadow:inset 0 0 0 1px #dbe3ec; font-weight:700; }
 @media (prefers-reduced-motion:reduce){ .sf-heat .hc { transition:none; }
   .sf-heat .hc:hover, .sf-heat .hc:focus-visible { transform:none; } }
@@ -1995,8 +1995,10 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
    row), so they now size to their own text and sit left, which frees the row
    and leaves full width to mean "primary action" (Save) alone.
    44px min-height is kept: one-handed use on the floor. */
+/* align-self, not just width:auto — .sf-form is a flex COLUMN, so its children
+   stretch to full width by default and width:auto alone changed nothing. */
 .hf-coc-add { display:inline-flex; align-items:center; justify-content:center;
-  gap:5px; width:auto; min-height:40px; padding:8px 14px;
+  align-self:flex-start; gap:5px; width:auto; min-height:40px; padding:8px 14px;
   border:1.5px dashed #94a3b8;
   background:#f8fafc; color:#475569; border-radius:9px; font-size:12px;
   font-weight:700; cursor:pointer; }
