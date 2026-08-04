@@ -2223,19 +2223,27 @@ select.fl-ctrl{ font-weight:600; cursor:pointer;
 /* ── bulk action ────────────────────────────────────────────────────────── */
 /* Flat fill + inner highlight. The old gradient + 20px coloured drop shadow was
    the single loudest element on the screen; "no neon/outer glows" applies. */
-/* Stays full-width and accent-filled — it IS the primary shortcut when the round
-   is clean, and that emphasis is deliberate. Only the box is trimmed: 50px plus
-   a 12px margin pushed the first activity below the fold on a 390px screen. */
+/* Outlined, not filled. This and "Submit Housekeeping" were both full-width
+   accent-filled bars, so the screen had TWO primaries: a bulk shortcut that
+   fills the form and the commit that writes the record read as equally
+   important, and the shortcut came first. Submit now leads alone; this reads as
+   the strong secondary it is — same width and 44px target, accent kept in the
+   border and label so it stays findable with gloves on.
+   Its `.undo` state (below) already used this treatment; the two states now
+   differ by label and tint rather than by rank. */
 .fl-allok{ width:100%; margin-bottom:9px; padding:0 16px; min-height:44px;
   border-radius:var(--r-lg); cursor:pointer;
-  font:700 var(--t-lg) 'Archivo','PMDev',sans-serif; color:var(--flon); border:0;
-  background:var(--flacc);
+  font:700 var(--t-lg) 'Archivo','PMDev',sans-serif; border:0;
+  background:var(--flpanel); color:var(--flacc);
+  box-shadow:inset 0 0 0 1.5px var(--flacc);
   transition:background .18s var(--ease),transform .1s var(--ease);
   display:inline-flex; align-items:center; justify-content:center; gap:9px; }
-.fl-allok:hover{ background:var(--flacc2); }
+.fl-allok:hover{ background:var(--flgoodw); }
 .fl-allok:active{ transform:scale(.985); }
+/* "Clear all" — the reversal. Neutral, no accent: undoing is not the thing to
+   reach for, and it must not look like the action it undoes. */
 .fl-allok.undo{ background:var(--flpanel); color:var(--flink);
-  border:1px solid var(--fledge2); box-shadow:none; }
+  box-shadow:inset 0 0 0 1px var(--fledge2); }
 .fl-allok.undo:hover{ background:var(--flpanel2); }
 .fl-allok svg{ width:17px; height:17px; }
 /* per-activity "All OK" — 44px minimum, was 36px */
@@ -2404,9 +2412,15 @@ select.fl-ctrl{ font-weight:600; cursor:pointer;
 /* auto-fit, capped: three fixed columns across the full 1180px grid gave each launcher
    a ~380px card holding one word plus a glyph. These are three choices, not a data grid,
    so each tile stops at 300px and the group sits left rather than stretching. */
-.fl-launch{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,300px));
-  gap:9px; margin-bottom:12px; justify-content:start; }
-@media(max-width:560px){ .fl-launch{ grid-template-columns:1fr; } }
+/* One column, always. auto-fit produced an orphaned 2-then-1 grid at tablet
+   width — three equal cards where the third dropped to its own row, which reads
+   as a broken grid rather than a deliberate group. These are three items in a
+   LIST (pick the utility you are logging), not a gallery of equivalent tiles, so
+   they stack in reading order at every width and the block stays scannable in
+   one vertical sweep.
+   Capped at 560px so a wide desktop does not stretch a 60px row to 1200px. */
+.fl-launch{ display:flex; flex-direction:column; gap:7px; margin-bottom:12px;
+  max-width:560px; }
 /* Left-aligned tiles: the icon sits in a tinted chip at top-left and the text
    ranges left, so the three tiles scan as a list rather than three centred
    posters. Centred stacks are the generic default the skill warns against. */
@@ -2446,6 +2460,19 @@ select.fl-ctrl{ font-weight:600; cursor:pointer;
 .rd-state.ok{ background:var(--flgoodw); color:var(--flgood); }
 .rd-state.due{ background:var(--flYw); color:var(--flwarn); }
 .fl-launchbtn.is-due{ border-color:var(--flbrand); box-shadow:inset 0 0 0 1px var(--flbrand); }
+/* `is-done` was applied by rdPaintStatus but had no rule, so a reading already
+   taken today looked exactly like one still outstanding — the launcher's whole
+   job is telling those two apart at a glance. Recessive, not celebratory: done
+   work should step back so the outstanding card is what the eye lands on.
+   Earned colour — a clean day leaves the launcher with no warm pixels at all. */
+.fl-launchbtn.is-done{ background:var(--flpanel2); border-color:var(--fledge); }
+.fl-launchbtn.is-done .fl-ln{ color:var(--fldim); }
+.fl-launchbtn.is-done .fl-lg{ opacity:.62; }
+/* Outstanding first, completed last — reordered in the DOM by rdPaintStatus, NOT
+   with CSS `order`. Flexbox order moves the paint but leaves tab and screen
+   reader sequence at the source position, so the keyboard would walk a "done"
+   card before the one that still needs doing. Three nodes; moving them is
+   cheaper than the mismatch. */
 /* Report is a peer action, not a footnote — solid panel, not a dashed hint. */
 /* max-width so this does not become a 1180px-wide button for four words. */
 .fl-linkbtn{ width:100%; max-width:420px; background:var(--flpanel); border:1px solid var(--fledge2); color:var(--flink);
@@ -9268,8 +9295,10 @@ function sfSettings(){
     tog('showRatioBanner','Precursor ratio banner','Leading-vs-lagging line on the incidents board')+
     tog('harmEmphasis','Emphasise harm events','Heavier rule + "injured" wording on Accident / First Aid')+
     tog('collapseClosed','Collapse closed records','Show open items first, closed behind a toggle')+
-    '<div class="sf-prow"><div><b>Charts</b><span>Position on the incidents tab</span></div>'+
-      seg('chartPosition',[{v:'top',l:'Top'},{v:'below',l:'Below'},{v:'off',l:'Off'}],p.chartPosition)+'</div>'+
+    /* The "Charts position" control was removed with the incidents Trends panel:
+       those charts live on the main dashboard now, so the setting had nothing
+       left to position. The stored key is left alone server-side — harmless, and
+       removing it would need a migration for no benefit. */
     '<div class="sf-prow"><div><b>Default view</b><span>List or board on open</span></div>'+
       seg('defaultView',[{v:'list',l:'List'},{v:'board',l:'Board'}],p.defaultView)+'</div>'+
     '<div class="sf-sect" style="margin-top:18px">Vocabularies</div>'+
@@ -9807,18 +9836,18 @@ function sfRenderIncidents(){
       '</span>'+
     '</div>'+
     '<div class="sf-chips" id="sf-inc-chips"></div>'+
-    (SF_PREFS.chartPosition==='top'?sfIncCharts():'')+
     '<div id="sf-inc-list">'+sfSkeleton(5)+'</div>'+
-    (SF_PREFS.chartPosition==='below'?sfIncCharts():'')+
     '</div>'+
     '<button class="sf-fab" onclick="sfNewIncident()" aria-label="Log new incident">+</button>';
-  if(SF_PREFS.chartPosition!=='off'){
-    sfChartDoughnut('sfi-type', (SF.charts||{}).incidentType, null);
-    // #0284c7, not #0ea5e9: the lighter blue measured 2.7:1 against the card surface,
-    // a validator WARN that obligates relief. One step darker clears 3:1 outright at
-    // the same hue.
-    sfChartHBar('sfi-zone', (SF.charts||{}).incidentZone, '#0284c7');
-  }
+  /* The "Trends" pair (Incidents by Type / by Zone) used to render here, above or
+     below the list per SF_PREFS.chartPosition. Both charts now live on the main
+     dashboard, so drawing them here too meant the SAME two charts in two places
+     — and on this screen they pushed the incident records, the reason the page
+     exists, below a second screenful of charts.
+     This page is now the register; the dashboard is where the trends are read.
+     The sfIncCharts() builder and the "Charts position" preference went with it —
+     a setting whose only effect was placing charts that no longer render here
+     would have been a control that silently does nothing. */
   google.script.run.withSuccessHandler(function(res){
     var el=document.getElementById('sf-inc-list'); if(!el) return;
     if(!res||!res.success){ el.innerHTML='<div class="sf-card">Could not load records: '+
@@ -9855,13 +9884,9 @@ function sfIncDate(iso){
   var d=new Date(iso); if(isNaN(d)) return sfEsc(String(iso).substr(0,10));
   return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
 }
-function sfIncCharts(){
-  return '<div class="sf-sect" style="margin-top:18px">Trends</div>'+
-    '<div class="sf-card"><h4>Incidents by Type</h4>'+
-      '<div class="sf-canvas-box"><canvas id="sfi-type"></canvas></div></div>'+
-    '<div class="sf-card"><h4>Incidents by Zone</h4>'+
-      '<div class="sf-canvas-box"><canvas id="sfi-zone"></canvas></div></div>';
-}
+/* sfIncCharts() removed — the Incidents "Trends" panel it built (Incidents by
+   Type / by Zone) now renders on the main dashboard instead, where it sits with
+   the other four OHS charts rather than duplicating them. */
 /* An incident still needs work while its CAPA is not closed. Only ~4 of 35 are
    open, so surfacing them above the archive is the whole point of the layout. */
 function sfIncOpen(r){
@@ -10738,6 +10763,20 @@ function rdPaintStatus(t){
       if(btn){ btn.classList.add('is-due'); btn.classList.remove('is-done'); }
     }
   });
+  /* Reorder in the DOM — due first, untouched next, logged last — so tab order
+     and screen-reader sequence match what the eye sees. CSS `order` would move
+     only the paint and leave the keyboard walking a completed card ahead of the
+     one still outstanding. Stable within each group, so Electricity/Water/Solar
+     keep their familiar relative order when their states are equal. */
+  var wrap=document.querySelector('#rd-launch .fl-launch');
+  if(wrap){
+    var rank=function(b){ return b.classList.contains('is-due') ? 0
+                             : b.classList.contains('is-done') ? 2 : 1; };
+    [].slice.call(wrap.querySelectorAll('.fl-launchbtn'))
+      .map(function(b,i){ return {b:b, r:rank(b), i:i}; })
+      .sort(function(x,y){ return x.r-y.r || x.i-y.i; })
+      .forEach(function(o){ wrap.appendChild(o.b); });
+  }
 }
 function rdBack(){ ['rd-elec-form','rd-water-form','rd-solar-form','rd-report'].forEach(function(id){var e=document.getElementById(id); if(e) e.style.display='none';}); document.getElementById('rd-launch').style.display='block'; }
 function rdOpen(kind){
