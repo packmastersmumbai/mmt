@@ -8237,8 +8237,31 @@ function loadSafety(){
      set by the CALL COUNT, not the work. Five calls were five × that floor.
      Server-side each part is guarded independently, so a failing section arrives
      as its empty default rather than sinking the payload. */
+  /* Paint from the last known payload first. Safety data is a register, not a
+     live gauge — a hazard logged minutes ago is still the same hazard — so a
+     cached copy is a correct thing to show while the live one loads. */
+  var _sfc = PMC.get('safety');
+  if(_sfc){
+    var c = _sfc.data;
+    SF.dash    = c.kpis    || {};
+    SF.charts  = c.charts  || {};
+    SF.heatmap = c.heatmap || {cells:[],total:0};
+    SF.lists   = c.lists   || {};
+    if(c.hira) SF.hira = c.hira;
+    if(c.config && c.config.success){
+      SF.cfg = c.config;
+      if(c.config.prefs) SF_PREFS = c.config.prefs;
+      if(c.config.harmTypes && c.config.harmTypes.length) SF_HARM_TYPES = c.config.harmTypes;
+      SF_HEALTH = c.config.health || null;
+    }
+    sfRender();
+  }
+
   google.script.run.withSuccessHandler(function(b){
-    if(!b || !b.success){ SF.dash = {}; sfRender(); return; }
+    if(!b || !b.success){ if(!SF.dash) SF.dash = {}; sfRender(); return; }
+    PMC.put('safety', {kpis:b.kpis, charts:b.charts, heatmap:b.heatmap,
+                       lists:b.lists, config:b.config,
+                       hira:(b.hira&&b.hira.success)?b.hira.rows:null});
     SF.dash    = b.kpis    || {};
     SF.charts  = b.charts  || {};
     SF.heatmap = b.heatmap || {cells:[],total:0};
@@ -10123,6 +10146,18 @@ function hkInit(){
   // Everything already in hand → render immediately, no round trip at all.
   if (FL.hkCfg && FL.personnel.length) { fillPeople(); hkTodayCheck(); hkRenderForm(); return; }
 
+  /* Activity config and the personnel list are configuration, not readings —
+     they change when the checklist is revised, not through the shift. Painting
+     the 11 activity rows from cache turns a ~3-4s wait into an instant form.
+     Today's logged status is NOT cached: it is re-fetched below, because
+     "has round 1 been logged?" is precisely what must never be stale. */
+  var _hkc = PMC.get('hkcfg');
+  if (_hkc && _hkc.data) {
+    if (_hkc.data.activities) FL.hkCfg = _hkc.data.activities;
+    if (_hkc.data.people && !FL.personnel.length) FL.personnel = _hkc.data.people;
+    if (FL.hkCfg) { fillPeople(); hkRenderForm(); }
+  }
+
   google.script.run.withSuccessHandler(function(r){
     if (r && r.success) {
       if (r.people && !FL.personnel.length) {
@@ -10131,7 +10166,16 @@ function hkInit(){
       }
       fillPeople();
       if (r.today) hkApplyToday(r.today);
-      if (r.config && r.config.success) { FL.hkCfg = r.config.activities; hkRenderForm(); }
+      if (r.config && r.config.success) {
+        /* Only re-render when the config actually CHANGED. hkRenderForm() resets
+           FL.hkState, so re-running it over an identical config would silently
+           discard anything the operator ticked while the live copy was in
+           flight — the cached form is already interactive. */
+        var changed = JSON.stringify(FL.hkCfg) !== JSON.stringify(r.config.activities);
+        FL.hkCfg = r.config.activities;
+        PMC.put('hkcfg', {activities:r.config.activities, people:FL.personnel});
+        if (changed) hkRenderForm();
+      }
       else document.getElementById('hk-acts').innerHTML =
         '<div class="fl-loading">'+esc((r.config&&r.config.error)||'Config error')+'</div>';
     } else {
@@ -10431,13 +10475,26 @@ function rdInit(){
   document.getElementById('rd-datesub').textContent=_flToday();
   rdBack();
   flLoadPeople(function(){});
-  // One call for all three meter lists + solar config + today's status (was four).
-  google.script.run.withSuccessHandler(function(b){
+
+  /* Meter lists and solar config are configuration — they change when someone
+     adds a meter, not through the day — so a cached copy paints the launcher
+     immediately instead of leaving three empty cards for a full round trip.
+     `today` is intentionally re-read every time: whether a reading has already
+     been taken today is exactly the thing that must not be stale. */
+  function apply(b, live){
     if(b&&b.meters){ FL.meters.elec=b.meters.elec||[]; FL.meters.water=b.meters.water||[];
                      FL.meters.solar=b.meters.solar||[]; }
     if(b&&b.solarCfg) FL.solarCfg=b.solarCfg;
     rdFillMeters(); slLive();
-    if(b&&b.today) rdPaintStatus(b.today);
+    if(live && b && b.today) rdPaintStatus(b.today);
+  }
+  var _rdc = PMC.get('readings');
+  if(_rdc) apply(_rdc.data, false);
+
+  // One call for all three meter lists + solar config + today's status (was four).
+  google.script.run.withSuccessHandler(function(b){
+    if(b) PMC.put('readings', {meters:b.meters, solarCfg:b.solarCfg});
+    apply(b, true);
   }).withFailureHandler(function(){ rdFillMeters(); slLive(); }).getReadingsBootstrap();
 }
 function rdFillMeters(){
