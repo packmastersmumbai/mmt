@@ -1818,6 +1818,30 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .hf-controls-box { margin-top:4px; }
 .hf-coc-row { border:1.5px solid #e2e8f0; border-radius:9px; padding:8px;
   margin-bottom:8px; background:#fff; }
+/* A measure with no hierarchy level is marked, not hidden: 139 of 143 imported
+   hazards arrived as unclassified prose, and the register should show that work is
+   outstanding rather than quietly defaulting them to "Administrative". */
+.hf-coc-row.unset { border-color:#fed7aa; background:#fffbf5; }
+.hf-coc-head { display:flex; align-items:center; gap:7px; margin-bottom:6px; }
+.hf-coc-n { width:20px; height:20px; border-radius:4px; background:#eef2f7;
+  color:#334155; font-size:11px; display:inline-flex; align-items:center;
+  justify-content:center; flex:0 0 auto; }
+.hf-coc-unset { font-size:10px; font-weight:700; color:#9a3412; background:#ffedd5;
+  padding:2px 7px; border-radius:3px; letter-spacing:.2px; }
+/* ── hazard evidence photos ── */
+.hz-photo-row { display:flex; gap:7px; flex-wrap:wrap; align-items:flex-start;
+  margin:2px 0 6px; }
+.hz-photo { position:relative; width:74px; height:74px; border-radius:8px;
+  overflow:hidden; border:1.5px solid #e2e8f0; background:#f8fafc; flex:0 0 auto; }
+.hz-photo img { width:100%; height:100%; object-fit:cover; display:block; cursor:pointer; }
+.hz-photo-x { position:absolute; top:2px; right:2px; width:20px; height:20px;
+  border:0; border-radius:50%; background:rgba(15,23,42,.72); color:#fff;
+  font-size:15px; line-height:1; cursor:pointer; padding:0; }
+.hz-photo-pins { position:absolute; bottom:2px; left:2px; min-width:17px; height:17px;
+  border-radius:9px; background:#0f766e; color:#fff; font-size:10px; font-weight:700;
+  display:flex; align-items:center; justify-content:center; padding:0 5px; }
+.hz-photo-none { font-size:11px; color:#64748b; padding:6px 0; }
+.hz-photo-meta { font-size:10.5px; color:#64748b; align-self:center; margin-left:2px; }
 .hf-coc-levels { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:6px; }
 .hf-coc-lvl { flex:1 1 0; min-width:62px; text-align:center; cursor:pointer;
   font-size:10px; font-weight:800; padding:6px 3px; border-radius:7px;
@@ -5162,6 +5186,7 @@ function _clSyncPhotoRow(id) {
   // CLIT and PM keep their photos in the form, not a checklist task row.
   if (id === 'clit') { clitRenderPhotos(); return; }
   if (id === 'pm')   { pmRenderPhotos();   return; }
+  if (id === 'hira') { hzRenderPhotos();   return; }
   var list = _clPhotos[id] || [];
   _b64[id] = list.length ? list[0].url : undefined;
   if (!list.length) delete _b64[id];
@@ -8652,14 +8677,80 @@ function sfHazardDetail(sr){
     '<label>Action Status</label>'+sfSeg('hf-status',SF_STATUSES,st,'','sfStatusChange')+
     '<div id="hf-signoff-box"></div>'+
     '<label for="hf-remarks">Remarks / Evidence</label><textarea id="hf-remarks" rows="2">'+sfEsc(r.remarks)+'</textarea>'+
+    /* Evidence photos. Reuses the CLIT/PM annotator rather than a second
+       implementation — same capture, same downscaling, same pin editor. */
+    '<label>Evidence Photos</label>'+
+    '<div class="hf-coc-hint">Add photos of the hazard or the control in place. '+
+      'Tap a photo to annotate it.</div>'+
+    '<div id="hz-photo-row" class="hz-photo-row"></div>'+
+    '<button type="button" class="hf-coc-add" onclick="hzAddPhoto()">+ Add photo</button>'+
     '<button class="sf-btn-primary" onclick="sfSaveHazard('+(isNew?'null':sr)+')">'+
       (isNew?'Add Hazard':'Save Changes')+'</button>'+
     '</div>';
   sfModal(isNew?'New Hazard':'Edit Hazard #'+sr, body);
   sfBuildMatrix(r.L||1, r.C||1);
   sfBuildControls(r.controls);
+  // Photos are per-open, not carried between hazards.
+  if(typeof _clPhotos!=='undefined') _clPhotos['hira']=[];
+  hzRenderPhotos();
   // Pre-fill sign-off panel from existing record
   sfStatusChange(r.verifiedBy,r.verifiedDate);
+}
+
+/* ── Hazard evidence photos ─────────────────────────────────────────────────
+   Reuses the CLIT/PM annotator wholesale: _clPhotos keyed 'hira', clOpenPhoto for
+   capture, clOpenAnnotator for pins. Writing a second capture path would mean a
+   second set of downscaling rules and a second set of bugs. */
+function hzAddPhoto(){
+  if(typeof clOpenPhoto!=='function'){ showStatus('Photo tool unavailable','error',3000); return; }
+  _clPhotoMode='free';
+  clOpenPhoto('hira');
+}
+function hzRenderPhotos(){
+  var box=document.getElementById('hz-photo-row');
+  if(!box) return;
+  var list=_clPhotos['hira']||[];
+  if(!list.length){ box.innerHTML='<div class="hz-photo-none">No photos yet</div>'; return; }
+  var bytes=0; list.forEach(function(p){ bytes+=p.url.length*0.75; });
+  box.innerHTML=list.map(function(p,i){
+    return '<div class="hz-photo">'+
+      '<img src="'+p.url+'" alt="Evidence '+(i+1)+'" onclick="clOpenAnnotator(\'hira\','+i+',\'free\')">'+
+      '<button type="button" class="hz-photo-x" title="Remove" '+
+        'onclick="hzDelPhoto('+i+')">&times;</button>'+
+      (p.pins&&p.pins.length?'<span class="hz-photo-pins">'+p.pins.length+'</span>':'')+
+    '</div>';
+  }).join('')+
+  '<div class="hz-photo-meta">'+list.length+' photo'+(list.length>1?'s':'')+
+    ' · ~'+Math.round(bytes/1024)+'KB</div>';
+}
+function hzDelPhoto(i){
+  var list=_clPhotos['hira']||[];
+  list.splice(i,1);
+  hzRenderPhotos();
+}
+/* Upload after the hazard row itself is saved, so a photo can never reference an
+   Sr that does not exist yet. Failure is reported but never rolls back the hazard —
+   losing the record because Drive was slow would be the worse outcome. */
+function hzUploadPhotos(sr, section, done){
+  var list=_clPhotos['hira']||[];
+  if(!list.length){ if(done) done(null); return; }
+  showStatus('Uploading '+list.length+' photo'+(list.length>1?'s':'')+'…','info',0);
+  google.script.run.withSuccessHandler(function(res){
+    if(res&&res.success){
+      var msg=res.uploaded.length+' photo'+(res.uploaded.length>1?'s':'')+' saved';
+      if(res.errors&&res.errors.length) msg+=' ('+res.errors.length+' failed)';
+      showStatus(msg,'success',2600);
+      _clPhotos['hira']=[];
+    } else {
+      showStatus('Photos not saved: '+((res&&res.message)||'unknown'),'error',5000);
+    }
+    if(done) done(res);
+  }).withFailureHandler(function(err){
+    showStatus('Photos not saved: '+((err&&err.message)||err),'error',5000);
+    if(done) done(null);
+  }).uploadHazardPhotos({ sr:sr, section:section,
+    images:list.map(function(p){ return { data:p.url, pins:p.pins||[] }; }),
+    by:(typeof _operator!=='undefined'?_operator:'') });
 }
 
 /* ── Hierarchy of Controls (ISO 45001 8.1.2) ── */
@@ -8674,18 +8765,44 @@ function sfCocColor(k){
   for(var i=0;i<SF_COC_LEVELS.length;i++) if(SF_COC_LEVELS[i].k===k) return SF_COC_LEVELS[i].c;
   return '#64748b';
 }
-/* Parse stored controls text into [{level,text}]. Lines like "[Engineering] do X". */
+/* Split a controls blob into individual measures.
+   139 of the 143 live hazards store every control on ONE line, numbered inside the
+   text ("1. Mandatory PPE… 2. Half-face respirator… 3. Pre-job ToolBox Talk…").
+   Splitting only on newlines therefore produced a single row and the modal showed
+   the whole thing as one paragraph. Recognising the numbering recovers 344 separate
+   measures across the register.
+   Order of attempts is deliberate: a real newline is the strongest signal, then
+   "N." / "N)" numbering, then bullet glyphs. */
+function sfSplitControlItems(raw){
+  var s=String(raw||'').trim();
+  if(!s) return [];
+  var byLine=s.split(/\r?\n/).map(function(x){return x.trim();}).filter(Boolean);
+  if(byLine.length>1) return byLine;
+  var byNum=s.split(/(?=(?:^|\s)\d{1,2}\s*[.)]\s)/)
+              .map(function(x){return x.trim();}).filter(Boolean);
+  if(byNum.length>1) return byNum;
+  var byBullet=s.split(/(?=[•·▪–-]\s)/).map(function(x){return x.trim();}).filter(Boolean);
+  return byBullet.length>1?byBullet:[s];
+}
+/* Strip a leading "1." / "2)" / "• " marker — the row's position already numbers it,
+   so keeping the marker would double-number every measure. */
+function sfStripMarker(t){
+  return String(t||'').replace(/^\s*(?:\d{1,2}\s*[.)]|[•·▪–-])\s*/,'').trim();
+}
+/* Parse stored controls text into [{level,text}]. Lines like "[Engineering] do X".
+   An untagged measure keeps level:'' — it is NOT guessed. Inferring a hierarchy
+   level from wording would write 344 fabricated ISO 45001 classifications into the
+   register; an unset level is honest and the editor prompts for it. */
 function sfParseControls(raw){
   var out=[];
-  String(raw||'').split(/\r?\n/).forEach(function(ln){
-    ln=ln.trim(); if(!ln) return;
+  sfSplitControlItems(raw).forEach(function(ln){
     var m=ln.match(/^\[([^\]]+)\]\s*(.*)$/);
     if(m){
       var lvl=m[1].trim();
       var ok=SF_COC_LEVELS.some(function(L){return L.k===lvl;});
-      out.push({level:ok?lvl:'Administrative', text:m[2].trim()});
+      out.push({level:ok?lvl:'', text:m[2].trim()});
     } else {
-      out.push({level:'Administrative', text:ln}); // legacy free text
+      out.push({level:'', text:sfStripMarker(ln)});
     }
   });
   return out;
@@ -8694,19 +8811,35 @@ function sfBuildControls(raw){
   var box=document.getElementById('hf-controls-box');
   box.innerHTML='';
   var rows=sfParseControls(raw);
-  if(!rows.length) rows=[{level:'Engineering',text:''}];
+  if(!rows.length) rows=[{level:'',text:''}];
   rows.forEach(function(r){ box.appendChild(sfCocRow(r.level,r.text)); });
+  sfCocRenumber();
+}
+/* Number the rows from their position, so measures read 1..n after any add/delete
+   instead of carrying whatever numbering the imported text happened to have. */
+function sfCocRenumber(){
+  var box=document.getElementById('hf-controls-box');
+  if(!box) return;
+  var rows=box.querySelectorAll('.hf-coc-row');
+  for(var i=0;i<rows.length;i++){
+    var n=rows[i].querySelector('.hf-coc-n');
+    if(n) n.textContent=(i+1);
+  }
 }
 function sfCocRow(level,text){
   var wrap=document.createElement('div');
-  wrap.className='hf-coc-row';
+  wrap.className='hf-coc-row'+(level?'':' unset');
   var lvls=SF_COC_LEVELS.map(function(L){
     var on=(L.k===level);
     return '<div class="hf-coc-lvl'+(on?' on':'')+'" data-lvl="'+L.k+'" '+
       (on?'style="background:'+L.c+'"':'')+' onclick="sfCocPick(this)">'+
       L.k+'<small>'+L.d+'</small></div>';
   }).join('');
-  wrap.innerHTML='<div class="hf-coc-levels">'+lvls+'</div>'+
+  wrap.innerHTML='<div class="hf-coc-head">'+
+      '<span class="hf-coc-n num">1</span>'+
+      (level?'':'<span class="hf-coc-unset">Level not set</span>')+
+    '</div>'+
+    '<div class="hf-coc-levels">'+lvls+'</div>'+
     '<div class="hf-coc-inrow">'+
     '<textarea class="hf-coc-text" rows="2" placeholder="Type the actual control measure…">'+
       sfEsc(text||'')+'</textarea>'+
@@ -8721,9 +8854,18 @@ function sfCocPick(el){
   }
   el.classList.add('on');
   el.style.background=sfCocColor(el.getAttribute('data-lvl'));
+  // Picking a level clears the "not set" state for this measure.
+  var wrap=el.closest('.hf-coc-row');
+  if(wrap){
+    wrap.classList.remove('unset');
+    var badge=wrap.querySelector('.hf-coc-unset');
+    if(badge) badge.remove();
+  }
 }
 function sfAddControl(){
-  document.getElementById('hf-controls-box').appendChild(sfCocRow('Administrative',''));
+  // New rows start UNSET, not Administrative — the operator chooses the level.
+  document.getElementById('hf-controls-box').appendChild(sfCocRow('',''));
+  sfCocRenumber();
 }
 function sfCocDel(btn){
   var box=document.getElementById('hf-controls-box');
@@ -8733,6 +8875,7 @@ function sfCocDel(btn){
     return;
   }
   btn.closest('.hf-coc-row').remove();
+  sfCocRenumber();
 }
 /* Serialize control rows back to "[Level] text" lines. */
 function sfCollectControls(){
@@ -8740,9 +8883,14 @@ function sfCollectControls(){
   var out=[];
   rows.forEach(function(row){
     var on=row.querySelector('.hf-coc-lvl.on');
-    var lvl=on?on.getAttribute('data-lvl'):'Administrative';
     var txt=(row.querySelector('.hf-coc-text').value||'').trim();
-    if(txt) out.push('['+lvl+'] '+txt);
+    if(!txt) return;
+    /* An unclassified measure is stored WITHOUT a tag rather than defaulted to
+       Administrative. Defaulting would turn "nobody has classified this yet" into a
+       positive claim that it is an administrative control — the register would look
+       complete while asserting something no one decided. Untagged text round-trips
+       unchanged and the row shows a "set level" prompt until someone picks one. */
+    out.push(on ? '['+on.getAttribute('data-lvl')+'] '+txt : txt);
   });
   return out.join('\n');
 }
@@ -8838,7 +8986,9 @@ function sfSaveHazard(sr){
     if(res&&res.success){
       sfCloseModal();
       showStatus('Hazard '+(res.action||'saved')+' — risk '+res.risk+' ('+res.classification+')','success',2800);
-      sfReloadAfterWrite();
+      /* Photos upload AFTER the row exists, keyed to the Sr the server returned —
+         on a new hazard that Sr is only known now. */
+      hzUploadPhotos(res.sr, d.section, function(){ sfReloadAfterWrite(); });
     } else showStatus('Save failed: '+(res&&res.message||''),'error',4000);
   }).withFailureHandler(function(err){
     showStatus('Save failed: '+(err&&err.message||err),'error',5000);
