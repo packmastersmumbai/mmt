@@ -401,13 +401,31 @@ body {
 .board-sub-tab.active { color:#0f172a; border-bottom-color:#0284c7; background:white; }
 
 /* Record row cards (BD/CLIT/Checklist in board tabs) */
-.rec-row { background:white; border-radius:10px; padding:12px 14px; margin-bottom:8px;
-  border:1px solid #e2e8f0; display:flex; gap:12px; align-items:flex-start; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
-.rec-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:5px; }
-.rec-body { flex:1; min-width:0; }
-.rec-title { font-size:15px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.rec-sub { font-size:12px; color:#64748b; margin-top:3px; line-height:1.5; }
-.rec-tag { font-size:11px; font-weight:700; padding:3px 9px; border-radius:10px; flex-shrink:0; white-space:nowrap; }
+/* Record row — rebuilt for density.
+   It was ~195px tall for four short fields: three stacked .rec-sub lines each with
+   margin-top and line-height:1.5, and a metadata line long enough to wrap ("Slip PM-"
+   / "BD-202607-001" split across lines). Six records filled a 1200px screen, so 28
+   records meant five screens of scrolling on a device held one-handed.
+   Now: title and status share the top line, meta is a single non-wrapping row that
+   ellipsises, and the whole row is a two-column grid rather than nested flex. ~72px. */
+.rec-row { background:white; border-radius:8px; padding:8px 10px; margin-bottom:5px;
+  border:1px solid #e2e8f0; display:grid; grid-template-columns:auto 1fr auto;
+  gap:9px; align-items:center; }
+.rec-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.rec-body { min-width:0; }
+.rec-head { display:flex; align-items:baseline; gap:7px; min-width:0; }
+.rec-title { font-size:13.5px; font-weight:700; color:#0f172a; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.rec-sub { font-size:11.5px; color:#64748b; line-height:1.35; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis; }
+/* The identifier line: mono for alignment down the column, and it must NEVER wrap —
+   a doc number broken across two lines is unreadable and cost a third row of height. */
+.rec-meta { font-family:'PMMono',ui-monospace,monospace; font-size:10.5px; color:#94a3b8;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
+.rec-age { font-family:'PMMono',ui-monospace,monospace; font-size:10.5px; font-weight:700;
+  white-space:nowrap; flex-shrink:0; margin-left:auto; }
+.rec-tag { font-size:10px; font-weight:700; padding:2px 7px; border-radius:4px;
+  flex-shrink:0; white-space:nowrap; }
 .rec-tag-open    { background:#fee2e2; color:#dc2626; }
 .rec-tag-closed  { background:#dcfce7; color:#16a34a; }
 .rec-tag-done    { background:#dcfce7; color:#16a34a; }
@@ -710,11 +728,18 @@ body {
 .mb-section-lbl { font-size:9px; font-weight:800; color:#64748b;
   text-transform:uppercase; letter-spacing:.6px; margin-bottom:5px;
   display:flex; align-items:center; justify-content:space-between; }
-/* category chips — wrap into 2+ rows */
-.mb-cat-chips { display:flex; gap:5px; flex-wrap:wrap; }
-.mb-chip { font-size:11.5px; font-weight:700; padding:5px 11px;
-  border-radius:16px; border:1.5px solid #e2e8f0; background:#fff; color:#64748b;
-  cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:4px; }
+/* Category chips — ONE scrolling row, not an unbounded wrap.
+   20 categories wrapped into 7 rows and claimed ~420px before a single record was
+   visible: the filter was pushing the content it filters off screen. A horizontal
+   strip costs one row and matches .mb-mac-grid directly below it, which already
+   scrolls the same way. */
+.mb-cat-chips { display:flex; gap:5px; overflow-x:auto; padding-bottom:2px;
+  -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+.mb-cat-chips::-webkit-scrollbar { display:none; }
+.mb-chip { font-size:11.5px; font-weight:700; padding:5px 10px;
+  border-radius:14px; border:1.5px solid #e2e8f0; background:#fff; color:#64748b;
+  cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:4px;
+  flex:0 0 auto; }
 .mb-chip.on { background:#0f172a; border-color:#0f172a; color:#fff; }
 .mb-chip .mbc-n { font-size:10px; opacity:.7; }
 .mb-chip .mbc-bd { width:6px; height:6px; border-radius:50%; background:#dc2626; }
@@ -748,7 +773,11 @@ body {
 .mb-ab-btn .ab-ico { font-size:14px; line-height:1; }
 .mb-ab-btn .ab-n { font-size:9px; font-weight:800; color:#0f766e; }
 .mb-ab-btn:active { background:#f1f5f9; }
-.mb-actionbar.locked .mb-ab-btn { opacity:.32; pointer-events:none; }
+/* Locked = no machine picked, so all eight actions are inoperable. It used to stay
+   at full height showing eight greyed buttons — ~100px of the first screen spent on
+   controls that cannot be pressed, above the records the operator came to read.
+   It now collapses to nothing and returns the moment a machine is selected. */
+.mb-actionbar.locked { display:none; }
 .mb-scope { font-size:10.5px; color:#64748b; font-weight:600; padding:7px 12px 3px;
   display:flex; justify-content:space-between; }
 .mb-scope b { color:#0f172a; }
@@ -4238,7 +4267,7 @@ function _renderRecordDetail(r, color) {
     '<div style="background:'+color+';color:white;padding:12px 16px;margin-bottom:12px;border-radius:0">'+
       '<div style="font-size:11px;opacity:0.75;margin-bottom:1px">'+esc(r.machineId)+' &nbsp;·&nbsp; Slip '+esc(r.slip)+'</div>'+
       '<div style="font-size:15px;font-weight:700">'+esc(r.machineName||r.machineId)+'</div>'+
-      '<div style="font-size:11px;opacity:0.8;margin-top:3px">'+esc(r.event)+' &nbsp;·&nbsp; '+esc(r.startDate)+'</div>'+
+      '<div style="font-size:11px;opacity:0.8;margin-top:3px">'+esc(r.event)+' · '+esc(r.startDate)+'</div>'+
     '</div>';
 
   var body = '<div style="padding:0 16px 16px">';
@@ -4362,16 +4391,20 @@ function renderBoardRecords(type, d) {
         }
       }
       var ageColor = ageStr ? (d >= 1 ? '#dc2626' : '#ea580c') : '';
+      /* Age is the urgent number on an OPEN breakdown, so it sits beside the title
+         where it is read first. On a closed record it is meaningless and omitted
+         rather than rendered blank. */
       return '<div class="rec-row" role="button" tabindex="0" style="cursor:pointer" onclick="openRecordDetail(\''+slip+'\',\'bd\',\''+mid+'\',\''+mn+'\')">'+
         '<div class="rec-dot" style="background:'+(isOpen?'#dc2626':'#16a34a')+'"></div>'+
         '<div class="rec-body">'+
-          '<div class="rec-title">'+mn+'</div>'+
-          '<div class="rec-sub">'+esc(item.problem||'')+'</div>'+
-          '<div class="rec-sub" style="font-family:monospace">'+mid+' &nbsp;·&nbsp; '+esc(item.date)+(slip?' &nbsp;·&nbsp; Slip '+slip:'')+'</div>'+
+          '<div class="rec-head">'+
+            '<span class="rec-title">'+mn+'</span>'+
+            (ageStr ? '<span class="rec-age" style="color:'+ageColor+'">'+ageStr+'</span>' : '')+
+          '</div>'+
+          (item.problem?'<div class="rec-sub">'+esc(item.problem)+'</div>':'')+
+          '<div class="rec-meta">'+mid+' · '+esc(item.date)+(slip?' · '+slip:'')+'</div>'+
         '</div>'+
-        (ageStr ? '<span style="font-size:11px;font-weight:700;color:'+ageColor+';white-space:nowrap;flex-shrink:0">'+ageStr+'</span>' : '') +
         '<div class="rec-tag rec-tag-'+(isOpen?'open':'closed')+'">'+esc(item.status)+'</div>'+
-        arrowIcon+
       '</div>';
     }).join('');
   } else if (type === 'pm') {
@@ -4383,7 +4416,7 @@ function renderBoardRecords(type, d) {
         '<div class="rec-body">'+
           '<div class="rec-title">'+mn+'</div>'+
           '<div class="rec-sub">'+esc(item.summary||'')+'</div>'+
-          '<div class="rec-sub" style="font-family:monospace">'+mid+' &nbsp;·&nbsp; '+esc(item.date)+(item.technician?' &nbsp;·&nbsp; '+esc(item.technician):'')+'</div>'+
+          '<div class="rec-meta">'+mid+' · '+esc(item.date)+(item.technician?' · '+esc(item.technician):'')+'</div>'+
         '</div>'+
         arrowIcon+
       '</div>';
@@ -4397,7 +4430,7 @@ function renderBoardRecords(type, d) {
         '<div class="rec-body">'+
           '<div class="rec-title">'+mn+'</div>'+
           '<div class="rec-sub">'+esc(item.summary||'')+'</div>'+
-          '<div class="rec-sub" style="font-family:monospace">'+mid+' &nbsp;·&nbsp; '+esc(item.date)+(item.performedBy?' &nbsp;·&nbsp; '+esc(item.performedBy):'')+'</div>'+
+          '<div class="rec-meta">'+mid+' · '+esc(item.date)+(item.performedBy?' · '+esc(item.performedBy):'')+'</div>'+
         '</div>'+
         arrowIcon+
       '</div>';
@@ -4413,7 +4446,7 @@ function renderBoardRecords(type, d) {
         '<div class="rec-dot" style="background:'+dotColor+'"></div>'+
         '<div class="rec-body">'+
           '<div class="rec-title">'+mn+'</div>'+
-          '<div class="rec-sub" style="font-family:monospace">'+mid+' &nbsp;·&nbsp; '+esc(item.date)+' &nbsp;·&nbsp; '+esc(item.shift||'')+'</div>'+
+          '<div class="rec-meta">'+mid+' · '+esc(item.date)+' · '+esc(item.shift||'')+'</div>'+
           '<div class="rec-sub">'+esc(item.operator||'')+'</div>'+
         '</div>'+
         '<div class="rec-tag '+tagCls+'">'+esc(item.status||'pending')+'</div>'+
@@ -6334,7 +6367,7 @@ function loadMHCView(machineId) {
               '<div class="rec-title" style="font-size:12px">'+
                 '<span style="background:'+ec+';color:white;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-right:4px">'+esc(rec.event)+'</span>'+
                 esc(rec.desc||'')+'</div>'+
-              '<div class="rec-sub" style="font-family:monospace">'+esc(rec.startDate)+(rec.hours?' &nbsp;·&nbsp; '+esc(rec.hours)+' h':'')+(rec.rectified?' &nbsp;·&nbsp; '+esc(rec.rectified):'')+'</div>'+
+              '<div class="rec-meta">'+esc(rec.startDate)+(rec.hours?' · '+esc(rec.hours)+' h':'')+(rec.rectified?' · '+esc(rec.rectified):'')+'</div>'+
             '</div>'+
             '<span style="color:#cbd5e1;font-size:15px;flex-shrink:0">&#8250;</span>'+
           '</div>';
@@ -6377,7 +6410,7 @@ function loadSOPView(machineId) {
                     '<span style="color:'+color+';font-weight:700;font-size:12px;flex-shrink:0;min-width:18px">'+(i+1)+'.</span>'+
                     '<div>'+
                       '<div style="font-size:13px;color:#1e293b">'+esc(label)+'</div>'+
-                      '<div style="font-size:11px;color:#64748b;margin-top:2px">'+extras.map(function(x){return esc(String(x));}).join(' &nbsp;·&nbsp; ')+'</div>'+
+                      '<div style="font-size:11px;color:#64748b;margin-top:2px">'+extras.map(function(x){return esc(String(x));}).join(' · ')+'</div>'+
                     '</div>'+
                   '</div>'+
                 '</div>';
@@ -6393,7 +6426,7 @@ function loadSOPView(machineId) {
         '</div>';
       }
       var html = '<div style="background:#7c3aed;color:white;padding:12px 16px;margin-bottom:8px;border-radius:8px">'+
-        '<div style="font-size:12px;opacity:0.7">'+esc(sop.machineId||machineId)+' &nbsp;·&nbsp; '+esc(sop.category||'')+'</div>'+
+        '<div style="font-size:12px;opacity:0.7">'+esc(sop.machineId||machineId)+' · '+esc(sop.category||'')+'</div>'+
         '<div style="font-size:15px;font-weight:700;margin-top:2px">Standard Operating Procedure</div>'+
         (sop.modifiedAt?'<div style="font-size:11px;opacity:0.6;margin-top:3px">Updated: '+esc(sop.modifiedAt)+'</div>':'')+
       '</div>';
@@ -6791,7 +6824,7 @@ function showBDForm(machineId) {
 
     bodyEl.innerHTML =
       '<div style="background:#fff1f2;border:1.5px solid #fca5a5;padding:8px 12px;border-radius:6px;margin-bottom:12px;font-size:12px;color:#7f1d1d;font-weight:600">' +
-        esc(machineId) + (machineLbl ? ' &nbsp;·&nbsp; ' + machineLbl : '') +
+        esc(machineId) + (machineLbl ? ' · ' + machineLbl : '') +
       '</div>' +
       '<div style="font-size:11px;color:#64748b;margin-bottom:10px;padding:6px 10px;background:#fef9c3;border-radius:6px">Step 1 of 2 — Report the breakdown. Technician will close it after repair.</div>' +
       '<div class="form-row-2">' +
@@ -6867,7 +6900,7 @@ function showBDCloseForm(machineId, slipNo, rowNum) {
     var personnel = ((fd && fd.personnel) || App.personnelList || []).map(function(p){return '<option>'+esc(p)+'</option>';}).join('');
     bodyEl.innerHTML =
       '<div style="background:#f0fdf4;border:1.5px solid #86efac;padding:8px 12px;border-radius:6px;margin-bottom:12px;font-size:12px;color:#14532d;font-weight:600">' +
-        '&#x2713; Closing ' + esc(slipNo) + ' &nbsp;·&nbsp; ' + esc(machineId) +
+        '&#x2713; Closing ' + esc(slipNo) + ' · ' + esc(machineId) +
       '</div>' +
       '<div style="font-size:11px;color:#64748b;margin-bottom:10px;padding:6px 10px;background:#fef9c3;border-radius:6px">Step 2 of 2 — Fill repair details to close this breakdown.</div>' +
       '<div class="form-row-2">' +
@@ -7050,7 +7083,7 @@ function showPMForm(machineId) {
 
     bodyEl.innerHTML =
       '<div style="background:#f0fdf4;border:1.5px solid #86efac;padding:8px 12px;border-radius:6px;margin-bottom:12px;font-size:12px;color:#14532d;font-weight:600">' +
-        esc(machineId) + (machineLbl ? ' &nbsp;·&nbsp; ' + machineLbl : '') +
+        esc(machineId) + (machineLbl ? ' · ' + machineLbl : '') +
       '</div>' +
       '<div class="form-row-2">' +
         '<div class="form-row"><label for="f-sd">Start Date *</label><input type="date" id="f-sd" value="'+td+'"></div>' +
