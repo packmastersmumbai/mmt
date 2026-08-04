@@ -7756,21 +7756,47 @@ function loadSafety(){
   // fetch core data once, then render
   if(SF.dash){ sfRender(); return; }
   var box = document.getElementById('safety-content');
-  google.script.run.withSuccessHandler(function(d){
-    SF.dash = d && d.success ? d.kpis : {};
+  /* Staged load: dashboard → charts → heatmap → lists → render.
+     EVERY stage needs its own failure handler. These are chained inside each
+     other's success callbacks, so a stage that fails without one does not just
+     lose its own data — it never issues the stages below it and never reaches
+     sfRender(), leaving the tab on its skeletons forever with nothing logged.
+     That is the "Safety data is not loading" report: the transport retries three
+     times and then gives up silently.
+     Each stage now falls through to a safe empty default and continues, so a
+     failed chart call costs the charts and nothing else. */
+  function _sfLists(){
+    google.script.run.withSuccessHandler(function(ls){
+      SF.lists = ls && ls.success ? ls.lists : {};
+      sfRender();
+    }).withFailureHandler(function(){
+      SF.lists = SF.lists || {}; sfRender();
+    }).getSafetyLists();
+  }
+  function _sfHeatmap(){
+    google.script.run.withSuccessHandler(function(h){
+      SF.heatmap = h && h.success ? h : {cells:[],total:0};
+      _sfLists();
+    }).withFailureHandler(function(){
+      SF.heatmap = {cells:[],total:0}; _sfLists();
+    }).getHeatmap();
+  }
+  function _sfCharts(){
     google.script.run.withSuccessHandler(function(c){
       SF.charts = c && c.success ? c.charts : {};
-      google.script.run.withSuccessHandler(function(h){
-        SF.heatmap = h && h.success ? h : {cells:[],total:0};
-        google.script.run.withSuccessHandler(function(ls){
-          SF.lists = ls && ls.success ? ls.lists : {};
-          sfRender();
-        }).getSafetyLists();
-      }).getHeatmap();
+      _sfHeatmap();
+    }).withFailureHandler(function(){
+      SF.charts = {}; _sfHeatmap();
     }).getOhsChartData();
+  }
+  google.script.run.withSuccessHandler(function(d){
+    SF.dash = d && d.success ? d.kpis : {};
+    _sfCharts();
   }).withFailureHandler(function(err){
     box.innerHTML = '<div class="sf-wrap"><div class="sf-card">Failed to load: '+
-      sfEsc(err && err.message || err)+'</div></div>';
+      sfEsc(err && err.message || err)+
+      ' <button class="sf-btn-primary" onclick="SF.dash=null;loadSafety()" '+
+      'style="margin-top:8px">Retry</button></div></div>';
   }).getSafetyDashboard();
 }
 
@@ -8156,6 +8182,16 @@ function sfRenderHira(){
     google.script.run.withSuccessHandler(function(r){
       SF.hira = r && r.success ? r.rows : [];
       _sfApplyPendingSr();
+    }).withFailureHandler(function(err){
+      /* Without this the register kept its skeleton rows forever and said nothing:
+         the transport had already retried three times, so no further attempt was
+         coming and no error was surfaced. Replace the skeleton with a real message
+         and a retry the operator can press. SF.hira stays null so Retry refetches. */
+      var el = document.getElementById('sf-hira-list');
+      if(el) el.innerHTML = '<div class="sf-card">Could not load the hazard register. '+
+        sfEsc(err && err.message || err)+
+        ' <button class="sf-btn-primary" onclick="SF.hira=null;sfRenderHira()" '+
+        'style="margin-top:8px">Retry</button></div>';
     }).getHiraRegister(null);
   } else _sfApplyPendingSr();
 }
@@ -8803,7 +8839,14 @@ function sfReloadAfterWrite(){
 /* ---------- ACTIONS — KANBAN BOARD ---------- */
 function sfRenderActions(){
   var box=document.getElementById('safety-content');
-  google.script.run.withSuccessHandler(function(k){
+  google.script.run.withFailureHandler(function(err){
+    /* The !k.success branch below only catches a server that ANSWERED with a
+       failure. A transport fault never reaches it, so the board sat blank. */
+    box.innerHTML='<div class="sf-wrap"><div class="sf-card">Could not load the board. '+
+      sfEsc(err && err.message || err)+
+      ' <button class="sf-btn-primary" onclick="SF.kanban=null;sfRenderActions()" '+
+      'style="margin-top:8px">Retry</button></div></div>';
+  }).withSuccessHandler(function(k){
     if(!k||!k.success){ box.innerHTML='<div class="sf-wrap"><div class="sf-card">'+
       'Failed to load board.</div></div>'; return; }
     SF.kanban=k;
