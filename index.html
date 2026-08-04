@@ -2489,7 +2489,15 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
         <span class="mbs-clear" id="mb-search-clear" role="button" tabindex="0" aria-label="Clear search" onclick="mbClearSearch()">&times;</span>
       </div>
       <span id="mb-count" style="font-size:11px;color:#64748b;flex-shrink:0;font-weight:600"></span>
-      <button onclick="showAddMachineForm()" style="flex-shrink:0;background:#f97316;color:#1a0d00;border:none;border-radius:8px;padding:8px 11px;font-size:13px;font-weight:700;cursor:pointer">+</button>
+      <!-- QR Labels moved here from the bottom nav (its slot went to HIRA).
+           It belongs with Machines: labels are printed PER MACHINE, and this is
+           the screen where a machine is chosen. Icon + text label, not icon
+           alone — an unlabelled QR glyph is not self-evident. -->
+      <button id="mb-qr-btn" onclick="navigate('labels')" aria-label="QR Labels"
+        style="flex-shrink:0;display:inline-flex;align-items:center;gap:5px;background:#fff;color:#001361;border:1.5px solid #cbd5e1;border-radius:8px;padding:7px 9px;font-size:12px;font-weight:700;cursor:pointer">
+        <span class="gn-icon" data-i="labels" style="display:inline-flex"></span>QR
+      </button>
+      <button onclick="showAddMachineForm()" aria-label="Add machine" style="flex-shrink:0;background:#f97316;color:#1a0d00;border:none;border-radius:8px;padding:8px 11px;font-size:13px;font-weight:700;cursor:pointer">+</button>
     </div>
     <!-- category chips — 2-row wrapped block -->
     <div class="mb-section">
@@ -3086,11 +3094,11 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
   <button class="gnav-btn" data-hash="board" data-btab="">
     <span class="gn-icon" data-i="machines"></span>Machines
   </button>
-  <button class="gnav-btn" data-hash="labels" data-btab="">
-    <span class="gn-icon" data-i="labels"></span>QR Labels
+  <button class="gnav-btn" data-hash="hira" data-btab="">
+    <span class="gn-icon" data-i="hira"></span>HIRA
   </button>
-  <button class="gnav-btn" data-hash="safety" data-btab="">
-    <span class="gn-icon" data-i="safety"></span>Safety
+  <button class="gnav-btn" data-hash="incidents" data-btab="">
+    <span class="gn-icon" data-i="incidents"></span>Incidents
   </button>
   <button class="gnav-btn" data-hash="hk" data-btab="">
     <span class="gn-icon" data-i="housekeep"></span>Housekeeping
@@ -3331,6 +3339,18 @@ var PM_ICONS = {
      ruled it out is gone: bd is now a fractured gear, not a warning triangle.
      Taller than wide, closed counter, sits at the row's heavier end. */
   safety:    '<path d="M12 3.2 4.5 6v6c0 4.4 3 8.1 7.5 9.8 4.5-1.7 7.5-5.4 7.5-9.8V6z"/><path d="m8.6 12.1 2.4 2.4 4.4-4.8"/>',
+  /* HIRA — hazard triangle with an exclamation. HIRA is risk ASSESSMENT, and the
+     triangle is the one universally-read "assess this hazard" mark on a factory
+     floor. It no longer collides with bd: bd was a warning triangle and is now a
+     fractured gear, which is precisely why that slot is free. Distinct from the
+     safety shield (straight edges, open base, internal vertical accent). */
+  hira:      '<path d="M12 3.6 21 19.4H3z"/><path d="M12 9.6v4.2"/><path d="M12 16.8v.01"/>',
+  /* Incidents — a jagged impact starburst: something that HAPPENED, against the
+     triangle's something that COULD happen. Drawn as one closed zig-zag outline,
+     NOT a circle with rays: that version was near-identical to the existing
+     `sun` glyph, and this row has to stay unambiguous at 19px. The irregular
+     spikes give it a silhouette no other glyph in the set shares. */
+  incidents: '<path d="M12 2.8 14 7.4l4.6-1.8-1.6 4.7 4.8 1.7-4.8 1.7 1.6 4.7-4.6-1.8-2 4.6-2-4.6-4.6 1.8 1.6-4.7L2.8 12l4.8-1.7-1.6-4.7L10.6 7.4z"/>',
   /* Broom — angled handle into a flared head with three separated bristles.
      The bristle gaps are what distinguish it from a dustpan wedge; a single
      cross-stroke was not enough to read as sweeping. */
@@ -3399,6 +3419,10 @@ var _highlightId  = null;
 var _collapsedCats = {};
 
 var _refType = 'mhc';
+/* Which safety sub-view the nav should show as active ('hira' | 'incidents').
+   The router collapses both onto the 'safety' view, so the nav cannot infer
+   the active button from App.currentHash alone. */
+var _sfNavHash = '';
 function loadRefCombined() {
   loadRefView(_refType);
   // Wire chips
@@ -4477,15 +4501,23 @@ var ACTION_MAP = {
   'kanban':        'board',
   'tag':           'board',
   'viewbd':        'bd',
-  'viewchecklist': 'checklist'
+  'viewchecklist': 'checklist',
+  /* HIRA and Incidents are now first-class nav destinations. 'safety' is kept
+     as an alias because Telegram deep links already in the channel use
+     ?action=safety&sr=NN — dropping it would break every link already sent. */
+  'safety':        'hira',
+  'hira':          'hira',
+  'incidents':     'incidents'
 };
 
 // All valid hashes (global nav + machine context)
 // 'mhc', 'sop', 'image' are accepted but remapped to 'ref' inside navigate()
-var VALID_HASHES = ['dashboard', 'board', 'labels', 'safety', 'hk', 'readings', 'checklist', 'bd', 'pm', 'clit', 'ref', 'mhc', 'sop', 'image'];
+// 'safety' stays valid: it is the target of live Telegram deep links and of the
+// KPI/chart drill-throughs inside the Safety view. It resolves to 'hira'.
+var VALID_HASHES = ['dashboard', 'board', 'labels', 'safety', 'hira', 'incidents', 'hk', 'readings', 'checklist', 'bd', 'pm', 'clit', 'ref', 'mhc', 'sop', 'image'];
 
 // Global nav hashes — shown without machine context
-var GLOBAL_HASHES = ['dashboard', 'board', 'labels', 'safety', 'hk', 'readings'];
+var GLOBAL_HASHES = ['dashboard', 'board', 'labels', 'safety', 'hira', 'incidents', 'hk', 'readings'];
 
 // ═══════════════════════════════════════════════════════
 // NAVIGATION CORE
@@ -4520,6 +4552,20 @@ function navigate(hash, machineId, skipPush) {
     _refTab = hash;
     _refType = hash;  // keep global in sync for buildNav active state
     hash = 'ref';
+  }
+
+  /* HIRA and Incidents are nav destinations but live as TABS inside the single
+     safety view, so they remap the same way 'ref' does. The nav-active state is
+     driven by _sfNavHash, not by the resolved hash, or both would light up as
+     'safety'. Bare 'safety' (live Telegram links, KPI drill-throughs) lands on
+     HIRA — the register, which is what those links are pointing at. */
+  var _sfTab = '';
+  if (hash === 'hira' || hash === 'incidents' || hash === 'safety') {
+    _sfTab = (hash === 'safety') ? 'hira' : hash;
+    _sfNavHash = _sfTab;
+    hash = 'safety';
+  } else {
+    _sfNavHash = '';
   }
   App.currentHash = hash;
 
@@ -4567,7 +4613,12 @@ function navigate(hash, machineId, skipPush) {
     App.machineName = '';
   }
   if (hash === 'labels')    loadLabels();
-  if (hash === 'safety')    loadSafety();
+  if (hash === 'safety') {
+    // Preselect the tab the nav asked for. A pending Sr (safety deep link)
+    // forces HIRA inside loadSafety(), so it is not overridden here.
+    if (_sfTab) SF.tab = _sfTab;
+    loadSafety();
+  }
   // #view-hk and #view-readings live INSIDE <main class="app-content"> (the <main>
   // refactor wrapped the existing container rather than nesting a new one). An earlier
   // revision collapsed .app-content here on the assumption they were siblings after it,
@@ -4617,9 +4668,13 @@ function updateHeader(hash) {
 // ═══════════════════════════════════════════════════════
 
 function buildNav(hash) {
-  // ── Global nav: update active state ──
+  /* ── Global nav: update active state ──
+     HIRA and Incidents both resolve to the 'safety' view, so matching on the
+     resolved hash alone would light BOTH buttons. _sfNavHash carries which of
+     the two the user actually asked for. */
+  var navHash = _sfNavHash || hash;
   document.querySelectorAll('#nav-global .gnav-btn').forEach(function(btn) {
-    btn.classList.toggle('active', btn.dataset.hash === hash);
+    btn.classList.toggle('active', btn.dataset.hash === navHash);
   });
 
   // ── Machine sub-nav: show/hide and populate ──
