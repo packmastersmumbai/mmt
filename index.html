@@ -600,6 +600,14 @@ body {
 .dash-card.dc-fold[open] > summary .dc-caret { transform:rotate(-135deg); }
 @media (prefers-reduced-motion:reduce){ .dc-caret { transition:none; } }
 .dash-card.dc-fold > .dc-body { padding:0 14px 13px; }
+/* Canvas box for the OHS charts. Fixed height: Chart.js with
+   maintainAspectRatio:false fills its parent, and a parent with no height
+   collapses to zero — the chart then renders as an invisible 0px strip. */
+.dc-cv { position:relative; height:190px; }
+.dash-sfcharts .dc-cv { height:180px; }
+/* The heatmap is wider than a phone at its natural 44px cell size; let it scroll
+   inside its own card rather than forcing the page to scroll sideways. */
+.dash-sfcharts #dsf-heat { overflow-x:auto; -webkit-overflow-scrolling:touch; }
 .dash-2col { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
 .dash-2col .dash-card { margin-top:0; }
 /* Card titles were uppercase + .5px tracking, the same treatment as the KPI labels and
@@ -1506,8 +1514,16 @@ body {
   transform:scale(1.08); box-shadow:0 2px 8px rgba(15,23,42,.28); z-index:2; }
 .sf-heat .hl { font-size:11px; font-weight:700; color:#475569; display:flex;
   align-items:center; justify-content:center; padding:0 6px; }
-/* Empty cells: no fill, muted ink — they must not read as a risk band. */
-.sf-heat .hc.z { color:#94a3b8; background:#f8fafc !important; }
+/* Empty cells must not read as a RISK BAND, but they must still read as CELLS.
+   They were #f8fafc on a white card — effectively invisible — so the matrix
+   appeared to have holes punched through it wherever a score had no hazards,
+   and the "0" was #94a3b8 on #f8fafc (~2.3:1), present but unreadable: some
+   zeros looked blank, others faintly showed, with no rule the eye could infer.
+   A visible tint plus a dashed border says "this cell exists and is empty",
+   which is a different statement from "this cell is a low risk band". Ink at
+   #64748b on #eef2f7 clears 4.5:1, so the 0 is legible. */
+.sf-heat .hc.z { color:#64748b; background:#eef2f7 !important;
+  box-shadow:inset 0 0 0 1px #dbe3ec; font-weight:700; }
 @media (prefers-reduced-motion:reduce){ .sf-heat .hc { transition:none; }
   .sf-heat .hc:hover, .sf-heat .hc:focus-visible { transform:none; } }
 @media (min-width:1025px){
@@ -1973,11 +1989,24 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .hf-coc-del { flex:0 0 auto; width:34px; align-self:stretch; border:1.5px solid #fecaca;
   background:#fef2f2; color:#dc2626; border-radius:7px; font-size:16px;
   font-weight:800; cursor:pointer; }
-.hf-coc-add { width:100%; padding:9px; border:1.5px dashed #94a3b8;
+/* "+ Add control measure" and "+ Add photo" were both full-width 334px dashed
+   bars stacked above a full-width Save — three near-identical slabs competing
+   for the same emphasis in one form. They are SECONDARY actions (add another
+   row), so they now size to their own text and sit left, which frees the row
+   and leaves full width to mean "primary action" (Save) alone.
+   44px min-height is kept: one-handed use on the floor. */
+.hf-coc-add { display:inline-flex; align-items:center; justify-content:center;
+  gap:5px; width:auto; min-height:40px; padding:8px 14px;
+  border:1.5px dashed #94a3b8;
   background:#f8fafc; color:#475569; border-radius:9px; font-size:12px;
   font-weight:700; cursor:pointer; }
 .hf-coc-add:hover { background:#f1f5f9; }
 .hf-coc-hint { font-size:10px; color:#64748b; margin:2px 0 6px; }
+/* What the selected control level MEANS, stated in the open rather than in a
+   title= tooltip that touch devices never show. */
+.hf-coc-desc { font-size:10.5px; line-height:1.35; color:#475569;
+  margin:0 0 6px; }
+.hf-coc-desc b { color:#0f172a; }
 /* kanban */
 .sf-kanban { display:grid; grid-template-columns:repeat(4,minmax(180px,1fr));
   gap:8px; overflow-x:auto; }
@@ -3923,6 +3952,11 @@ var _dashSafety = null;
 /* Age (ms) of the currently displayed dashboard data, 0 once live data lands.
    Non-zero means the screen is showing a cached copy and says so. */
 var _dashStale = 0;
+/* OHS charts + heatmap for the dashboard's Safety section. Held separately from
+   SF.charts/SF.heatmap for the same reason as _dashSafety: SF is initialised
+   further down this file and would clobber an early seed. */
+var _dashSfCharts = null;
+var _dashSfHeat = null;
 
 function loadDashboard() {
   var ready = _boardData && _boardData.success && _dashMetrics && _boardRecordsCache.bd;
@@ -3951,6 +3985,8 @@ function loadDashboard() {
     if (c.kanban && c.kanban.success) _boardData = c.kanban;
     if (c.metrics) _dashMetrics = c.metrics;
     if (c.safety)  _dashSafety  = c.safety;
+    if (c.safetyCharts) _dashSfCharts = c.safetyCharts;
+    if (c.safetyHeat)   _dashSfHeat   = c.safetyHeat;
     _dashStale = cached.age;
     renderDashboard();
   }
@@ -3959,7 +3995,8 @@ function loadDashboard() {
     attempt = attempt || 1;
     function done(d) {
       if (d) {
-        PMC.put('dash', {kanban:d.kanban, metrics:d.metrics, safety:d.safety});
+        PMC.put('dash', {kanban:d.kanban, metrics:d.metrics, safety:d.safety,
+                         safetyCharts:d.safetyCharts, safetyHeat:d.safetyHeat});
         _dashStale = 0;
         if (d.kanban && d.kanban.success) _boardData = d.kanban;
         if (d.metrics) _dashMetrics = d.metrics;
@@ -3975,6 +4012,8 @@ function loadDashboard() {
            sfRenderDashboard keeps owning SF.dash; this is read-only display
            data for the main dashboard. */
         if (d.safety) _dashSafety = d.safety;
+        if (d.safetyCharts) _dashSfCharts = d.safetyCharts;
+        if (d.safetyHeat)   _dashSfHeat   = d.safetyHeat;
       }
       if (!_boardData)  _boardData  = {success:false};
       if (!_dashMetrics) _dashMetrics = {};
@@ -3993,6 +4032,51 @@ function loadDashboard() {
       .getDashboardBootstrap();
   }
   fetchAll();
+}
+
+/* Paint a dashboard OHS chart the first time its card is opened.
+   Lazy on purpose: six Chart.js instances cost real time on a phone, and these
+   cards start collapsed, so building them up front would be work for charts the
+   operator may never expand. Guarded by _painted so a collapse/expand cycle does
+   not build a second instance over the first.
+   Each chart keeps its drill-through — a chart here is a way INTO the register,
+   the same as on the safety dashboard it replaces. */
+var _dashSfPainted = {};
+function _dashPaintSfChart(el){
+  if(!el || !el.open) return;
+  var key = el.getAttribute('data-sfc');
+  if(!key || _dashSfPainted[key]) return;
+  if(typeof Chart === 'undefined' && key !== 'heat') return;   // chart lib not up yet
+  _dashSfPainted[key] = true;
+  var C = _dashSfCharts || {};
+  try {
+    if(key === 'heat'){
+      /* The heatmap is HTML, not a canvas, and sfHeatmapHtml() reads SF.heatmap —
+         so point that at the dashboard copy before rendering. SF.heatmap is only
+         set by the safety view's own load, which has not run here. */
+      if(!SF.heatmap && _dashSfHeat) SF.heatmap = _dashSfHeat;
+      var box = document.getElementById('dsf-heat');
+      if(box) box.innerHTML = sfHeatmapHtml();
+    }
+    else if(key === 'class')
+      sfChartBarClass('dsf-class', C.classification,
+        function(l){ navigate('hira'); setTimeout(function(){ sfOpenRecords('hira',{classification:l}); },400); });
+    else if(key === 'status')
+      sfChartDoughnut('dsf-status', C.actionStatus, SF_STATUS_COLORS,
+        function(l){ navigate('hira'); setTimeout(function(){ sfOpenRecords('actions',{status:l}); },400); });
+    else if(key === 'section')
+      sfChartHBar('dsf-section', C.bySection, '#0d9488',
+        function(l){ navigate('hira'); setTimeout(function(){ sfOpenRecords('hira',{section:l}); },400); });
+    else if(key === 'inctype')
+      sfChartDoughnut('dsf-inctype', C.incidentType, null,
+        function(l){ navigate('incidents'); setTimeout(function(){ sfOpenRecords('incidents',{type:l}); },400); });
+    else if(key === 'inczone')
+      sfChartHBar('dsf-inczone', C.incidentZone, '#0369a1',
+        function(l){ navigate('incidents'); setTimeout(function(){ sfOpenRecords('incidents',{zone:l}); },400); });
+  } catch(e){
+    _dashSfPainted[key] = false;   // let a retry happen on the next open
+    console.error('safety chart '+key, e);
+  }
 }
 
 /* Re-render dashboard once records finish prefetching (called by _prefetchRecords). */
@@ -4146,6 +4230,39 @@ function renderDashboard() {
        of it ("Load C…hine 04 3") buried the figure and read as one token. */
     return map[k] + ' · ' + (fmt ? fmt(k, 12) : _catAbbr(k));
   }
+  /* A safety chart card. Same fold as the breakdown charts, plus a data-sfc key
+     so the chart can be painted the first time it is actually opened rather than
+     up front — six Chart.js instances nobody expands is wasted work on a phone. */
+  function sfold(title, peek, bodyHtml, key) {
+    return '<details class="dash-card dc-fold"'+(_wideCharts ? ' open' : '')+
+      ' data-sfc="'+key+'" ontoggle="_dashPaintSfChart(this)">'+
+      '<summary><span class="dc-caret"></span>'+
+        '<span class="dc-title">'+title+'</span>'+
+        '<span class="dc-peek">'+(peek||'')+'</span>'+
+      '</summary>'+
+      '<div class="dc-body">'+bodyHtml+'</div>'+
+    '</details>';
+  }
+  /* Peek for a {label:count} chart map: the leading category and its count. */
+  function _peekChart(name) {
+    var m = (_dashSfCharts || {})[name] || {};
+    var keys = Object.keys(m).filter(function(k){ return m[k] > 0; });
+    if (!keys.length) return '0';
+    keys.sort(function(a,b){ return m[b]-m[a]; });
+    return m[keys[0]] + ' · ' + keys[0];
+  }
+  /* Peek for the heatmap: how many hazards sit in the top two risk bands, which
+     is the only thing on that grid worth acting on at a glance. */
+  function _peekHeat() {
+    var cells = (_dashSfHeat && _dashSfHeat.cells) || [];
+    var hi = 0;
+    for (var l = 1; l <= 5; l++) for (var c = 1; c <= 5; c++) {
+      var cell = cells[l-1] ? cells[l-1][c-1] : null;
+      if (cell && l*c >= 15) hi += (cell.count || 0);
+    }
+    var total = (_dashSfHeat && _dashSfHeat.total) || 0;
+    return hi > 0 ? hi + ' high risk' : total + ' rated';
+  }
   function _peekSum(arr, suffix) {
     var n = (arr||[]).reduce(function(s,v){ return s + (typeof v==='number' ? v : (v&&v.n)||0); }, 0);
     return n + (suffix ? ' ' + suffix : '');
@@ -4190,6 +4307,15 @@ function renderDashboard() {
      rate plus the done/total split, and a donut of three values it duplicates is a
      picture of a number we have already printed. */
 
+  /* innerHTML below destroys every canvas, so any Chart.js instance bound to one
+     is now orphaned. Drop them and clear the painted flags, or a re-render after
+     the live data lands would leave the safety charts permanently blank. */
+  if (window._dashSfPainted) {
+    ['dsf-class','dsf-status','dsf-section','dsf-inctype','dsf-inczone'].forEach(function(id){
+      try { var c = Chart.getChart && Chart.getChart(id); if (c) c.destroy(); } catch(e){}
+    });
+    _dashSfPainted = {};
+  }
   el.innerHTML =
     '<div class="dash-wrap">' +
     '<div class="dash-hd"><h2>Dashboard</h2><span class="dash-date">'+
@@ -4267,6 +4393,24 @@ function renderDashboard() {
       relTile(_sfv(sfk.completedActions),'Completed','actions','#16a34a',"sfOpenActions()") +
       relTile(_sfv(sfk.totalIncidents),'Incidents','total','#7c3aed',"navigate('incidents')") +
     '</div>' +
+
+    /* ── The six OHS charts, collapsed ──
+       The safety dashboard is no longer a reachable destination, so these move
+       here. They use the same fold as the breakdown charts above: six expanded
+       charts would add ~1500px to a screen that was just compacted to 640px, and
+       charts are the slowest thing to render and the least glanceable one-handed.
+       Each collapses to the one figure worth a glance and opens on tap.
+       Charts are painted lazily on first open (see _dashPaintSfChart) — building
+       six Chart.js instances that nobody expands is wasted work on a phone. */
+    (_dashSfCharts ?
+      '<div class="dash-chartrow dash-sfcharts">' +
+        sfold('Risk Heatmap',        _peekHeat(),                  '<div id="dsf-heat"></div>', 'heat') +
+        sfold('Risk Classification', _peekChart('classification'),  '<div class="dc-cv"><canvas id="dsf-class"></canvas></div>', 'class') +
+        sfold('Action Status',       _peekChart('actionStatus'),    '<div class="dc-cv"><canvas id="dsf-status"></canvas></div>', 'status') +
+        sfold('Hazards by Section',  _peekChart('bySection'),       '<div class="dc-cv"><canvas id="dsf-section"></canvas></div>', 'section') +
+        sfold('Incidents by Type',   _peekChart('incidentType'),    '<div class="dc-cv"><canvas id="dsf-inctype"></canvas></div>', 'inctype') +
+        sfold('Incidents by Zone',   _peekChart('incidentZone'),    '<div class="dc-cv"><canvas id="dsf-inczone"></canvas></div>', 'inczone') +
+      '</div>' : '') +
 
     /* The fleet strip that used to sit here is gone — the "Machines" KPI at the top
        already carries the count and opens the same board, so the strip repeated a
@@ -9351,11 +9495,22 @@ function sfCocRow(level,text){
       (on?'style="background:'+L.c+'"':'')+' onclick="sfCocPick(this)">'+
       (L.s||L.k)+'</div>';
   }).join('');
+  /* The five levels were abbreviated chips ("Elim", "Subst", "Engg") whose only
+     explanation was a title= tooltip — which does not exist on a touch device,
+     i.e. on the factory floor where this form is actually filled in. The
+     hierarchy is the whole point of the control: picking PPE where Elimination
+     was possible is the classic HIRA error, and the form was giving no hint.
+     The meaning of the selected level is now stated in the open, under the row,
+     and updates as the level changes. */
+  var sel=SF_COC_LEVELS.filter(function(L){return L.k===level;})[0];
   wrap.innerHTML='<div class="hf-coc-head">'+
       '<span class="hf-coc-n num">1</span>'+
       (level?'':'<span class="hf-coc-unset">Level not set</span>')+
     '</div>'+
     '<div class="hf-coc-levels">'+lvls+'</div>'+
+    '<div class="hf-coc-desc">'+(sel
+      ? '<b>'+sfEsc(sel.k)+'</b> — '+sfEsc(sel.d)
+      : 'Most effective first: remove the hazard before relying on PPE.')+'</div>'+
     '<div class="hf-coc-inrow">'+
     '<textarea class="hf-coc-text" rows="2" placeholder="Type the actual control measure…">'+
       sfEsc(text||'')+'</textarea>'+
@@ -9369,13 +9524,18 @@ function sfCocPick(el){
     row[i].classList.remove('on'); row[i].style.background='';
   }
   el.classList.add('on');
-  el.style.background=sfCocColor(el.getAttribute('data-lvl'));
+  var k=el.getAttribute('data-lvl');
+  el.style.background=sfCocColor(k);
   // Picking a level clears the "not set" state for this measure.
   var wrap=el.closest('.hf-coc-row');
   if(wrap){
     wrap.classList.remove('unset');
     var badge=wrap.querySelector('.hf-coc-unset');
     if(badge) badge.remove();
+    // Restate what the chosen level MEANS — the chip alone is an abbreviation.
+    var desc=wrap.querySelector('.hf-coc-desc');
+    var L=SF_COC_LEVELS.filter(function(x){return x.k===k;})[0];
+    if(desc&&L) desc.innerHTML='<b>'+sfEsc(L.k)+'</b> — '+sfEsc(L.d);
   }
 }
 function sfAddControl(){
