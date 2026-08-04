@@ -789,8 +789,11 @@ body {
 /* Category chips — ONE scrolling row, not an unbounded wrap.
    20 categories wrapped into 7 rows and claimed ~420px before a single record was
    visible: the filter was pushing the content it filters off screen. A horizontal
-   strip costs one row and matches .mb-mac-grid directly below it, which already
-   scrolls the same way. */
+   strip costs one row instead.
+   The chips stay a scroller while .mb-mac-grid below now wraps, and that
+   asymmetry is deliberate: there are 19 categories (a genuinely long list where
+   one row is the only affordable form), but at most 10 machines inside any one
+   of them — few enough to show in full. */
 .mb-cat-chips { display:flex; gap:5px; overflow-x:auto; padding-bottom:2px;
   -webkit-overflow-scrolling:touch; scrollbar-width:none; }
 .mb-cat-chips::-webkit-scrollbar { display:none; }
@@ -801,12 +804,20 @@ body {
 .mb-chip.on { background:#0f172a; border-color:#0f172a; color:#fff; }
 .mb-chip .mbc-n { font-size:10px; opacity:.7; }
 .mb-chip .mbc-bd { width:6px; height:6px; border-radius:50%; background:#dc2626; }
-/* machine tiles — 2-row scrollable grid */
-.mb-mac-grid { display:grid; grid-auto-flow:column;
-  grid-template-rows:repeat(2, auto); gap:7px; overflow-x:auto;
-  -webkit-overflow-scrolling:touch; scrollbar-width:none;
-  grid-auto-columns:78px; padding-bottom:2px; }
-.mb-mac-grid::-webkit-scrollbar { display:none; }
+/* machine tiles — wrapping grid.
+   Wraps, not a horizontal scroller. This was a 2-row sideways-scrolling strip
+   with a hidden scrollbar, which meant: the page scrolled vertically while this
+   one block scrolled horizontally, and nothing on screen said so.
+   The measurement that settled it — the LARGEST category holds 10 machines, so
+   the strip overflowed to 418px in a 370px viewport. It scrolled sideways to
+   reveal about one and a half tiles: an affordance that is nearly always
+   unnecessary and undiscoverable in the case where it is not.
+   Wrapping shows every machine in the category at once, in reading order, and
+   the block simply grows a row instead of hiding its tail. auto-fill with a
+   78px floor keeps the tile size the layout was built around. */
+.mb-mac-grid { display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(78px, 1fr));
+  gap:7px; padding-bottom:2px; }
 .mb-tile { position:relative; border:1.5px solid #e2e8f0; border-radius:10px;
   background:#fff; cursor:pointer; padding:6px 5px; display:flex;
   flex-direction:column; align-items:center; gap:3px; text-align:center; }
@@ -2908,11 +2919,17 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 
   <!-- ══════ SAFETY / OHS MODULE ══════ -->
   <div class="view" id="view-safety" style="padding:0">
-    <div class="sf-tabs" id="sf-tabs">
+    <!-- The tab row that used to sit here (Dashboard | HIRA | Incidents) is gone.
+         HIRA and Incidents are bottom-nav destinations now, so this row repeated
+         the navigation the user had just used, and its "Dashboard" tab duplicated
+         the bottom nav's Dashboard button one row below it. Tapping HIRA now shows
+         the HIRA register immediately.
+         The row is kept in the DOM as a hidden element rather than deleted:
+         sfGoTab() and the KPI/chart drill-throughs query '#sf-tabs .sf-tab' to sync
+         the active state, and those calls must keep finding their nodes. -->
+    <div class="sf-tabs" id="sf-tabs" hidden aria-hidden="true">
       <button class="sf-tab active" data-sftab="dashboard">Dashboard</button>
       <button class="sf-tab" data-sftab="hira">HIRA</button>
-      <!-- "Actions" was a sibling tab here, but it is the SAME hazard records grouped
-           by status — not separate data. It now lives beside List/Board inside HIRA. -->
       <button class="sf-tab" data-sftab="incidents">Incidents</button>
     </div>
     <div id="safety-content">
@@ -7971,7 +7988,12 @@ function preloadPersonnel(startHash) {
 
 // SF state — declared before init() so a direct #safety load (which calls
 // loadSafety() during init) does not hit an undefined SF.
-var SF = { tab:'dashboard', dash:null, hira:null, charts:null, lists:null,
+/* Defaults to 'hira', not 'dashboard': the safety dashboard tab is no longer
+   reachable (its KPI tiles moved to the main dashboard and the tab row is
+   hidden), so falling back to it would render a screen with no way out. Any
+   entry point that does not name a tab — a bare #safety, a legacy link — lands
+   on the HIRA register. */
+var SF = { tab:'hira', dash:null, hira:null, charts:null, lists:null,
   heatmap:null, chartObjs:[], chartTypes:{} };
 
 (function init() {
