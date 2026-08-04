@@ -1404,6 +1404,10 @@ body {
 .ref-card-foot { font-size:10px; color:#64748b; margin-top:6px; border-top:1px solid #f1f5f9; padding-top:4px; }
 
 /* ══════ SAFETY / OHS MODULE ══════ */
+/* `display:flex` beats the `hidden` attribute, so the hidden tab row still
+   rendered. Explicit rule restores it — the element stays in the DOM only so
+   sfGoTab() and the drill-throughs can keep syncing '.sf-tab' active state. */
+.sf-tabs[hidden] { display:none; }
 .sf-tabs { display:flex; gap:4px; padding:8px 10px; background:#fff; border-bottom:1px solid #e2e8f0;
   overflow-x:auto; position:sticky; top:0; z-index:5; }
 /* min-height 44px, was ~28px (7px padding + 12px text). These are the Safety
