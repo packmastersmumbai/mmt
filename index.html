@@ -516,6 +516,9 @@ body {
 .dash-hd .dash-date { font-size:11.5px; color:#64748b; font-weight:700;
   font-variant-numeric:tabular-nums; white-space:nowrap; letter-spacing:-0.01em; }
 /* KPI grid — 3 per row, 2 rows */
+/* Cached-copy notice. Amber, not red: stale-but-refreshing is a state to be
+   aware of, not a fault. Replaced by the date as soon as live data lands. */
+.dash-stale { color:#b45309; font-weight:700; }
 .dk-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
 /* ── ONE-ROW tile rows (.dk-row) ────────────────────────────────────────────
    Requested as "all tiles in one row". Ten tiles across a 390px phone is ~39px
@@ -3358,6 +3361,16 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
            the choice. */
         var usePost = true;
 
+        /* Any WRITE invalidates the persistent read cache. Done here, at the one
+           point every call passes through, rather than at each call site — a new
+           write endpoint cannot then forget to do it and leave the next cold load
+           painting pre-write numbers. Name-based because the transport has no
+           other signal about what a function does. */
+        if (typeof window.PMC !== 'undefined' &&
+            /^(submit|add|update|close|set|delete|remove|upload|repair|sync|migrate|normalise)/.test(prop)) {
+          try { window.PMC.clear(); } catch(e) {}
+        }
+
         _enqueue(function() { return _attempt(prop, args, argsJson, usePost, 1); })
           .then(function(data) {
             // A throw inside the caller's success handler is the CALLER's bug, not a
@@ -3513,6 +3526,56 @@ function pmIcon(name, cls){
 // ═══════════════════════════════════════════════════════
 // APP STATE
 // ═══════════════════════════════════════════════════════
+/* ══════ PERSISTENT CACHE (stale-while-revalidate) ══════════════════════════
+   Every screen refetched from the server on every cold page load, so opening
+   the app cost a full round trip (~2.5-4.5s of pure platform latency) before
+   anything appeared — even though the underlying sheets barely move within a
+   shift, and in-memory caching already made REVISITS instant at ~40-120ms.
+   localStorage carries that same benefit across reloads: the last payload is
+   painted immediately, the network copy replaces it when it lands.
+
+   Deliberately NOT used for writes or for anything safety-critical to act on
+   without refresh — every cached read is followed by a live one, and the age is
+   surfaced so nobody mistakes a stale number for a current one. */
+var PMC = (function(){
+  var PFX = 'pmc1:', MAX_AGE = 6 * 3600 * 1000;   // 6h — one shift
+  var on = (function(){ try { localStorage.setItem(PFX+'t','1');
+    localStorage.removeItem(PFX+'t'); return true; } catch(e){ return false; } })();
+  return {
+    enabled: on,
+    get: function(k){
+      if(!on) return null;
+      try {
+        var raw = localStorage.getItem(PFX+k); if(!raw) return null;
+        var o = JSON.parse(raw);
+        if(!o || typeof o.t !== 'number') return null;
+        var age = Date.now() - o.t;
+        if(age > MAX_AGE){ localStorage.removeItem(PFX+k); return null; }
+        return { data:o.d, age:age };
+      } catch(e){ return null; }
+    },
+    put: function(k, data){
+      if(!on) return;
+      try { localStorage.setItem(PFX+k, JSON.stringify({t:Date.now(), d:data})); }
+      catch(e){
+        /* Quota exceeded — drop our own keys and retry once. A cache that fills
+           up must not become a cache that throws on every write. */
+        try {
+          Object.keys(localStorage).forEach(function(x){
+            if(x.indexOf(PFX)===0) localStorage.removeItem(x); });
+          localStorage.setItem(PFX+k, JSON.stringify({t:Date.now(), d:data}));
+        } catch(e2){}
+      }
+    },
+    /* Called after any write, so the next load cannot show pre-write numbers. */
+    clear: function(){
+      if(!on) return;
+      try { Object.keys(localStorage).forEach(function(x){
+        if(x.indexOf(PFX)===0) localStorage.removeItem(x); }); } catch(e){}
+    }
+  };
+})();
+
 var App = {
   machineId: INIT_MACHINE_ID || '',
   machineName: '',
@@ -3857,13 +3920,21 @@ var _dashMetrics = null;
 /* Safety KPIs from getDashboardBootstrap. Separate from SF.dash because SF is
    initialised lower in this file and would clobber an early seed. */
 var _dashSafety = null;
+/* Age (ms) of the currently displayed dashboard data, 0 once live data lands.
+   Non-zero means the screen is showing a cached copy and says so. */
+var _dashStale = 0;
 
 function loadDashboard() {
   var ready = _boardData && _boardData.success && _dashMetrics && _boardRecordsCache.bd;
   if (ready) { renderDashboard(); return; }
-  document.getElementById('dash-body').innerHTML =
-    '<div class="dash-wrap"><div class="loading-spinner" style="padding:40px">' +
-    '<div class="spinner-ring"></div>Loading dashboard&hellip;</div></div>';
+  /* Only show the spinner when there is genuinely nothing to show. With a cached
+     payload the block below paints real numbers instead, and replacing them with
+     a spinner would be a step backwards — content first, then quietly refresh. */
+  if (!PMC.get('dash')) {
+    document.getElementById('dash-body').innerHTML =
+      '<div class="dash-wrap"><div class="loading-spinner" style="padding:40px">' +
+      '<div class="spinner-ring"></div>Loading dashboard&hellip;</div></div>';
+  }
   /* ONE round trip for kanban + metrics + config. This was three calls chained
      through each other's success handlers with 250ms gaps between them; on this
      platform the round trip itself is the cost (~2.5-4.5s even for a no-op), so
@@ -3871,10 +3942,25 @@ function loadDashboard() {
 
      The server guards each part independently, so a partial result still renders —
      the old chain issued step 2 only if step 1 succeeded. */
+  /* Paint the last known payload immediately, then revalidate. On a cold load
+     this replaces a ~3-5s spinner with real numbers at ~40ms; the live copy
+     overwrites them when it lands. */
+  var cached = PMC.get('dash');
+  if (cached) {
+    var c = cached.data;
+    if (c.kanban && c.kanban.success) _boardData = c.kanban;
+    if (c.metrics) _dashMetrics = c.metrics;
+    if (c.safety)  _dashSafety  = c.safety;
+    _dashStale = cached.age;
+    renderDashboard();
+  }
+
   function fetchAll(attempt) {
     attempt = attempt || 1;
     function done(d) {
       if (d) {
+        PMC.put('dash', {kanban:d.kanban, metrics:d.metrics, safety:d.safety});
+        _dashStale = 0;
         if (d.kanban && d.kanban.success) _boardData = d.kanban;
         if (d.metrics) _dashMetrics = d.metrics;
         // Seed the personnel cache the BD/PM/CLIT forms read, so opening a
@@ -4023,6 +4109,14 @@ function renderDashboard() {
      than 0 — "0 overdue actions" is a safety claim, and showing it before the
      data arrives would be asserting something unverified. */
   function _sfv(n) { return (n == null) ? '—' : n; }
+  /* How old the displayed copy is, in the coarsest useful unit. Shown while a
+     cached dashboard is on screen so a stale figure is never read as current. */
+  function _ageStr(ms) {
+    var m = Math.round(ms / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return m + 'm';
+    return Math.round(m / 60) + 'h';
+  }
 
   /* A chart card that collapses to its headline figure. Open by default only on
      screens wide enough to show all four charts at once (the ≥1100px row); on a
@@ -4098,7 +4192,9 @@ function renderDashboard() {
 
   el.innerHTML =
     '<div class="dash-wrap">' +
-    '<div class="dash-hd"><h2>Dashboard</h2><span class="dash-date">'+dateStr+'</span></div>' +
+    '<div class="dash-hd"><h2>Dashboard</h2><span class="dash-date">'+
+      (_dashStale ? '<span class="dash-stale">'+_ageStr(_dashStale)+' old · refreshing</span>' : dateStr)+
+    '</span></div>' +
 
     /* ── ROW 1 — 6 KPI cells, ONE scrolling row (was a 3x2 grid) ── */
     '<div class="dk-grid dk-row">' +
@@ -8147,6 +8243,15 @@ function loadSafety(){
     SF.charts  = b.charts  || {};
     SF.heatmap = b.heatmap || {cells:[],total:0};
     SF.lists   = b.lists   || {};
+    /* The HIRA register rides along in this payload. It previously waited for
+       this call to finish and THEN issued getHiraRegister — two SEQUENTIAL round
+       trips, ~9.6s to first content. Seeded here it is already in hand when
+       sfRenderHira runs, and that function's `if(!SF.hira)` guard then skips the
+       second call entirely.
+       Incidents is deliberately NOT seeded: its renderer also needs the `facets`
+       and `statuses` the server derives alongside the rows, and seeding rows
+       alone would leave the filter dropdowns empty. It keeps its own call. */
+    if(b.hira && b.hira.success) SF.hira = b.hira.rows || [];
     var cfg = b.config;
     if(cfg && cfg.success){
       SF.cfg = cfg;
@@ -10000,18 +10105,42 @@ function flFillPeople(sel, placeholder){
 }
 
 // ── HOUSEKEEPING ──
+/* ONE round trip for config + today's status + personnel. These were three
+   separate calls (getPersonnelList, getHkTodayStatus, getHkConfig) and the form
+   could not render until the slowest returned — ~3.9s to first content, almost
+   all of it platform latency rather than work.
+   Everything already cached is filled from memory first and the call is skipped
+   entirely when nothing is missing, so a revisit costs nothing. */
 function hkInit(){
   _flEnsure();
   document.getElementById('hk-datesub').textContent = _flToday();
   FL.hkMonth = FL.hkMonth || _flMY(new Date());
-  flLoadPeople(function(){ flFillPeople('hk-by','By / नाम…'); flFillPeople('hk-sup','Supervisor / पर्यवेक्षक (verify)…'); });
-  hkTodayCheck();
-  if (!FL.hkCfg) {
-    google.script.run.withSuccessHandler(function(r){
-      if(r&&r.success){ FL.hkCfg=r.activities; hkRenderForm(); }
-      else document.getElementById('hk-acts').innerHTML='<div class="fl-loading">'+esc((r&&r.error)||'Config error')+'</div>';
-    }).withFailureHandler(function(e){ document.getElementById('hk-acts').innerHTML='<div class="fl-loading">Failed: '+esc(e.message)+'</div>'; }).getHkConfig();
-  } else hkRenderForm();
+
+  function fillPeople(){
+    flFillPeople('hk-by','By / नाम…');
+    flFillPeople('hk-sup','Supervisor / पर्यवेक्षक (verify)…');
+  }
+  // Everything already in hand → render immediately, no round trip at all.
+  if (FL.hkCfg && FL.personnel.length) { fillPeople(); hkTodayCheck(); hkRenderForm(); return; }
+
+  google.script.run.withSuccessHandler(function(r){
+    if (r && r.success) {
+      if (r.people && !FL.personnel.length) {
+        FL.personnel = (r.people && r.people.people) ? r.people.people
+                     : (Array.isArray(r.people) ? r.people : []);
+      }
+      fillPeople();
+      if (r.today) hkApplyToday(r.today);
+      if (r.config && r.config.success) { FL.hkCfg = r.config.activities; hkRenderForm(); }
+      else document.getElementById('hk-acts').innerHTML =
+        '<div class="fl-loading">'+esc((r.config&&r.config.error)||'Config error')+'</div>';
+    } else {
+      document.getElementById('hk-acts').innerHTML = '<div class="fl-loading">Config error</div>';
+    }
+  }).withFailureHandler(function(e){
+    document.getElementById('hk-acts').innerHTML =
+      '<div class="fl-loading">Failed: '+esc((e&&e.message)||'check connection')+'</div>';
+  }).getHkBootstrap(_flToday());
 }
 function hkRenderForm(){
   FL.hkState={};
@@ -10241,15 +10370,20 @@ function hkSend(by,sup,activities,force){
     .submitHkLog({ by:by, supervisor:sup, date:_flToday(), time:_flNowTime(), activities:activities, force:!!force });
 }
 // Warn BEFORE 53 chips get filled, not after.
+/* Render-only: the status now arrives inside getHkBootstrap, so the drawing is
+   split from the fetching and both paths share it. */
+function hkApplyToday(r){
+  var bar=document.getElementById('hk-warnbar'); if(!bar||!r||!r.success) return;
+  if(r.logged){ bar.className='fl-warnbar show';
+    // Stated as a fact, not an alarm: a second round is legitimate.
+    bar.innerHTML=flIcon('clock')+'<span>Round 1 logged'+(r.time?' at <b>'+esc(r.time):'<b>')+
+      '</b> by <b>'+esc(r.by||'?')+'</b>. Submitting again records round 2.</span>'; }
+  else bar.className='fl-warnbar';
+}
+/* Standalone refetch — used after a submit, where the status has changed and
+   the bootstrap is not being re-issued. */
 function hkTodayCheck(){
-  google.script.run.withSuccessHandler(function(r){
-    var bar=document.getElementById('hk-warnbar'); if(!bar||!r||!r.success) return;
-    if(r.logged){ bar.className='fl-warnbar show';
-      // Stated as a fact, not an alarm: a second round is legitimate.
-      bar.innerHTML=flIcon('clock')+'<span>Round 1 logged'+(r.time?' at <b>'+esc(r.time):'<b>')+
-        '</b> by <b>'+esc(r.by||'?')+'</b>. Submitting again records round 2.</span>'; }
-    else bar.className='fl-warnbar';
-  }).getHkTodayStatus(_flToday());
+  google.script.run.withSuccessHandler(hkApplyToday).getHkTodayStatus(_flToday());
 }
 // HK report
 function hkShowReport(){
