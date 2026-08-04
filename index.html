@@ -10543,7 +10543,10 @@ function hkUpdateSummary(){
   cov.innerHTML=
     '<div class="hk-sum">'+
       '<div class="hk-sum-t">'+
-        '<span class="num hk-sum-big">'+tot+'</span>'+
+        /* No .num here: that class applies the PMMono face, whose only zero glyph
+           is the dotted one, and it wins over .hk-sum-big (both single-class, .num
+           declared later). .hk-sum-big carries its own tabular-nums. */
+        '<span class="hk-sum-big">'+tot+'</span>'+
         '<span class="hk-sum-of">/ '+configured+' parameters</span>'+
         '<span class="hk-sum-pct '+covCls+'">'+covPct+'%</span>'+
       '</div>'+
