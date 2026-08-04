@@ -517,6 +517,25 @@ body {
   font-variant-numeric:tabular-nums; white-space:nowrap; letter-spacing:-0.01em; }
 /* KPI grid — 3 per row, 2 rows */
 .dk-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+/* ── ONE-ROW tile rows (.dk-row) ────────────────────────────────────────────
+   Requested as "all tiles in one row". Ten tiles across a 390px phone is ~39px
+   each, so the row scrolls horizontally instead of shrinking — the same pattern
+   that took the category chips from 420px/7 rows to 26px/1 row, and it is
+   already familiar on this screen.
+   Two rows of 3 (~186px) collapse to one 92px row; the reliability block does
+   the same. From 560px up there is room for every tile at once, so the row
+   stops scrolling and becomes a plain equal-width grid. */
+.dk-row { display:flex; gap:8px; overflow-x:auto; padding-bottom:2px;
+  -webkit-overflow-scrolling:touch; scrollbar-width:none;
+  scroll-snap-type:x proximity; }
+.dk-row::-webkit-scrollbar { display:none; }
+.dk-row > .dk-cell { flex:0 0 30%; min-width:104px; scroll-snap-align:start; }
+.dash-rel-row.dk-row > .dk-cell { flex:0 0 27%; min-width:96px; }
+@media (min-width:560px){
+  .dk-row { display:grid; grid-auto-flow:column;
+    grid-auto-columns:1fr; overflow-x:visible; }
+  .dk-row > .dk-cell, .dash-rel-row.dk-row > .dk-cell { flex:initial; min-width:0; }
+}
 .dk-cell { background:#fff; border:1px solid #e4e9f0; border-radius:12px;
   padding:11px 8px 10px; text-align:center;
   /* Two-layer shadow with real offset and blur: a 1px contact edge plus a soft cast.
@@ -3742,6 +3761,9 @@ function dashGotoBoard(tab) {
 
 /* ════════ DENSE DASHBOARD — KPIs + charts ════════ */
 var _dashMetrics = null;
+/* Safety KPIs from getDashboardBootstrap. Separate from SF.dash because SF is
+   initialised lower in this file and would clobber an early seed. */
+var _dashSafety = null;
 
 function loadDashboard() {
   var ready = _boardData && _boardData.success && _dashMetrics && _boardRecordsCache.bd;
@@ -3767,6 +3789,13 @@ function loadDashboard() {
         if (d.config && d.config.personnelList && !(App.personnelList || []).length) {
           App.personnelList = d.config.personnelList;
         }
+        /* Safety KPIs for the OHS tile row. Held in a standalone global, NOT
+           written into SF.dash: `var SF = {...dash:null...}` is declared far
+           below this point in the file, so on a fast first response that
+           initialiser runs AFTER this handler and would wipe the seed.
+           sfRenderDashboard keeps owning SF.dash; this is read-only display
+           data for the main dashboard. */
+        if (d.safety) _dashSafety = d.safety;
       }
       if (!_boardData)  _boardData  = {success:false};
       if (!_dashMetrics) _dashMetrics = {};
@@ -3812,7 +3841,10 @@ function renderDashboard() {
   }
   var clRate = total>0 ? Math.round((clDone/total)*100) : 0;
   var mtbf = metrics.mtbf||0, mttr = metrics.mttr||0;
-  var safetyCrit = (window.SF && SF.dash && SF.dash.critical) || 0;
+  /* Safety KPIs: the bootstrap seed first, falling back to SF.dash if the
+     Safety view has since loaded its own copy. */
+  var sfk = _dashSafety || (window.SF && SF.dash) || {};
+  var safetyCrit = sfk.criticalRisks || sfk.critical || 0;
 
   /* ---- aggregate from prefetched records ---- */
   var bd = (_boardRecordsCache.bd && _boardRecordsCache.bd.items) || [];
@@ -3883,10 +3915,21 @@ function renderDashboard() {
   }
   /* A reliability reading: same tile shell as the KPI row so the two rows read as one
      system, but not clickable — there is no records view behind MTBF. */
-  function relTile(v, lbl, sub, color) {
-    return '<div class="dk-cell"><div class="dk-num" style="color:'+color+'">'+v+'</div>'+
+  /* `go` is optional: reliability tiles are readings with nowhere to drill to,
+     while the safety tiles each open their register. Only the ones that navigate
+     get role="button"/tabindex and the pointer affordance — an inert tile that
+     looks clickable is worse than a plain one. aria-label joins value to label
+     so a screen reader does not announce "12" and "Hazards" as unrelated. */
+  function relTile(v, lbl, sub, color, go) {
+    var interactive = go ? ' role="button" tabindex="0" onclick="'+go+'"'+
+      ' aria-label="'+lbl+' '+sub+': '+v+'"' : '';
+    return '<div class="dk-cell"'+interactive+'><div class="dk-num" style="color:'+color+'">'+v+'</div>'+
       '<div class="dk-lbl">'+lbl+'</div><div class="dk-sub">'+sub+'</div></div>';
   }
+  /* Safety values are absent until the bootstrap lands. Render an em dash rather
+     than 0 — "0 overdue actions" is a safety claim, and showing it before the
+     data arrives would be asserting something unverified. */
+  function _sfv(n) { return (n == null) ? '—' : n; }
   function hbars(map, keys, color, fmtKey) {
     if (!keys.length) return '<div class="dc-empty">No data</div>';
     /* Scale against the max OR 4, whichever is larger. Scaling purely to the max meant
@@ -3931,8 +3974,8 @@ function renderDashboard() {
     '<div class="dash-wrap">' +
     '<div class="dash-hd"><h2>Dashboard</h2><span class="dash-date">'+dateStr+'</span></div>' +
 
-    /* ── ROW 1 — 6 KPI cells ── */
-    '<div class="dk-grid">' +
+    /* ── ROW 1 — 6 KPI cells, ONE scrolling row (was a 3x2 grid) ── */
+    '<div class="dk-grid dk-row">' +
       kpi(total,'Machines','in use','#0f172a',"navigate('board')") +
       kpiSplit(bdOpen, bdClosed, 'Breakdowns', "dashGotoBoard('bd')") +
       kpi(metrics.bdCount30||0,'BD · 30d','breakdowns','#ea580c',"dashGotoBoard('bd')") +
@@ -3984,11 +4027,28 @@ function renderDashboard() {
        heading is a label on the row itself; wrapping four tiles in a card only added
        a nested container. */
     '<div class="dash-sec-hd">Reliability</div>' +
-    '<div class="dk-grid dk-grid-4 dash-rel-row">' +
+    '<div class="dk-grid dk-grid-4 dash-rel-row dk-row">' +
       relTile(mtbf>0?mtbf+'h':'—','MTBF','mean time between failures','#ea580c') +
       relTile(mttr>0?mttr+'h':'—','MTTR','mean time to repair','#dc2626') +
       relTile(bdClosed,'BD Closed','resolved to date','#16a34a') +
       relTile(bdTotal,'BD Total','all records','#475569') +
+    '</div>' +
+
+    /* ── Safety · ONE row of 6 ──
+       The Safety nav button was replaced by HIRA and Incidents, so the OHS
+       dashboard is no longer reachable as a destination. Its six KPI tiles move
+       here, to the screen that is actually opened first. Each still drills into
+       the register it summarises, so nothing became read-only.
+       Values come from getDashboardBootstrap (no extra round trip); until they
+       land the tiles render '—' rather than a misleading 0. */
+    '<div class="dash-sec-hd">Safety</div>' +
+    '<div class="dk-grid dk-grid-4 dash-rel-row dk-row">' +
+      relTile(_sfv(sfk.totalHazards),'Hazards','identified','#0f766e',"navigate('hira')") +
+      relTile(_sfv(sfk.openActions),'Open','actions','#ea580c',"sfOpenActions()") +
+      relTile(_sfv(sfk.overdueActions),'Overdue','actions',(sfk.overdueActions>0?'#dc2626':'#16a34a'),"sfOpenActions()") +
+      relTile(_sfv(sfk.criticalRisks),'Critical','intolerable',(sfk.criticalRisks>0?'#dc2626':'#16a34a'),"navigate('hira')") +
+      relTile(_sfv(sfk.completedActions),'Completed','actions','#16a34a',"sfOpenActions()") +
+      relTile(_sfv(sfk.totalIncidents),'Incidents','total','#7c3aed',"navigate('incidents')") +
     '</div>' +
 
     /* The fleet strip that used to sit here is gone — the "Machines" KPI at the top
@@ -4593,9 +4653,12 @@ function navigate(hash, machineId, skipPush) {
   // ── Rebuild bottom nav ──
   buildNav(hash);
 
-  // ── Update URL hash (no hashchange loop) ──
+  /* ── Update URL hash (no hashchange loop) ──
+     Push the SUB-VIEW for safety (#hira / #incidents) rather than the resolved
+     '#safety', so a refresh or a shared link returns to the same tab. Both are
+     in VALID_HASHES and route back through the remap above. */
   if (!skipPush) {
-    var newHash = '#' + hash;
+    var newHash = '#' + (_sfNavHash || hash);
     if (location.hash !== newHash) {
       history.pushState(null, '', newHash);
     }
@@ -8093,6 +8156,16 @@ function sfOpenRecords(tab, filter){
       })();
     }
   },90);   // > the 0ms tab-switch tick, so the target tab's DOM exists
+}
+
+/* Open HIRA's Actions view from OUTSIDE the safety module (the dashboard safety
+   tiles). sfGoTab assumes the safety view is already rendered; from the dashboard
+   it is not, so route first and set the view, then let loadSafety() render it.
+   Deferred one tick because navigate() → loadSafety() may still be mid-render. */
+function sfOpenActions(){
+  SF_VIEW.hira = 'actions';
+  navigate('hira');
+  setTimeout(function(){ if(SF.tab==='hira') sfGoTab('actions'); }, 0);
 }
 
 function sfGoTab(t){
