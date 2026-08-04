@@ -9685,15 +9685,13 @@ function rdInit(){
   document.getElementById('rd-datesub').textContent=_flToday();
   rdBack();
   flLoadPeople(function(){});
-  ['elec','water','solar'].forEach(function(k){
-    google.script.run.withSuccessHandler(function(r){
-      FL.meters[k]=(r&&r.meters)||[];
-      rdFillMeters();
-    }).withFailureHandler(function(){ FL.meters[k]=FL.meters[k]||[]; rdFillMeters(); })
-      .getMeterList(k);
-  });
-  google.script.run.withSuccessHandler(function(c){ if(c) FL.solarCfg=c; slLive(); })
-    .withFailureHandler(function(){ slLive(); }).getSolarConfig();
+  // One call for all three meter lists + solar config (was four).
+  google.script.run.withSuccessHandler(function(b){
+    if(b&&b.meters){ FL.meters.elec=b.meters.elec||[]; FL.meters.water=b.meters.water||[];
+                     FL.meters.solar=b.meters.solar||[]; }
+    if(b&&b.solarCfg) FL.solarCfg=b.solarCfg;
+    rdFillMeters(); slLive();
+  }).withFailureHandler(function(){ rdFillMeters(); slLive(); }).getReadingsBootstrap();
 }
 function rdFillMeters(){
   var byId={ 'el-meter':'elec', 'wt-meter':'water', 'sl-meter':'solar' };
