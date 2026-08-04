@@ -5736,6 +5736,9 @@ function clCheckResume(onComplete) {
   if (!_mid) { if (onComplete) onComplete(); return; }
   var bar = document.getElementById('cl-statusBar');
   google.script.run
+    // ponytail: resume info is an optimisation, not a gate — on failure just
+    // continue to a blank form rather than leaving the checklist unopenable.
+    .withFailureHandler(function() { if (onComplete) onComplete(); })
     .withSuccessHandler(function(info) {
       console.log('getResumeInfo result for', _mid, JSON.stringify(info));
       if (info && info.found) {
@@ -9722,9 +9725,11 @@ function rdInit(){
     google.script.run.withSuccessHandler(function(r){
       FL.meters[k]=(r&&r.meters)||[];
       rdFillMeters();
-    }).getMeterList(k);
+    }).withFailureHandler(function(){ FL.meters[k]=FL.meters[k]||[]; rdFillMeters(); })
+      .getMeterList(k);
   });
-  google.script.run.withSuccessHandler(function(c){ if(c) FL.solarCfg=c; slLive(); }).getSolarConfig();
+  google.script.run.withSuccessHandler(function(c){ if(c) FL.solarCfg=c; slLive(); })
+    .withFailureHandler(function(){ slLive(); }).getSolarConfig();
 }
 function rdFillMeters(){
   var byId={ 'el-meter':'elec', 'wt-meter':'water', 'sl-meter':'solar' };
