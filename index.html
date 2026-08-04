@@ -2298,7 +2298,13 @@ select.fl-ctrl{ font-weight:600; cursor:pointer;
 .hk-sum{ background:var(--flpanel); border:1px solid var(--fledge);
   border-radius:var(--r-md); padding:11px 13px; }
 .hk-sum-t{ display:flex; align-items:baseline; gap:8px; margin-bottom:9px; }
-.hk-sum-big{ font-size:var(--t-2xl); line-height:1; color:var(--flink); }
+/* Archivo with tnum, NOT the PMMono face this carries via .num. PMMono's only
+   zero glyph is the DOTTED one, so at this size a score of 0 rendered as a
+   circle with a bar through it — beside "/ 53 parameters" that reads as a stray
+   mark, not a numeral. Same reasoning as .dk-num on the dashboard tiles. */
+.hk-sum-big{ font-size:var(--t-2xl); line-height:1; color:var(--flink);
+  font-family:'Archivo',system-ui,sans-serif; font-weight:800;
+  font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1; }
 .hk-sum-of{ font:600 var(--t-sm) 'Archivo',sans-serif; color:var(--flfaint); }
 .hk-sum-pct{ margin-left:auto; font:700 var(--t-sm) 'PMMono',ui-monospace,monospace;
   font-variant-numeric:tabular-nums; color:var(--fldim); }
