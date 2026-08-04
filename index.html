@@ -7738,73 +7738,37 @@ function loadSafety(){
       sfRender();
     });
   }
-  // Safety config (vocabularies + shared display prefs) loads INDEPENDENTLY of the
-  // dashboard chain: that chain is skipped entirely once SF.dash is cached, and it
-  // is already ~18s of serial calls. Fired once, re-renders when it lands.
-  if(!SF.cfg && !SF._cfgPending){
-    SF._cfgPending = true;
-    google.script.run.withSuccessHandler(function(cfg){
-      SF._cfgPending = false;
-      if(cfg && cfg.success){
-        SF.cfg = cfg;
-        if(cfg.prefs) SF_PREFS = cfg.prefs;
-        if(cfg.harmTypes && cfg.harmTypes.length) SF_HARM_TYPES = cfg.harmTypes;
-        SF_HEALTH = cfg.health || null;
-        if(!SF.viewInit){ SF.viewInit = true;
-          SF_VIEW.hira = SF_VIEW.incidents = (SF_PREFS.defaultView || 'list'); }
-        if(SF.tab==='incidents' || SF.tab==='hira') sfRender();
-      }
-    }).withFailureHandler(function(){ SF._cfgPending = false; }).getSafetyConfig();
-  }
   // fetch core data once, then render
   if(SF.dash){ sfRender(); return; }
   var box = document.getElementById('safety-content');
-  /* Staged load: dashboard → charts → heatmap → lists → render.
-     EVERY stage needs its own failure handler. These are chained inside each
-     other's success callbacks, so a stage that fails without one does not just
-     lose its own data — it never issues the stages below it and never reaches
-     sfRender(), leaving the tab on its skeletons forever with nothing logged.
-     That is the "Safety data is not loading" report: the transport retries three
-     times and then gives up silently.
-     Each stage now falls through to a safe empty default and continues, so a
-     failed chart call costs the charts and nothing else. */
-  /* The three follow-up calls are INDEPENDENT of each other — only the dashboard
-     has to land first (it gates the initial paint). Chaining them end-to-end cost
-     the sum of their latencies: measured 4–37s each, so the tab took up to 141s to
-     render. They now fire together and the render happens when the last one lands,
-     so the wait is the SLOWEST call rather than their total.
-     _sfDone is the barrier: every branch, success or failure, must call it or the
-     tab would never render at all. */
-  var _sfPending = 3;
-  function _sfDone(){ if(--_sfPending <= 0) sfRender(); }
-  function _sfRest(){
-    google.script.run.withSuccessHandler(function(c){
-      SF.charts = c && c.success ? c.charts : {}; _sfDone();
-    }).withFailureHandler(function(){
-      SF.charts = SF.charts || {}; _sfDone();
-    }).getOhsChartData();
-
-    google.script.run.withSuccessHandler(function(h){
-      SF.heatmap = h && h.success ? h : {cells:[],total:0}; _sfDone();
-    }).withFailureHandler(function(){
-      SF.heatmap = SF.heatmap || {cells:[],total:0}; _sfDone();
-    }).getHeatmap();
-
-    google.script.run.withSuccessHandler(function(ls){
-      SF.lists = ls && ls.success ? ls.lists : {}; _sfDone();
-    }).withFailureHandler(function(){
-      SF.lists = SF.lists || {}; _sfDone();
-    }).getSafetyLists();
-  }
-  google.script.run.withSuccessHandler(function(d){
-    SF.dash = d && d.success ? d.kpis : {};
-    _sfRest();
+  /* ONE call for the whole tab (dashboard + charts + heatmap + lists + config).
+     A GAS /exec round trip costs ~3s of platform overhead no matter what it does
+     — an unknown function name measures the same as a real one — so load time was
+     set by the CALL COUNT, not the work. Five calls were five × that floor.
+     Server-side each part is guarded independently, so a failing section arrives
+     as its empty default rather than sinking the payload. */
+  google.script.run.withSuccessHandler(function(b){
+    if(!b || !b.success){ SF.dash = {}; sfRender(); return; }
+    SF.dash    = b.kpis    || {};
+    SF.charts  = b.charts  || {};
+    SF.heatmap = b.heatmap || {cells:[],total:0};
+    SF.lists   = b.lists   || {};
+    var cfg = b.config;
+    if(cfg && cfg.success){
+      SF.cfg = cfg;
+      if(cfg.prefs) SF_PREFS = cfg.prefs;
+      if(cfg.harmTypes && cfg.harmTypes.length) SF_HARM_TYPES = cfg.harmTypes;
+      SF_HEALTH = cfg.health || null;
+      if(!SF.viewInit){ SF.viewInit = true;
+        SF_VIEW.hira = SF_VIEW.incidents = (SF_PREFS.defaultView || 'list'); }
+    }
+    sfRender();
   }).withFailureHandler(function(err){
     box.innerHTML = '<div class="sf-wrap"><div class="sf-card">Failed to load: '+
       sfEsc(err && err.message || err)+
       ' <button class="sf-btn-primary" onclick="SF.dash=null;loadSafety()" '+
       'style="margin-top:8px">Retry</button></div></div>';
-  }).getSafetyDashboard();
+  }).getSafetyBootstrap();
 }
 
 function sfRender(){
