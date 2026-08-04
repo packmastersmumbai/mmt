@@ -3480,35 +3480,40 @@ function loadBoard(highlightMachineId) {
 }
 
 /* Pull all 4 record types — chained (parallel JSONP collides). */
+/* All four record types in ONE round trip. This was four serial calls with a
+   250ms gap between each; on this platform that is four full floors (~12s+)
+   before the dashboard charts could fill. The server bundles the same
+   already-cached per-type reads. */
+var _prefetchInFlight = false;
+
 function _prefetchRecords() {
-  var types = ['bd','pm','clit','checklist'], i = 0;
-  function next() {
-    if (i >= types.length) {
-      if (App.currentHash === 'dashboard') _dashRecordsReady();
-      else _renderRecList();
-      return;
-    }
-    var type = types[i++];
-    google.script.run
-      .withSuccessHandler(function(d){
-        if (d && d.success && d.items) {
-          _boardRecordsCache[type] = d;
-          d.items.forEach(function(it){
-            var mid = String(it.machineId||'');
-            if (!_recordsByMachine[mid]) _recordsByMachine[mid] = {bd:[],pm:[],clit:[],checklist:[]};
-            _recordsByMachine[mid][type].push(it);
-          });
-          if (App.currentHash === 'board') {
-            if (type === _recType) _renderRecList();
-            _updateActionCounts();
-          }
-        }
-        setTimeout(next, 250);
-      })
-      .withFailureHandler(function(){ setTimeout(next, 250); })
-      .getAllBoardRecords(type);
+  if (_prefetchInFlight) return;          // a second caller would duplicate the fetch
+  _prefetchInFlight = true;
+
+  function absorb(type, d) {
+    if (!d || !d.success || !d.items) return;
+    _boardRecordsCache[type] = d;
+    d.items.forEach(function(it){
+      var mid = String(it.machineId||'');
+      if (!_recordsByMachine[mid]) _recordsByMachine[mid] = {bd:[],pm:[],clit:[],checklist:[]};
+      _recordsByMachine[mid][type].push(it);
+    });
   }
-  next();
+  function finish() {
+    _prefetchInFlight = false;
+    if (App.currentHash === 'dashboard') _dashRecordsReady();
+    else _renderRecList();
+  }
+
+  google.script.run
+    .withSuccessHandler(function(res){
+      var recs = (res && res.records) || {};
+      ['bd','pm','clit','checklist'].forEach(function(t){ absorb(t, recs[t]); });
+      if (App.currentHash === 'board') _updateActionCounts();
+      finish();
+    })
+    .withFailureHandler(function(){ finish(); })
+    .getBoardRecordsBootstrap();
 }
 
 function renderBoard(data) {
@@ -7734,18 +7739,18 @@ function submitCLITForm(machineId) {
    cost — a full ~3s round trip for data arriving anyway. Deferred instead:
    if the bootstrap has filled the cache by then, skip it entirely.
 
-   Still needed for deep links that bypass the dashboard (?action=viewbd, #hk,
-   a QR scan landing on #mhc), where no bootstrap runs. */
-(function preloadPersonnel() {
-  setTimeout(function () {
-    if ((App.personnelList || []).length) return;   // bootstrap already supplied it
-    google.script.run
-      .withSuccessHandler(function(cfg) {
-        if (cfg && cfg.personnelList) App.personnelList = cfg.personnelList;
-      })
-      .getAppConfig();
-  }, 6000);
-})();
+   Only deep links that bypass the dashboard (?action=viewbd, #hk, a QR scan
+   landing on #mhc) need this call. It is invoked from init() once the start
+   route is known — at this point in the file App.currentHash is still '', so
+   deciding here would always fire and always duplicate the bootstrap. */
+function preloadPersonnel(startHash) {
+  if (startHash === 'dashboard') return;   // getDashboardBootstrap supplies it
+  google.script.run
+    .withSuccessHandler(function(cfg) {
+      if (cfg && cfg.personnelList) App.personnelList = cfg.personnelList;
+    })
+    .getAppConfig();
+}
 
 // ═══════════════════════════════════════════════════════
 // INIT — resolve startup route from server-injected vars
@@ -7818,6 +7823,7 @@ var SF = { tab:'dashboard', dash:null, hira:null, charts:null, lists:null,
   }
 
   navigate(startHash, App.machineId || null);
+  preloadPersonnel(startHash);   // no-op on a dashboard landing; bootstrap covers it
   App.initialized = true;
 })();
 
