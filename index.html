@@ -1747,6 +1747,10 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   padding:9px 10px; margin-bottom:4px; }
 .if-chips { display:flex; flex-wrap:wrap; gap:6px 10px; font-size:11px; color:#475569; }
 .if-line { font-size:11px; color:#475569; margin-top:4px; line-height:1.35; }
+/* Where-it-happened pair in the incident edit modal. Two columns on a roomy screen,
+   stacked on a phone — the location names are long and must not be squeezed. */
+.if-where { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:2px; }
+@media (max-width:420px){ .if-where { grid-template-columns:1fr; } }
 .if-chips span { white-space:nowrap; }
 /* Separator BEFORE each chip except the first. A trailing ::after would leave a
    dangling dot whenever the row wraps and the last chip moves to a new line. */
@@ -9147,15 +9151,21 @@ function sfIncidentDetail(sr){
         if(pp.count!=null) return chip(pp.count+(pp.count===1?' person':' persons'));
         return pp.name? chip(sfEsc(pp.name)) : ''; })()+
     '</div>'+
-    // Zone and location are long free-text values that wrap. A dot separator
-    // between them strands itself on a line break, so give each its own line.
-    (r.zone?'<div class="if-line">'+sfEsc(r.zone)+'</div>':'')+
-    (r.location?'<div class="if-line">'+sfEsc(r.location)+'</div>':'')+
+    /* Zone and location used to render here as read-only text. They are not history
+       in the way date/time/type are — a mis-picked location is a correctable fact,
+       and the backend has always accepted both on update. They now live in the
+       editable form below instead of this facts block. */
     '</div>';
   // Wrapped in .sf-form — that class is what stacks labels above full-width
   // fields and sets font-family:inherit. Without it labels sit beside the inputs
   // and textareas render tiny and monospace.
   var body='<div class="sf-form">'+facts+
+    /* Where it happened — same master-seeded dropdowns as the add form, preselected
+       to the incident's current values. */
+    '<div class="if-where">'+
+      sfIncSelect('if-zone', 'Dept / Zone', sfIncOptionsFor('zone'),     r.zone)+
+      sfIncSelect('if-loc',  'Location',    sfIncOptionsFor('location'), r.location)+
+    '</div>'+
     '<label>What happened</label>'+
     '<textarea id="if-desc" rows="5">'+sfEsc(r.description||'')+'</textarea>'+
     '<label>Root cause</label>'+
@@ -9191,6 +9201,12 @@ function sfSaveIncident(sr){
   function v(id){var e=document.getElementById(id);return e?e.value:'';}
   var d={ sr:sr, description:v('if-desc'), rootCause:v('if-rc'),
           capa:v('if-capa'), capaStatus:v('if-status') };
+  /* Zone/location: send only when set. updateIncident merges with pick(), where
+     undefined means "not supplied, keep what is there" and '' is an explicit CLEAR.
+     Sending '' for a select the operator never touched would wipe a good value. */
+  var _zo=sfIncPick('if-zone'), _lo=sfIncPick('if-loc');
+  if(_zo) d.zone=_zo;
+  if(_lo) d.location=_lo;
   /* Only SEND the dates when the operator actually set one. updateIncident treats
      undefined as "not supplied" and applies its auto-stamp; sending '' would be an
      explicit instruction to CLEAR the cell and would defeat the stamp entirely. */
@@ -9258,11 +9274,18 @@ function sfIncOptionsFor(field){
    the first genuinely new zone or location from ever being logged, so picking "Other…"
    reveals a free-text box; the dropdown covers the 95% case with two taps and no typing,
    which is what a plant floor on a phone needs. */
-function sfIncSelect(id, label, opts){
+function sfIncSelect(id, label, opts, sel){
+  /* `sel` preselects the current value when editing an existing record. A value that
+     is no longer on the list is still prepended and selected — reopening an old
+     incident must not silently reassign it to a different location on save. */
+  var cur = (sel==null) ? '' : String(sel).trim();
+  var list = opts.slice();
+  if(cur && list.indexOf(cur)===-1) list = [cur].concat(list);
   return '<label class="sfi-f"><span class="sfi-lbl">'+sfEsc(label)+'</span>'+
     '<select id="'+id+'" onchange="sfIncOtherToggle(\''+id+'\')">'+
       '<option value="">'+sfEsc(label)+'…</option>'+
-      opts.map(function(v){ return '<option value="'+sfEsc(v)+'">'+sfEsc(v)+'</option>'; }).join('')+
+      list.map(function(v){
+        return '<option value="'+sfEsc(v)+'"'+(v===cur?' selected':'')+'>'+sfEsc(v)+'</option>'; }).join('')+
       '<option value="__other">Other… (type a new one)</option>'+
     '</select>'+
     '<input id="'+id+'-other" class="sfi-other" style="display:none" '+
