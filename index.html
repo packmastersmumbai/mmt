@@ -2145,6 +2145,41 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .hf-coc-desc { font-size:10.5px; line-height:1.3; color:#475569;
   margin:3px 0 0 27px; }
 .hf-coc-desc b { color:#0f172a; }
+/* ── Hierarchy review queue ──
+   A worklist, so it is denser than the edit form: the reviewer is reading a
+   measure and tapping one chip, not filling in fields. */
+.sf-rvq { display:flex; flex-direction:column; gap:6px; }
+.sf-rvq-head { font-size:11.5px; line-height:1.45; color:#475569; background:#f8fafc;
+  border:1px solid #e2e8f0; border-radius:9px; padding:9px 11px; margin-bottom:2px; }
+.sf-rvq-head b { color:#0f172a; }
+.sf-rvq-head em { color:#9a3412; font-style:normal; font-weight:700; }
+/* Hazard header: the context a measure is being judged against. Sticky so the
+   hazard stays visible while working down its measures. */
+.sf-rvq-hz { display:flex; align-items:center; gap:7px; flex-wrap:wrap;
+  padding:7px 2px 3px; margin-top:6px; position:sticky; top:0; z-index:2;
+  background:linear-gradient(#fff 70%, rgba(255,255,255,0)); }
+.sf-rvq-risk { font-size:10px; font-weight:800; padding:2px 7px; border-radius:4px;
+  color:#fff; background:#64748b; white-space:nowrap; }
+.sf-rvq-intolerable { background:#dc2626; } .sf-rvq-substantial { background:#ea580c; }
+.sf-rvq-tolerable  { background:#ca8a04; } .sf-rvq-negligible  { background:#16a34a; }
+.sf-rvq-sr { font-size:10.5px; font-weight:800; color:#475569; }
+.sf-rvq-hazard { font-size:11.5px; font-weight:700; color:#0f172a; flex:1; min-width:0; }
+.sf-rvq-row { border:1.5px solid #e2e8f0; border-radius:9px; padding:7px 8px;
+  background:#fff; display:flex; flex-direction:column; gap:5px; }
+.sf-rvq-text { font-size:12px; line-height:1.35; color:#0f172a; }
+.sf-rvq-why { font-size:10.5px; line-height:1.3; color:#475569; }
+.sf-rvq-why b { color:#0f172a; }
+.sf-rvq-nosug { font-weight:700; color:#9a3412; }
+/* The suggestion is a DASHED outline, never a filled chip. A filled chip would
+   look identical to a confirmed choice, and the difference between "the text
+   hints this" and "a person decided this" is the whole point of the queue. */
+.hf-coc-lvl.sug { border-style:dashed; border-width:2px;
+  border-color:var(--c,#94a3b8);
+  background:color-mix(in srgb, var(--c,#94a3b8) 16%, #fff); }
+.sf-rvq-row.saving { opacity:.55; pointer-events:none; }
+.sf-rvq-row.done { border-color:#bbf7d0; background:#f0fdf4; }
+.sf-vsw-n { display:inline-block; margin-left:5px; font-size:10px; font-weight:800;
+  background:#ea580c; color:#fff; border-radius:9px; padding:1px 6px; }
 /* kanban */
 .sf-kanban { display:grid; grid-template-columns:repeat(4,minmax(180px,1fr));
   gap:8px; overflow-x:auto; }
@@ -9292,10 +9327,101 @@ function sfHiraFilter(opt){
     return;
   }
   if(SF_VIEW.hira==='actions'){ sfRenderActionsInto(listEl); return; }
+  /* The review queue reads the WHOLE register, not the filtered set — it is a
+     backlog to work through, and hiding part of it behind a filter would make
+     "nothing left to classify" mean "nothing left in this filter". */
+  if(SF_VIEW.hira==='review'){ sfRenderReviewInto(listEl); return; }
   listEl.innerHTML = SF_VIEW.hira==='board'
     ? sfHiraBoard(filtered)
     : sfHiraList(filtered, rows.length);
 }
+/* Review queue rendered INSIDE the HIRA tab, same as the actions board.
+   One entry per unclassified measure, highest-risk hazard first. */
+function sfRenderReviewInto(box){
+  var q=sfBuildReviewQueue();
+  if(!q.length){
+    box.innerHTML=sfEmpty('Every control measure has a hierarchy level',
+      'Nothing left to classify in the register.','');
+    return;
+  }
+  var withSug=q.filter(function(x){return x.suggest;}).length;
+  var html='<div class="sf-rvq">'+
+    '<div class="sf-rvq-head">'+
+      '<b>'+q.length+'</b> measures have no hierarchy level. '+
+      '<b>'+withSug+'</b> have a suggestion from their own wording; the rest need '+
+      'your judgement. <em>Nothing is saved until you tap a level.</em>'+
+    '</div>';
+  var lastSr=null;
+  q.forEach(function(m,qi){
+    if(m.sr!==lastSr){
+      lastSr=m.sr;
+      var band=m.cls||'—';
+      html+='<div class="sf-rvq-hz">'+
+        '<span class="sf-rvq-risk sf-rvq-'+band.toLowerCase()+'">'+band+' · '+m.risk+'</span>'+
+        '<span class="sf-rvq-sr">SR'+m.sr+'</span>'+
+        '<span class="sf-rvq-hazard">'+sfEsc(m.hazard)+'</span>'+
+      '</div>';
+    }
+    var chips=SF_COC_LEVELS.map(function(L){
+      var sug=m.suggest&&m.suggest.level===L.k;
+      return '<div class="hf-coc-lvl'+(sug?' sug':'')+'" style="--c:'+L.c+'" '+
+        'title="'+L.k+' — '+L.d+'" '+
+        'onclick="sfReviewPick('+qi+',\''+L.k+'\',this)">'+(L.s||L.k)+'</div>';
+    }).join('');
+    html+='<div class="sf-rvq-row" id="rvq-'+qi+'">'+
+      '<div class="sf-rvq-text">'+sfEsc(m.text)+'</div>'+
+      '<div class="hf-coc-levels">'+chips+'</div>'+
+      '<div class="sf-rvq-why">'+(m.suggest
+        ? 'Suggested <b>'+sfEsc(m.suggest.level)+'</b> — the measure says '+
+          '&ldquo;'+sfEsc(m.suggest.why)+'&rdquo;. Confirm or pick another.'
+        : '<span class="sf-rvq-nosug">No suggestion</span> — the wording does not '+
+          'name a control type. Your call.')+'</div>'+
+    '</div>';
+  });
+  box.innerHTML=html+'</div>';
+  window._SF_RVQ=q;
+}
+/* Write ONE confirmed level back. Re-reads the hazard's current controls and
+   replaces only the line being classified, so a concurrent edit elsewhere in the
+   record is not clobbered by a stale copy. */
+function sfReviewPick(qi, level, el){
+  var q=window._SF_RVQ||[]; var m=q[qi]; if(!m) return;
+  var h=(SF.hira||[]).filter(function(x){return String(x.sr)===String(m.sr);})[0];
+  if(!h){ showStatus('Hazard SR'+m.sr+' not loaded','error',3000); return; }
+  var parts=sfSplitControlItems(h.controls||'');
+  if(!parts[m.idx]){ showStatus('Measure moved — reload the queue','error',3500); return; }
+  parts[m.idx]='['+level+'] '+sfStripMarker(parts[m.idx]);
+  var payload={ sr:h.sr, section:h.section, activity:h.activity, di:h.di, rnr:h.rnr,
+    hazard:h.hazard, L:h.L, C:h.C, controls:parts.join('\n'),
+    responsible:h.responsible, target:h.target, status:h.status, remarks:h.remarks };
+  /* verifiedBy/verifiedDate are deliberately NOT sent: addHazard preserves them
+     when absent but blanks them when sent empty, and a classification edit must
+     never clear somebody's sign-off. */
+  var row=document.getElementById('rvq-'+qi);
+  if(row) row.classList.add('saving');
+  google.script.run.withSuccessHandler(function(res){
+    if(res&&res.success){
+      h.controls=parts.join('\n');           // keep the local copy in step
+      if(row){ row.classList.remove('saving'); row.classList.add('done');
+        var why=row.querySelector('.sf-rvq-why');
+        if(why) why.innerHTML='Saved as <b>'+sfEsc(level)+'</b>.';
+        row.querySelectorAll('.hf-coc-lvl').forEach(function(c){
+          c.classList.remove('sug');
+          c.classList.toggle('on', c.textContent.trim()===
+            (SF_COC_LEVELS.filter(function(L){return L.k===level;})[0].s||level));
+        });
+      }
+      showStatus('SR'+m.sr+' — measure classified as '+level,'success',1800);
+    } else {
+      if(row) row.classList.remove('saving');
+      showStatus('Not saved: '+((res&&res.message)||'unknown'),'error',4000);
+    }
+  }).withFailureHandler(function(err){
+    if(row) row.classList.remove('saving');
+    showStatus('Not saved: '+((err&&err.message)||err),'error',4500);
+  }).addHazard(payload);
+}
+
 /* Action tracker rendered INSIDE the HIRA tab. It is the same hazard set grouped by
    status, so it reuses SF.hira rather than issuing getActionsKanban again — one less
    round trip, and the board can never disagree with the list beside it. */
@@ -9567,7 +9693,16 @@ function sfViewSwitch(tab){
     (tab==='hira'
       ? '<button class="'+(v==='actions'?'on':'')+'" aria-pressed="'+(v==='actions')+'" '+
         'onclick="sfSetView(\'hira\',\'actions\')" title="Action tracker">'+
-        sfIcon('board')+'Actions</button>'
+        sfIcon('board')+'Actions</button>'+
+        /* Review carries a count because it is a BACKLOG, not just another way to
+           look at the same records — the number is the reason to open it. */
+        (function(){
+          var n=(SF.hira&&SF.hira.length)?sfBuildReviewQueue().length:0;
+          return '<button class="'+(v==='review'?'on':'')+'" aria-pressed="'+(v==='review')+'" '+
+            'onclick="sfSetView(\'hira\',\'review\')" '+
+            'title="Classify control measures by hierarchy level">'+
+            sfIcon('list')+'Review'+(n?'<span class="sf-vsw-n">'+n+'</span>':'')+'</button>';
+        })()
       : '')+
     '</div>'+
     '<button class="sf-gear" onclick="sfSettings()" title="Safety settings" '+
@@ -9999,6 +10134,67 @@ function sfCollectControls(){
     out.push(on ? '['+on.getAttribute('data-lvl')+'] '+txt : txt);
   });
   return out.join('\n');
+}
+
+/* ── Hierarchy review queue ─────────────────────────────────────────────────
+   336 of 347 measures in the register carry no hierarchy level. Opening 139
+   hazards one at a time to fix that is the reason it has not been done.
+
+   This is a SUGGESTION engine, never a classifier. Nothing it produces is
+   written anywhere until a person taps a chip. The distinction matters: an
+   earlier attempt at automatic classification was built, tested and
+   deliberately not shipped because it tagged "Earthing & bonding" as
+   Administrative when it is Engineering — writing 344 guessed ISO 45001
+   classifications into a safety register would fabricate audit data.
+
+   So each suggestion must SHOW ITS EVIDENCE — the actual words it matched —
+   and a measure with no evidence gets NO suggestion at all rather than a
+   default. A reviewer can then disagree with something specific. */
+var SF_COC_SIGNALS=[
+  /* Ordered most-effective-first, matching SF_COC_LEVELS. Each pattern is
+     deliberately narrow: a miss (no suggestion) costs a few seconds of reading,
+     a false suggestion costs the register's credibility. */
+  {k:'Elimination',   re:/\beliminat|\bdiscontinu|\bstop(ped)? using|\bno longer used|\bremoved from service\b/i},
+  {k:'Substitution',  re:/\bsubstitut|\breplaced? with\b|\bwater[- ]based\b|\blow[- ]voc\b|\bless hazardous\b/i},
+  /* elcb/rccb/mcb appear as "MCBs/RCCBs" and "MCB,s" in this register, so the
+     trailing boundary is (s|,|/|\b) rather than \b — a slash or comma directly
+     after the acronym defeated \b and skipped a real Engineering control. */
+  {k:'Engineering',   re:/\bguard(ed|ing|s)?\b|\binterlock|\benclosure|\bexhaust\b|\bventilat|\bearthing\b|\bbonding\b|\b(?:elcb|rccb|mcb)s?\b|\bbarricad|\brailing|\bdetector\b|\balarm\b|\bextinguisher|\bcanopy\b|\bcage\b|\brestraint\b|\bscrubber\b|\blocal exhaust\b|\blightning arrest|\bcable tray/i},
+  {k:'Administrative',re:/\btraining\b|\btool ?box\b|\bsop\b|\bprocedure\b|\bsignage\b|\bdisplay(ed)?\b|\bawareness\b|\bpermit\b|\bregister\b|\bchecklist\b|\binspection\b|\bmonitor(ing)?\b|\baudit\b|\bcompetent\b|\bauthoris|\bauthoriz|\bonly trained\b|\bmock drill\b|\bmsds\b/i},
+  {k:'PPE',           re:/\bppe\b|\bhelmet|\bgoggle|\beyewear\b|\bface ?shield|\brespirator|\bdust mask|\bear ?plug|\bear ?muff|\bsafety shoe|\bgloves\b|\bapron\b|\bfull sleeve/i}
+];
+/* Return {level, why} only when the evidence points ONE way. Two or more
+   different control types in one measure means the measure describes two
+   controls ("Noise monitoring — if >85dB, enclosure mandatory"): that is a
+   judgement about which one it primarily is, so no suggestion is offered. */
+function sfSuggestLevel(text){
+  var t=String(text||''); var hits=[];
+  SF_COC_SIGNALS.forEach(function(s){
+    var m=t.match(s.re);
+    if(m) hits.push({k:s.k, word:m[0]});
+  });
+  if(hits.length!==1) return null;
+  return {level:hits[0].k, why:hits[0].word};
+}
+/* Every unclassified measure in the register, highest risk first. Each carries
+   the sr it belongs to and its index within that hazard's control list, so a
+   confirmation can be written back to exactly the right line. */
+function sfBuildReviewQueue(){
+  var rows=SF.hira||[];
+  var out=[];
+  rows.forEach(function(h){
+    var parts=sfSplitControlItems(h.controls||'');
+    parts.forEach(function(p,i){
+      if(/^\[[^\]]+\]/.test(p)) return;               // already classified
+      var txt=sfStripMarker(p);
+      if(!txt) return;
+      out.push({sr:h.sr, idx:i, text:txt, risk:h.risk||0,
+        cls:h.classification||'', hazard:h.hazard||'', activity:h.activity||'',
+        suggest:sfSuggestLevel(txt)});
+    });
+  });
+  out.sort(function(a,b){ return (b.risk-a.risk) || (a.sr-b.sr) || (a.idx-b.idx); });
+  return out;
 }
 
 /* ── Interactive 5×5 Risk Matrix ── */
