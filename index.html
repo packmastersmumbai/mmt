@@ -1166,6 +1166,37 @@ body {
   -webkit-user-drag:none; user-select:none; }
 .ann-pins { position:absolute; inset:0; pointer-events:none; }
 
+/* ── Box annotation (HIRA evidence) ──
+   One dragged rectangle framing the hazard. Amber, not the app's safety red:
+   red on a photo of a red machine guard vanishes, and this marks WHERE to look
+   rather than asserting a severity. The white outer stroke keeps it visible on
+   a dark or busy photo — a single-colour border disappears against itself.
+   pointer-events:none because the drag is bound to the frame, not the box; the
+   box is purely a readout of the current selection. */
+.ann-box { position:absolute; border:2.5px solid #f59e0b;
+  outline:1.5px solid rgba(255,255,255,.9); outline-offset:0;
+  box-shadow:0 0 0 1.5px rgba(0,0,0,.35) inset; border-radius:2px;
+  pointer-events:none; }
+/* Dim everything outside the box so the marked portion is what the eye lands on.
+   A huge spread on the box's own shadow paints the surround without needing four
+   separate mask elements. */
+.ann-box::after { content:''; position:absolute; inset:-2.5px;
+  box-shadow:0 0 0 9999px rgba(8,14,28,.42); pointer-events:none; }
+/* Box mode swaps the pin toolbar for these. Sized to the same 44px floor as the
+   rest of the form controls. */
+.ann-boxbtn { min-height:44px; padding:0 16px; border-radius:9px; cursor:pointer;
+  border:1.5px solid rgba(255,255,255,.28); background:rgba(255,255,255,.08);
+  color:#e2e8f0; font-size:13px; font-weight:700; }
+.ann-boxbtn.primary { background:#0f766e; border-color:#0f766e; color:#fff; }
+/* In box mode the frame IS the drawing surface, so it takes the pointer and
+   suppresses the browser's own pan/zoom gesture for the duration of a drag. */
+.ann-modal.mode-box .ann-frame { cursor:crosshair; touch-action:none; }
+/* Pins from hazards annotated BEFORE box mode still render — a safety register
+   must not silently drop detail somebody already recorded. They are inert here
+   (no dragging, no status sheet), so a stray drag draws a box instead of
+   nudging an old pin. */
+.ann-modal.mode-box .ann-pin { pointer-events:none; cursor:default; }
+
 /* Pin: 44px hit area via padding, but a small painted body so it never hides
    the very detail it is pointing at. The tip sits on the stored coordinate. */
 /* 44px hit area, small painted body. The body is anchored to the BOTTOM of the
@@ -2957,6 +2988,10 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
         <img id="cl-annImg" alt="Checklist proof photo"
           src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
         <div class="ann-pins" id="cl-annPins"></div>
+        <!-- Box mode (HIRA evidence): a single dragged rectangle framing the
+             hazard. Sits above the pin layer but only accepts pointer events in
+             box mode, so CLIT/PM pin dragging is untouched. -->
+        <div class="ann-box" id="cl-annBox" hidden></div>
       </div>
       <div class="ann-dots" id="cl-annDots"></div>
     </div>
@@ -2968,6 +3003,12 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
         <!-- CLIT drives pins from the form's checkboxes, so there is nothing to
              add here; Checklist (free mode) still needs a way to drop a pin. -->
         <button class="ann-addpt" id="cl-annAddPt" onclick="clAnnOpenPoints()">+ Point</button>
+        <!-- Box mode only. Drawing is the drag itself, so there is no "add"
+             affordance to offer — just a way to undo it and a way out. -->
+        <button class="ann-boxbtn" id="cl-annBoxClear" hidden
+          onclick="clAnnClearBox()">Clear box</button>
+        <button class="ann-boxbtn primary" id="cl-annBoxDone" hidden
+          onclick="clCloseAnnotator()">Done</button>
       </div>
     </div>
     <div class="ann-hint" id="cl-annHint"></div>
@@ -5941,6 +5982,7 @@ function clOpenAnnotator(taskId, photoIdx, mode, items) {
   _clAnnMode  = mode || 'free';
   _clAnnItems = items || [];
   document.getElementById('cl-annModal').classList.toggle('mode-legend', _clAnnMode === 'legend');
+  document.getElementById('cl-annModal').classList.toggle('mode-box', _clAnnMode === 'box');
   document.getElementById('cl-annModal').classList.add('show');
   document.body.style.overflow = 'hidden';
   clAnnRender();
@@ -5948,7 +5990,15 @@ function clOpenAnnotator(taskId, photoIdx, mode, items) {
 
 function clCloseAnnotator() {
   var wasLegend = _clAnnMode === 'legend';
+  var task = _clAnnTask, cur = _clAnnCur();
+  /* Burn the box into the JPEG on the way out. Done here rather than on every
+     pointerup because a re-encode per drag would soften the image and cost a
+     canvas round trip on each move. The close is the commit point. */
+  if (_clAnnMode === 'box' && cur && cur.box && !cur.boxBurned) {
+    clAnnBurnBox(cur, function() { if (task) _clSyncPhotoRow(task); });
+  }
   document.getElementById('cl-annModal').classList.remove('show');
+  document.getElementById('cl-annModal').classList.remove('mode-box');
   document.body.style.overflow = '';
   if (_clAnnTask) _clSyncPhotoRow(_clAnnTask);
   _clAnnTask = null; _clAnnSel = null; _clAnnPlacing = null;
@@ -5982,15 +6032,25 @@ function clAnnRender() {
   document.getElementById('cl-annDots').innerHTML = _clAnnPhotos().length > 1 ? dots : '';
 
   clAnnRenderPins();
+  clAnnRenderBox();
   clAnnRenderStrip();
   clAnnRenderTally();
   clAnnRenderLegend();
+
+  /* Box mode swaps the toolbar: drawing is the drag itself, so "+ Point" has
+     nothing to offer and would just be a dead control on a safety form.
+     "Clear box" and the hint are driven by clAnnRenderBox(), which every draw
+     path runs; only "Done" is static enough to set here. */
+  var isBox = _clAnnMode === 'box';
+  var bDone = document.getElementById('cl-annBoxDone');
+  if (bDone) bDone.hidden = !isBox;
   // The picker is back in legend mode: pins are placed ONE at a time, chosen
   // deliberately. Auto-dropping a pin per ticked item stacked them all at the
   // centre coordinate, where the ones underneath could not be reached at all.
   var addBtn = document.getElementById('cl-annAddPt');
   if (addBtn) {
-    addBtn.style.display = '';
+    // Box mode has no pins to add — the drag IS the annotation.
+    addBtn.style.display = isBox ? 'none' : '';
     if (_clAnnMode === 'legend') {
       var left = _clitUnpinnedTicked().length;
       addBtn.textContent = left ? '+ Point (' + left + ')' : '+ Point';
@@ -6374,12 +6434,93 @@ function clAnnRemovePin() {
   if (_clAnnMode === 'legend' && typeof _annRefresh === 'function') _annRefresh();
 }
 
+/* ── Box annotation (HIRA evidence) ─────────────────────────────────────
+   HIRA does not use pins: the register wants "the hazard is HERE", not a
+   numbered legend keyed to checklist items. One dragged rectangle says that.
+
+   The box is stored as percentages on the photo (like pins) for live redraw,
+   but unlike pins it is also BURNED INTO THE JPEG when the annotator closes.
+   That is deliberate, not belt-and-braces: uploadHazardPhotos() accepts a
+   `pins` array but never reads it, so anything left as coordinates is dropped
+   on upload. Burning it in is the only way the marking survives to Drive. */
+function clAnnRenderBox() {
+  var el = document.getElementById('cl-annBox');
+  if (!el) return;
+  var cur = _clAnnCur();
+  var b = cur && cur.box;
+  if (_clAnnMode !== 'box' || !b) { el.hidden = true; }
+  else {
+    el.hidden = false;
+    el.style.left   = b.x + '%';
+    el.style.top    = b.y + '%';
+    el.style.width  = b.w + '%';
+    el.style.height = b.h + '%';
+  }
+  /* The toolbar tracks the box, and this is the only function every draw path
+     goes through — updating it in clAnnRender() alone left "Clear box" hidden
+     after a drag, since a drag never re-runs the full render. */
+  var bClear = document.getElementById('cl-annBoxClear');
+  if (bClear) bClear.hidden = (_clAnnMode !== 'box') || !b;
+  var hintEl = document.getElementById('cl-annHint');
+  if (hintEl && _clAnnMode === 'box') {
+    hintEl.textContent = b ? 'Drag again to redraw the box.'
+                           : 'Drag across the photo to frame the hazard.';
+  }
+}
+
+function clAnnClearBox() {
+  var cur = _clAnnCur();
+  if (!cur) return;
+  delete cur.box;
+  delete cur.boxBurned;
+  clAnnRenderBox();
+  _clSyncPhotoRow(_clAnnTask);
+}
+
+/* Paint the box permanently onto the photo. Runs once per box (boxBurned
+   guards re-entry) — burning twice would stack a second rectangle a pixel off
+   the first and progressively soften the image through repeated JPEG encodes. */
+function clAnnBurnBox(photo, cb) {
+  if (!photo || !photo.box || photo.boxBurned) { if (cb) cb(); return; }
+  var b = photo.box;
+  var img = new Image();
+  img.onerror = function() { if (cb) cb(); };   // keep the photo, lose the burn
+  img.onload = function() {
+    var w = img.width, h = img.height;
+    var c = document.createElement('canvas'); c.width = w; c.height = h;
+    var ctx = c.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    var x = b.x/100*w, y = b.y/100*h, bw = b.w/100*w, bh = b.h/100*h;
+    // Dim the surround, then punch the box back to full brightness, so the
+    // marked area is what the eye lands on when this is read months later in a
+    // Drive folder with no app around it.
+    ctx.fillStyle = 'rgba(8,14,28,0.42)';
+    ctx.beginPath();
+    ctx.rect(0, 0, w, h);
+    ctx.rect(x, y, bw, bh);
+    ctx.fill('evenodd');
+    // Stroke scales with the image so it reads the same on a 500px and 600px copy.
+    var lw = Math.max(2, Math.round(Math.min(w, h) * 0.008));
+    ctx.strokeStyle = 'rgba(255,255,255,0.92)';
+    ctx.lineWidth = lw * 2;
+    ctx.strokeRect(x, y, bw, bh);
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = lw;
+    ctx.strokeRect(x, y, bw, bh);
+    photo.url = c.toDataURL('image/jpeg', 0.5);
+    photo.boxBurned = true;
+    if (cb) cb();
+  };
+  img.src = photo.url;
+}
+
 /* ── Dragging ───────────────────────────────────────────────────────────
    Pointer events cover mouse, touch and stylus in one path. Coordinates are
    converted to percentages of the image box on every move, so the stored
    position is resolution-independent. */
 (function clAnnBindDrag() {
   var drag = null;
+  var boxDrag = null;
 
   function pctFromEvent(e) {
     // Measured against the frame (the photo itself), matching how pins render.
@@ -6389,6 +6530,45 @@ function clAnnRemovePin() {
       y: Math.min(100, Math.max(0, ((e.clientY - box.top) / box.height) * 100))
     };
   }
+
+  /* Box mode owns the pointer on the frame. Bound in the same capture-phase
+     listener set as pins rather than a separate one, so there is a single place
+     that decides what a drag on the photo means. */
+  document.addEventListener('pointerdown', function(e) {
+    if (_clAnnMode !== 'box' || !_clAnnTask) return;
+    var frame = document.getElementById('cl-annFrame');
+    if (!frame || !e.target.closest || !e.target.closest('#cl-annFrame')) return;
+    var p = pctFromEvent(e);
+    boxDrag = { x0: p.x, y0: p.y };
+    var cur = _clAnnCur();
+    if (cur) { delete cur.box; delete cur.boxBurned; }
+    clAnnRenderBox();
+    frame.setPointerCapture && frame.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+
+  document.addEventListener('pointermove', function(e) {
+    if (!boxDrag || _clAnnMode !== 'box') return;
+    var cur = _clAnnCur(); if (!cur) return;
+    var p = pctFromEvent(e);
+    cur.box = {
+      x: Math.min(boxDrag.x0, p.x), y: Math.min(boxDrag.y0, p.y),
+      w: Math.abs(p.x - boxDrag.x0), h: Math.abs(p.y - boxDrag.y0)
+    };
+    clAnnRenderBox();
+  });
+
+  document.addEventListener('pointerup', function() {
+    if (!boxDrag) return;
+    boxDrag = null;
+    var cur = _clAnnCur();
+    // A tap, not a drag: too small to be a deliberate mark, and a 0.5% box would
+    // burn in as an invisible speck. Discard rather than record something the
+    // operator cannot see.
+    if (cur && cur.box && (cur.box.w < 3 || cur.box.h < 3)) delete cur.box;
+    clAnnRenderBox();
+    if (_clAnnTask) _clSyncPhotoRow(_clAnnTask);
+  });
 
   document.addEventListener('pointerdown', function(e) {
     // The ✕ on a selected pin deletes it outright — handled before drag setup so
@@ -6401,6 +6581,8 @@ function clAnnRemovePin() {
       return;
     }
     var pinEl = e.target.closest ? e.target.closest('.ann-pin') : null;
+    // Box mode leaves legacy pins on screen but inert — a drag there draws a box.
+    if (_clAnnMode === 'box') return;
     if (!pinEl || !_clAnnTask) return;
     drag = { i: parseInt(pinEl.dataset.i, 10), moved: false };
     pinEl.setPointerCapture && pinEl.setPointerCapture(e.pointerId);
@@ -9514,7 +9696,7 @@ function sfHazardDetail(sr){
        implementation — same capture, same downscaling, same pin editor. */
     '<label>Evidence Photos</label>'+
     '<div class="hf-coc-hint">Add photos of the hazard or the control in place. '+
-      'Tap a photo to annotate it.</div>'+
+      'Tap a photo, then drag a box around the hazard.</div>'+
     '<div id="hz-photo-row" class="hz-photo-row"></div>'+
     '<button type="button" class="hf-coc-add" onclick="hzAddPhoto()">+ Add photo</button>'+
     '<button class="sf-btn-primary" onclick="sfSaveHazard('+(isNew?'null':sr)+')">'+
@@ -9536,7 +9718,9 @@ function sfHazardDetail(sr){
    second set of downscaling rules and a second set of bugs. */
 function hzAddPhoto(){
   if(typeof clOpenPhoto!=='function'){ showStatus('Photo tool unavailable','error',3000); return; }
-  _clPhotoMode='free';
+  /* 'box', not 'free': HIRA evidence marks WHERE the hazard is, which is an area,
+     not a numbered point keyed to a checklist item. */
+  _clPhotoMode='box';
   clOpenPhoto('hira');
 }
 function hzRenderPhotos(){
@@ -9547,10 +9731,13 @@ function hzRenderPhotos(){
   var bytes=0; list.forEach(function(p){ bytes+=p.url.length*0.75; });
   box.innerHTML=list.map(function(p,i){
     return '<div class="hz-photo">'+
-      '<img src="'+p.url+'" alt="Evidence '+(i+1)+'" onclick="clOpenAnnotator(\'hira\','+i+',\'free\')">'+
+      '<img src="'+p.url+'" alt="Evidence '+(i+1)+'" onclick="clOpenAnnotator(\'hira\','+i+',\'box\')">'+
       '<button type="button" class="hz-photo-x" title="Remove" '+
         'onclick="hzDelPhoto('+i+')">&times;</button>'+
-      (p.pins&&p.pins.length?'<span class="hz-photo-pins">'+p.pins.length+'</span>':'')+
+      /* Badge says whether the hazard has been marked. Legacy photos carry pins
+         instead of a box, so both count as annotated. */
+      (p.box ? '<span class="hz-photo-pins" title="Hazard area marked">&#9633;</span>'
+             : (p.pins&&p.pins.length?'<span class="hz-photo-pins">'+p.pins.length+'</span>':''))+
     '</div>';
   }).join('')+
   '<div class="hz-photo-meta">'+list.length+' photo'+(list.length>1?'s':'')+
