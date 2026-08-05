@@ -740,9 +740,15 @@ body {
 .dash-pairrow { grid-template-columns:repeat(2,minmax(0,1fr)); }
 @media (max-width:359px){ .dash-mixrow { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 .dash-mixrow > .dash-card, .dash-pairrow > .dash-card { margin-top:0; min-width:0; }
-/* An open card spans its whole row: a doughnut in a 110px column is a dot. */
-.dash-mixrow > .dash-card[open]  { grid-column:1/-1; }
-.dash-pairrow > .dash-card[open] { grid-column:1/-1; }
+/* An open card spans its whole row: a doughnut in a 110px column is a dot.
+   Capped at 1099px. Above that the cards are force-open (see the ≥1100px
+   .dash-chartrow block, and fold()'s _wideCharts default), so an unconditional
+   span meant EVERY card claimed the full row and the trio/pair stacked on
+   desktop — the one place there is room to sit side by side. */
+@media (max-width:1099px){
+  .dash-mixrow > .dash-card[open]  { grid-column:1/-1; }
+  .dash-pairrow > .dash-card[open] { grid-column:1/-1; }
+}
 /* Stacked title over figure — side by side they would each get ~50px. */
 .dash-mixrow .dc-fold > summary, .dash-pairrow .dc-fold > summary {
   flex-wrap:wrap; padding:9px 10px; gap:2px 6px; }
@@ -779,7 +785,12 @@ body {
   .dash-chartrow > .dash-card > .dc-body > .dc-donut-wrap { flex:1; }
   /* At ~330px the label column and the value both need to shrink, or a 6-bar chart
      leaves the track about 90px wide. */
-  .dash-chartrow .hb-lbl { flex:0 0 78px; font-size:10px; }
+  /* 78px held ~11 characters, but _machShort() budgets 17 — so the middle-elided
+     name ("Load …ne 03") was clipped from the tail a SECOND time by text-overflow,
+     destroying the trailing unit number the middle-elision exists to preserve.
+     112px at 10px/700 fits the 17 characters _machShort actually emits, and the
+     track still reads as a proportion in the remaining ~180px of a 330px card. */
+  .dash-chartrow .hb-lbl { flex:0 0 112px; font-size:10px; }
   .dash-chartrow .hb-val { font-size:10.5px; }
   .dash-chartrow .dc-bars { height:90px; }
   /* The donut + legend go vertical in a narrow column — side by side, the legend had
@@ -1922,9 +1933,14 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 /* segmented click controls */
 .hf-seg { display:flex; flex-wrap:wrap; gap:6px; }
 .hf-seg.grade { gap:5px; }
-.hf-seg-btn { flex:1 1 auto; min-width:44px; text-align:center; padding:9px 6px;
+/* flex:1 1 0 (not 1 1 auto) so buttons share the row evenly instead of sizing to
+   their text — "In Progress" is twice "Open", which pushed the 4-value Action Status
+   set past 412px and wrapped it onto a second row. Even columns keep it on ONE row,
+   and 44px min-height brings it to the touch floor (it was 38px). */
+.hf-seg-btn { flex:1 1 0; min-width:0; text-align:center; padding:9px 4px;
+  min-height:44px; display:flex; align-items:center; justify-content:center;
   border:1.5px solid #cbd5e1; border-radius:8px; background:#fff; color:#475569;
-  font-size:12px; font-weight:700; cursor:pointer; user-select:none;
+  font-size:12px; font-weight:700; cursor:pointer; user-select:none; line-height:1.15;
   transition:background .12s,border-color .12s,color .12s; }
 .hf-seg-btn:active { transform:scale(.97); }
 .hf-seg-btn.on { background:#0f766e; border-color:#0f766e; color:#fff; }
@@ -1951,7 +1967,13 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
    to ~52px on a 412px modal, so the 5×5 grid claimed ~300px of vertical space for a
    control the operator taps once. 34px still clears the 44px-with-gap touch target
    across a row and halves the block. */
-.hf-mx-cell { aspect-ratio:1.45/1; min-height:28px; max-height:36px;
+/* Height is set directly, NOT via aspect-ratio + max-height. That pairing made the
+   cell 52.2px wide inside a 70.5px column: max-height clamped the height to 36px and
+   aspect-ratio then shrank the WIDTH to 36×1.45 to keep the ratio, leaving an 18px
+   hole in every column that read as a broken gap. A fixed height lets the cell fill
+   its 1fr column, so the only spacing is the grid's own 3px gap. 44px also brings the
+   cell to the touch-target floor — a mis-tap here writes the wrong risk score. */
+.hf-mx-cell { height:44px;
   border-radius:5px; border:2px solid transparent;
   display:flex; align-items:center; justify-content:center; cursor:pointer;
   font-size:12px; font-weight:800; color:#fff; user-select:none;
@@ -1979,7 +2001,12 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
    hazards arrived as unclassified prose, and the register should show that work is
    outstanding rather than quietly defaulting them to "Administrative". */
 .hf-coc-row.unset { border-color:#fed7aa; background:#fffbf5; }
-.hf-coc-head { display:flex; align-items:center; gap:7px; margin-bottom:6px; }
+/* The number badge sat alone on a full-width line above the level picker, costing a
+   whole row per measure for one 20px glyph. The row is now a compact strip: the
+   number shrinks to its content and the "Level not set" badge sits beside it rather
+   than beneath, so the head costs ~20px instead of ~32px. */
+.hf-coc-head { display:flex; align-items:center; gap:7px; margin-bottom:4px;
+  min-height:20px; }
 .hf-coc-n { width:20px; height:20px; border-radius:4px; background:#eef2f7;
   color:#334155; font-size:11px; display:inline-flex; align-items:center;
   justify-content:center; flex:0 0 auto; }
@@ -1988,12 +2015,20 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 /* ── hazard evidence photos ── */
 .hz-photo-row { display:flex; gap:7px; flex-wrap:wrap; align-items:flex-start;
   margin:2px 0 6px; }
+/* overflow is visible so the delete button can sit ON the corner (see .hz-photo-x);
+   the img carries the rounding itself now that the parent no longer clips it.
+   The 7px top margin keeps the overhanging button inside the row's bounds. */
 .hz-photo { position:relative; width:74px; height:74px; border-radius:8px;
-  overflow:hidden; border:1.5px solid #e2e8f0; background:#f8fafc; flex:0 0 auto; }
-.hz-photo img { width:100%; height:100%; object-fit:cover; display:block; cursor:pointer; }
-.hz-photo-x { position:absolute; top:2px; right:2px; width:20px; height:20px;
-  border:0; border-radius:50%; background:rgba(15,23,42,.72); color:#fff;
-  font-size:15px; line-height:1; cursor:pointer; padding:0; }
+  border:1.5px solid #e2e8f0; background:#f8fafc; flex:0 0 auto; margin-top:7px; }
+.hz-photo img { width:100%; height:100%; object-fit:cover; display:block;
+  cursor:pointer; border-radius:6px; }
+/* 28px, was 20px — below even the 24px WCAG floor, on a DESTRUCTIVE control that
+   sat 2px inside the photo's own tap area, so a near-miss opened the viewer. Moved
+   onto the corner with a white ring so delete and view no longer share an edge. */
+.hz-photo-x { position:absolute; top:-7px; right:-7px; width:28px; height:28px;
+  border:2px solid #fff; border-radius:50%; background:rgba(15,23,42,.86); color:#fff;
+  font-size:15px; line-height:1; cursor:pointer; padding:0;
+  box-shadow:0 1px 4px rgba(0,0,0,.3); }
 .hz-photo-pins { position:absolute; bottom:2px; left:2px; min-width:17px; height:17px;
   border-radius:9px; background:#0f766e; color:#fff; font-size:10px; font-weight:700;
   display:flex; align-items:center; justify-content:center; padding:0 5px; }
@@ -2004,16 +2039,22 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
    ~120px of chrome before its text. The descriptions move to title= (still available
    on hover/long-press) and the labels abbreviate, so the picker is one 30px strip. */
 .hf-coc-levels { display:flex; gap:3px; margin-bottom:5px; }
+/* 44px and 11px text. At 9.5px/30px this was under the touch-target floor while
+   being the form's PRIMARY data-entry control — and since the descriptions moved to
+   title= (unreachable on touch), the abbreviation is the only label it has. 11px is
+   the functional-text floor in PRODUCT.md. Costs 14px per measure row. */
 .hf-coc-lvl { flex:1 1 0; min-width:0; text-align:center; cursor:pointer;
-  font-size:9.5px; font-weight:800; padding:7px 2px; border-radius:5px;
-  border:1.5px solid #cbd5e1; background:#fff; color:#64748b; line-height:1.1;
+  font-size:11px; font-weight:800; padding:4px 3px; border-radius:6px;
+  min-height:44px; display:flex; align-items:center; justify-content:center;
+  border:1.5px solid #cbd5e1; background:#fff; color:#334155; line-height:1.15;
   user-select:none; transition:all .12s; white-space:nowrap; overflow:hidden;
   text-overflow:ellipsis; }
 .hf-coc-lvl small { display:none; }
 .hf-coc-lvl.on { color:#fff; border-color:transparent; }
 .hf-coc-inrow { display:flex; gap:6px; align-items:flex-start; }
 .hf-coc-inrow textarea { flex:1; }
-.hf-coc-del { flex:0 0 auto; width:34px; align-self:stretch; border:1.5px solid #fecaca;
+/* 44px, was 34px — destructive controls warrant more slop than average, not less. */
+.hf-coc-del { flex:0 0 auto; width:44px; align-self:stretch; border:1.5px solid #fecaca;
   background:#fef2f2; color:#dc2626; border-radius:7px; font-size:16px;
   font-weight:800; cursor:pointer; }
 /* "+ Add control measure" and "+ Add photo" were both full-width 334px dashed
@@ -4504,10 +4545,12 @@ function renderDashboard() {
         sfold('Incidents by Zone',  _peekChart('incidentZone'), '<div class="dc-cv"><canvas id="dsf-inczone"></canvas></div>', 'inczone') +
       '</div>' +
 
-      /* The two risk views keep the full-width stack: the heatmap is a 5x5 grid
-         that cannot shrink below its cell size, and the classification bars carry
-         long band names. */
-      '<div class="dash-chartrow dash-sfcharts">' +
+      /* The two risk views are a pair — same register, two readings of it — so
+         they share a row like the other two groups. The heatmap's 5x5 grid still
+         cannot shrink below its cell size, so it keeps its own horizontal scroll
+         inside the card (.dash-sfcharts #dsf-heat) rather than forcing the pair
+         apart. */
+      '<div class="dash-pairrow dash-sfcharts">' +
         sfold('Risk Heatmap',        _peekHeat(),                 '<div id="dsf-heat"></div>', 'heat') +
         sfold('Risk Classification', _peekChart('classification'), '<div class="dc-cv"><canvas id="dsf-class"></canvas></div>', 'class') +
       '</div>' : '') +
@@ -8894,14 +8937,32 @@ function sfChartHBar(id, obj, color, onPick){
         // clipping them mid-word. Cap the axis and wrap onto two lines rather
         // than truncating — the section name IS the label's information.
         y:{ticks:{color:'#334155',font:{size:11},crossAlign:'far',autoSkip:false,
+             /* The wrap width follows the axis width, which now follows the
+                canvas (see afterFit). A flat 26 produced lines wider than a
+                330px card's axis could hold, so Chart.js clipped them mid-word
+                — the wrap and the cap have to agree or the wrapping is undone.
+                ~5.6px per character at 11px; floored at 12 so a name always
+                breaks into readable chunks rather than one letter per line. */
              callback:function(v){
                var s=String(this.getLabelForValue(v));
-               if(s.length<=26) return s;
-               var cut=s.lastIndexOf(' ',26);
-               if(cut<12) cut=26;
+               var axisW=(this.chart&&this.chart.width)
+                 ? Math.max(88,Math.round(this.chart.width*0.45)) : 190;
+               var per=Math.max(12,Math.floor(axisW/5.6));
+               if(s.length<=per) return s;
+               var cut=s.lastIndexOf(' ',per);
+               if(cut<Math.floor(per*0.45)) cut=per;
                return [s.slice(0,cut), s.slice(cut).trim()];
              }},
-           afterFit:function(sc){ sc.width=Math.min(sc.width,190); },
+           /* A flat 190px cap was tuned for the full-width Safety card. In the
+              dashboard's four-across .dash-chartrow each card is ~330px, so a
+              190px axis left ~114px of plot and Chart.js hard-clipped the
+              two-line labels the callback above had just wrapped. Cap at 45% of
+              the canvas instead: the axis never eats more than it can afford,
+              and on the wide Safety card 45% still lands at the old ~190px. */
+           afterFit:function(sc){
+             var avail = (sc.chart && sc.chart.width) || 420;
+             sc.width = Math.min(sc.width, Math.max(88, Math.round(avail*0.45)));
+           },
            grid:{display:false},border:{display:false}}}},
     plugins:[sfBarValuePlugin(false)]}));
 }
@@ -9425,8 +9486,14 @@ function sfHazardDetail(sr){
   else if(st==='Ongoing') st='In Progress';
   if(SF_STATUSES.indexOf(st)===-1) st='Open';
   var body='<div class="sf-form">'+
-    '<label for="hf-section">Section</label><select id="hf-section">'+sfListOptions('ZONES',r.section)+'</select>'+
-    '<label for="hf-activity">Activity / Job Step</label><input id="hf-activity" value="'+sfEsc(r.activity)+'">'+
+    /* Section and Activity pair up: both answer "where/what is this hazard about",
+       and each is a single short control that wasted a full row on its own. */
+    '<div class="hf-2">'+
+      '<div><label for="hf-section">Section</label>'+
+        '<select id="hf-section">'+sfListOptions('ZONES',r.section)+'</select></div>'+
+      '<div><label for="hf-activity">Activity / Job Step</label>'+
+        '<input id="hf-activity" value="'+sfEsc(r.activity)+'"></div>'+
+    '</div>'+
     '<div class="hf-2"><div><label>D/I</label>'+sfSeg('hf-di',['D','I'],r.di)+'</div>'+
       '<div><label>R/NR</label>'+sfSeg('hf-rnr',['R','NR','E'],r.rnr)+'</div></div>'+
     '<label for="hf-hazard">Hazard Description</label><textarea id="hf-hazard" rows="2">'+sfEsc(r.hazard)+'</textarea>'+
