@@ -4253,7 +4253,7 @@ function loadDashboard() {
       if (!_boardData)  _boardData  = {success:false};
       if (!_dashMetrics) _dashMetrics = {};
       renderDashboard();                                // render with what we have
-      if (!_boardRecordsCache.bd) _prefetchRecords();   // fills charts when ready
+      if (!_boardRecordsCache.bd) _prefetchRecords();   // no-op if already in flight
     }
     function retryOr(d) {
       if (attempt < 3) { setTimeout(function(){ fetchAll(attempt+1); }, 400); return; }
@@ -4265,6 +4265,17 @@ function loadDashboard() {
       })
       .withFailureHandler(function(){ retryOr(null); })
       .getDashboardBootstrap();
+    /* Start the record prefetch ALONGSIDE the bootstrap instead of after it.
+       These two calls have no data dependency — the bootstrap paints the KPIs and
+       the prefetch only fills the charts — but firing the prefetch from done()
+       chained them, so the user waited 8s + 9s serially for a screen that could
+       have been ready in 9s. The polyfill's own GAP_MS keeps their departures
+       separated, which is what the single-use redirect keys actually require;
+       full sequencing was never needed.
+       _prefetchRecords() guards itself with _prefetchInFlight, so the call left
+       in done() above is a no-op on this path and still covers the cache-hit
+       path where fetchAll never runs. */
+    if (!_boardRecordsCache.bd) _prefetchRecords();
   }
   fetchAll();
 }
