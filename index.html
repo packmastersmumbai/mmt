@@ -5305,9 +5305,19 @@ function navigate(hash, machineId, skipPush) {
   }
   if (hash === 'labels')    loadLabels();
   if (hash === 'safety') {
-    // Preselect the tab the nav asked for. A pending Sr (safety deep link)
-    // forces HIRA inside loadSafety(), so it is not overridden here.
-    if (_sfTab) SF.tab = _sfTab;
+    /* Preselect the tab the nav asked for. A pending Sr (safety deep link)
+       forces HIRA inside loadSafety(), so it is not overridden here.
+       The .active class must be synced too: assigning SF.tab alone left the
+       bar highlighting "Dashboard" while HIRA's content was on screen, so a
+       #hira / #incidents deep link showed the right records under the wrong
+       tab. sfGoTab() owns both halves of that state — but it also calls
+       sfRender(), which cannot run before loadSafety() has data, so only the
+       class sync is borrowed here. */
+    if (_sfTab) {
+      SF.tab = _sfTab;
+      document.querySelectorAll('#sf-tabs .sf-tab').forEach(function(x){
+        x.classList.toggle('active', x.dataset.sftab === _sfTab); });
+    }
     loadSafety();
   }
   // #view-hk and #view-readings live INSIDE <main class="app-content"> (the <main>
@@ -8766,8 +8776,14 @@ function sfEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</
 
 /** Entry point — called by navigate('safety'). */
 function loadSafety(){
-  // Deep-linked to a specific hazard Sr → force the HIRA tab.
-  if(SF.pendingSr){ SF.tab = 'hira'; }
+  /* Deep-linked to a specific hazard Sr → force the HIRA tab. Sync the bar as
+     well as the state: a Telegram link like ?action=safety&sr=40 otherwise
+     opened the hazard with "Dashboard" still highlighted. */
+  if(SF.pendingSr){
+    SF.tab = 'hira';
+    document.querySelectorAll('#sf-tabs .sf-tab').forEach(function(x){
+      x.classList.toggle('active', x.dataset.sftab === 'hira'); });
+  }
   // wire tab clicks once
   var tabs = document.getElementById('sf-tabs');
   if(tabs && !tabs._wired){
