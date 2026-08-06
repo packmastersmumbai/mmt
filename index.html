@@ -6218,19 +6218,20 @@ function clAnnRender() {
   // The picker is back in legend mode: pins are placed ONE at a time, chosen
   // deliberately. Auto-dropping a pin per ticked item stacked them all at the
   // centre coordinate, where the ones underneath could not be reached at all.
+  /* Points exist ONLY in legend mode (CLIT and PM), where a pin means a
+     specific checklist item and the number keys it to the list. Anywhere else
+     a "point" is a bare number on a photo that refers to nothing — the Daily
+     Checklist photo already belongs to one task, so drawing on it says
+     everything a numbered dot could. Free and box mode get Draw only. */
   var addBtn = document.getElementById('cl-annAddPt');
   if (addBtn) {
-    // Box mode has no pins to add — the drag IS the annotation.
-    addBtn.style.display = isBox ? 'none' : '';
-    if (_clAnnMode === 'legend') {
+    var isLegend = _clAnnMode === 'legend';
+    addBtn.style.display = isLegend ? '' : 'none';
+    if (isLegend) {
       var left = _clitUnpinnedTicked().length;
       addBtn.textContent = left ? '+ Point (' + left + ')' : '+ Point';
       addBtn.disabled = !left;
       addBtn.style.opacity = left ? '' : '0.45';
-    } else {
-      addBtn.textContent = '+ Point';
-      addBtn.disabled = false;
-      addBtn.style.opacity = '';
     }
   }
 }
@@ -6445,20 +6446,10 @@ function _clAnnPlacedIds() {
   return _clAnnAllPins().map(function(o) { return String(o.pin.p); });
 }
 
+/* Legend mode only — the "+ Point" button is hidden everywhere else, since a
+   pin is meaningful only when it keys to a numbered checklist item. */
 function clAnnOpenPoints() {
-  // Free mode has nothing to pick from — the photo already belongs to one task,
-  // so just drop the next numbered pin and go straight to positioning it.
-  if (_clAnnMode === 'free') {
-    clAnnCloseSheets();
-    var next = 1;
-    _clAnnAllPins().forEach(function(o) {
-      var n = parseInt(o.pin.p, 10);
-      if (!isNaN(n) && n >= next) next = n + 1;
-    });
-    clAnnBeginPlace(String(next));
-    return;
-  }
-
+  if (_clAnnMode !== 'legend') return;
   clAnnCloseSheets();
   // Only ticked-but-unpinned items are offered. An unticked item is not claimed
   // as done, so pinning it would put evidence on the photo for work the operator
