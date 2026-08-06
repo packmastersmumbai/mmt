@@ -6228,8 +6228,12 @@ function clAnnRender() {
     var isLegend = _clAnnMode === 'legend';
     addBtn.style.display = isLegend ? '' : 'none';
     if (isLegend) {
+      /* The button is now a PROMPT, not a picker — it names what a tap on the
+         photo will place and how many are left. Placing happens by tapping the
+         image itself, so this reads as instruction rather than a control that
+         opens something. */
       var left = _clitUnpinnedTicked().length;
-      addBtn.textContent = left ? '+ Point (' + left + ')' : '+ Point';
+      addBtn.textContent = left ? 'Tap photo to pin (' + left + ')' : 'All points placed';
       addBtn.disabled = !left;
       addBtn.style.opacity = left ? '' : '0.45';
     }
@@ -6446,63 +6450,61 @@ function _clAnnPlacedIds() {
   return _clAnnAllPins().map(function(o) { return String(o.pin.p); });
 }
 
-/* Legend mode only — the "+ Point" button is hidden everywhere else, since a
-   pin is meaningful only when it keys to a numbered checklist item. */
+/* Which item the NEXT tap on the photo will place: the lowest-numbered ticked
+   item that is not pinned anywhere yet. Returns null when nothing is pending. */
+function _clAnnNextPoint() {
+  var pending = _clitUnpinnedTicked();
+  return pending.length ? String(pending[0].id) : null;
+}
+
+/**
+ * Place a pin where the operator tapped the photo.
+ *
+ * This replaces a five-step flow — tap "+ Point", read a grouped sheet, pick an
+ * item, drag the pin off the centre, tap "Set" — with one tap at the spot the
+ * pin belongs. The sheet only ever offered items in a fixed order, so choosing
+ * from it carried no information the running order did not already have: the
+ * next pending item is taken automatically, and the pin lands under the finger
+ * instead of at the centre of the photo.
+ */
+function clAnnPlaceAt(xPct, yPct) {
+  if (_clAnnMode !== 'legend') return;
+  var pid = _clAnnNextPoint();
+  if (!pid) {
+    // Nothing pending is not an error — it usually means every ticked item is
+    // already on a photo. Say which, rather than doing nothing.
+    var ticked = (typeof _clitUnpinnedTicked === 'function');
+    showStatus(ticked && _clAnnAllPins().length
+      ? 'All ticked items are placed. Tap a pin to set its status.'
+      : 'Tick items in the form first, then tap the photo to place them.',
+      'info', 3200);
+    return;
+  }
+  var cur = _clAnnCur();
+  if (!cur) return;
+  // Status is inherited from the form — the operator already stated the outcome
+  // there, so asking again on the photo would be the same question twice.
+  var inherited = (typeof _annGetState === 'function') ? _annGetState(pid) : 0;
+  cur.pins.push({ p: pid, x: Math.round(xPct), y: Math.round(yPct), s: inherited, n: '' });
+  _clAnnSel = cur.pins.length - 1;
+  clAnnRender();
+  if (typeof _annRefresh === 'function') _annRefresh();
+  if (_clAnnTask) _clSyncPhotoRow(_clAnnTask);
+}
+
+/* Kept as the "+ Point" button's action: it no longer opens a picker, it just
+   tells the operator to tap the photo — the pin needs a position, and only a
+   tap on the image can supply one. */
 function clAnnOpenPoints() {
   if (_clAnnMode !== 'legend') return;
   clAnnCloseSheets();
-  // Only ticked-but-unpinned items are offered. An unticked item is not claimed
-  // as done, so pinning it would put evidence on the photo for work the operator
-  // never recorded.
-  var pending = _clitUnpinnedTicked();
-  var elsewhere = [];
-  _clAnnItems.forEach(function(item, i) {
-    var pid = String(i + 1);
-    var at = _clAnnFindPoint(pid);
-    if (at !== -1 && at !== _clAnnPhoto) elsewhere.push({ id: pid, item: item, photo: at });
-  });
-
-  var html = '';
-  html += '<div class="ann-sheet-h"><span class="ann-grab"></span></div>';
-  html += '<div class="ann-sheet-t">Place a point on this photo</div>';
-
-  if (!pending.length && !elsewhere.length) {
-    html += '<div class="ann-empty">Tick items in the form first — only ticked ' +
-            'items can be pinned.</div>';
+  var pid = _clAnnNextPoint();
+  if (!pid) {
+    showStatus('All ticked items are placed. Tap a pin to set its status.', 'info', 3200);
+    return;
   }
-  if (pending.length) {
-    // Grouped by C/L/I/T so the operator scans by discipline, not a flat list.
-    var lastType = null;
-    html += '<div class="ann-plist">' + pending.map(function(o) {
-      var t = (o.item.type || 'C').toUpperCase().charAt(0);
-      var head = '';
-      if (t !== lastType) {
-        lastType = t;
-        head = '<div class="ann-grp t-' + t + '"><span>' + t + '</span>' +
-               esc(CLIT_TYPE_LABEL[t] || t) + '</div>';
-      }
-      return head + '<button class="ann-pitem" onclick="clAnnBeginPlace(\'' + esc(o.id) + '\')">' +
-             '<b class="t-' + t + '">' + esc(o.id) + '</b>' +
-             '<span>' + esc(o.item.en || '') + '</span><i>&#8250;</i></button>';
-    }).join('') + '</div>';
-  } else if (elsewhere.length) {
-    html += '<div class="ann-empty">All ticked items are placed &#10003;</div>';
-  }
-
-  if (elsewhere.length) {
-    html += '<button class="ann-fold" onclick="this.nextElementSibling.classList.toggle(\'show\')">' +
-            'On other photos (' + elsewhere.length + ') &#8964;</button>';
-    html += '<div class="ann-plist ann-foldable">' + elsewhere.map(function(o) {
-      return '<button class="ann-pitem dim" onclick="clAnnGoPhoto(' + o.photo + ')">' +
-             '<b>' + esc(o.id) + '</b><span>' + esc(o.item.en || '') + '</span>' +
-             '<i>&#9635;' + (o.photo + 1) + '</i></button>';
-    }).join('') + '</div>';
-  }
-
-  var sheet = document.getElementById('cl-annSheetPoints');
-  sheet.innerHTML = html;
-  sheet.classList.add('show');
-  document.getElementById('cl-annModal').classList.add('sheeted');
+  showStatus('Tap the photo where "' + (_clPointLabel(pid) || ('point ' + pid)) +
+             '" is.', 'info', 3200);
 }
 
 var CLIT_TYPE_LABEL = { C:'Cleaning', L:'Lubrication', I:'Inspection', T:'Tightening' };
@@ -6542,42 +6544,28 @@ function _clPointType(pid) {
   return it ? (it.type || 'C').toUpperCase().charAt(0) : '';
 }
 
-/** Drop a pin dead-centre, then let the operator drag it to the real spot. */
+/**
+ * Place ONE named point. Used by the form's point chips, which target a
+ * specific item rather than "the next pending one" — tapping the photo cannot
+ * express "this chip", so that path still needs a function.
+ *
+ * The pin lands at centre and is immediately live: no "drag to position / Set"
+ * confirm step. Dragging it is still how you move it, and that was always
+ * optional — the confirm bar only ever added a tap and covered the photo.
+ */
 function clAnnBeginPlace(pid) {
   var cur = _clAnnCur();
+  if (!cur) return;
   // In legend mode the form already carries the outcome, so the pin inherits it.
   // Asking again on the photo made the operator state the same fact twice.
   var inherited = (_clAnnMode === 'legend' && typeof _annGetState === 'function')
     ? _annGetState(pid) : 0;
-  cur.pins.push({ p: pid, x: 50, y: 50, s: inherited, n: '', u: 1 });
+  cur.pins.push({ p: pid, x: 50, y: 50, s: inherited, n: '' });
   _clAnnSel = cur.pins.length - 1;
-  _clAnnPlacing = pid;
-
-  document.getElementById('cl-annSheetPoints').classList.remove('show');
-  var hint = document.getElementById('cl-annHint');
-  hint.innerHTML = '<b>' + esc(pid) + '</b> ' + esc(_clPointLabel(pid)) +
-                   ' &mdash; drag to position' +
-                   '<button class="ann-set" onclick="clAnnConfirmPlace()">Set</button>';
-  hint.classList.add('show');
-  document.getElementById('cl-annModal').classList.add('sheeted');
-  clAnnRenderPins();
-  clAnnRenderStrip();
-}
-
-function clAnnConfirmPlace() {
-  _clAnnPlacing = null;
-  document.getElementById('cl-annHint').classList.remove('show');
-  var cur = _clAnnCur();
-  if (cur && cur.pins[_clAnnSel]) delete cur.pins[_clAnnSel].u;
-  // Legend mode already knows the status from the form, so setting it here would
-  // be asking the same question twice. Free mode still needs the sheet.
-  if (_clAnnMode === 'legend') {
-    clAnnCloseSheets();
-    clAnnRender();
-    if (typeof _annRefresh === 'function') _annRefresh();
-    return;
-  }
-  clAnnOpenStatus(_clAnnSel);
+  clAnnRender();
+  if (typeof _annRefresh === 'function') _annRefresh();
+  if (_clAnnTask) _clSyncPhotoRow(_clAnnTask);
+  showStatus('Point ' + pid + ' placed — drag it onto the exact spot.', 'info', 2600);
 }
 
 function clAnnOpenStatus(i) {
@@ -6950,6 +6938,7 @@ function clAnnBurnBox(photo, cb) {
 (function clAnnBindDrag() {
   var drag = null;
   var boxDrag = null;
+  var tapPlace = null;   // pending "tap the photo to drop a pin" in legend mode
 
   function pctFromEvent(e) {
     // Measured against the frame (the photo itself), matching how pins render.
@@ -7012,6 +7001,19 @@ function clAnnBurnBox(photo, cb) {
     var pinEl = e.target.closest ? e.target.closest('.ann-pin') : null;
     // Box mode leaves legacy pins on screen but inert — a drag there draws a box.
     if (_clAnnMode === 'box') return;
+
+    /* Tap on bare photo in legend mode = place the next pending point right
+       there. This is the whole add flow now: no button, no picker sheet, no
+       "Set" step. Only fires when the tap missed every existing pin, so tapping
+       a pin still means "change this one" rather than "add another". */
+    if (!pinEl && _clAnnMode === 'legend' && _clAnnTask &&
+        e.target.closest && e.target.closest('#cl-annFrame')) {
+      var pt = pctFromEvent(e);
+      tapPlace = { x: pt.x, y: pt.y, moved: false };
+      e.preventDefault();
+      return;
+    }
+
     if (!pinEl || !_clAnnTask) return;
     drag = { i: parseInt(pinEl.dataset.i, 10), moved: false };
     pinEl.setPointerCapture && pinEl.setPointerCapture(e.pointerId);
@@ -7019,6 +7021,15 @@ function clAnnBurnBox(photo, cb) {
   });
 
   document.addEventListener('pointermove', function(e) {
+    /* A tap that travels is a scroll or a stray finger, not a placement.
+       Tracked in percent of the frame so the threshold means the same thing on
+       a phone and a desktop. */
+    if (tapPlace) {
+      var tp = pctFromEvent(e);
+      if (Math.abs(tp.x - tapPlace.x) > 4 || Math.abs(tp.y - tapPlace.y) > 4) {
+        tapPlace.moved = true;
+      }
+    }
     if (!drag || !_clAnnTask) return;
     var pin = _clAnnCur().pins[drag.i];
     if (!pin) return;
@@ -7033,11 +7044,20 @@ function clAnnBurnBox(photo, cb) {
   });
 
   document.addEventListener('pointerup', function() {
+    // Commit a tap on bare photo into a pin at that spot.
+    if (tapPlace) {
+      var tp = tapPlace; tapPlace = null;
+      if (!tp.moved && _clAnnMode === 'legend' && _clAnnTask) {
+        clAnnPlaceAt(tp.x, tp.y);
+        drag = null;
+        return;
+      }
+    }
     if (!drag || !_clAnnTask) { drag = null; return; }
     // A tap (no movement) sets status; a drag just commits position.
     // Legend mode cycles in place — same one-tap rule as the list beside it.
     // Free mode still opens the sheet, which is also where its note field lives.
-    if (!drag.moved && !_clAnnPlacing) {
+    if (!drag.moved) {
       if (_clAnnMode === 'legend') clAnnCycleStatus(_clAnnPhoto, drag.i);
       else clAnnOpenStatus(drag.i);
     }
