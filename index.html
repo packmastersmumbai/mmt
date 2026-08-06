@@ -1196,6 +1196,9 @@ body {
    (no dragging, no status sheet), so a stray drag draws a box instead of
    nudging an old pin. */
 .ann-modal.mode-box .ann-pin { pointer-events:none; cursor:default; }
+/* Legend mode drives points from the form's checkboxes and sets status by
+   tapping a row, so the pin annotator needs no status sheet at all there. */
+.ann-modal.mode-legend #cl-annSheetStatus { display:none !important; }
 
 /* Pin: 44px hit area via padding, but a small painted body so it never hides
    the very detail it is pointing at. The tip sits on the stored coordinate. */
@@ -1252,12 +1255,52 @@ body {
 
 .ann-foot { flex-shrink:0; padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px)); background:#0f172a; }
 
+/* ── Freehand annotator (PMAnnot) ─────────────────────────────────────────
+   Full-screen over everything, including the pin annotator (z 9999) so it can
+   be opened from a checklist photo without the pin UI showing through. */
+.pma-overlay { display:none; position:fixed; inset:0; z-index:10000; background:#000;
+  flex-direction:column; touch-action:none; }
+.pma-overlay.show { display:flex; }
+.pma-tools { display:flex; gap:6px; padding:8px; background:#111827; flex-wrap:wrap;
+  align-items:center; padding-top:calc(8px + env(safe-area-inset-top,0px)); }
+.pma-t { min-height:44px; min-width:44px; padding:8px 12px; border:1px solid #374151;
+  border-radius:8px; background:#1f2937; color:#e5e7eb; font-size:13px; font-weight:600;
+  cursor:pointer; touch-action:manipulation; }
+.pma-t.on { background:#2563eb; border-color:#3b82f6; color:#fff; }
+.pma-colors { display:flex; gap:6px; margin-left:auto; }
+/* 44px touch target with a smaller visible swatch — a 44px block of pure colour
+   read as a filled button rather than a colour choice. */
+.pma-c { width:44px; height:44px; padding:0; border:0; background:none; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; touch-action:manipulation; }
+.pma-c i { width:26px; height:26px; border-radius:50%; border:2px solid rgba(255,255,255,.35); }
+.pma-c.on i { border-color:#fff; box-shadow:0 0 0 3px rgba(255,255,255,.28); }
+.pma-stage { flex:1; min-height:0; display:flex; align-items:center; justify-content:center;
+  background:#000; overflow:hidden; }
+#pmaCanvas { max-width:100%; max-height:100%; display:block; touch-action:none; }
+.pma-acts { display:flex; gap:8px; padding:8px; background:#111827; justify-content:center;
+  padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)); }
+.pma-b { min-height:44px; padding:10px 22px; border:0; border-radius:9px; font-size:14px;
+  font-weight:700; cursor:pointer; touch-action:manipulation; }
+.pma-b.undo { background:#d97706; color:#fff; }
+.pma-b.cancel { background:#374151; color:#e5e7eb; }
+.pma-b.save { background:#16a34a; color:#fff; flex:1; max-width:200px; }
+
 /* Legend (CLIT only): number + item name + status icon, beside the photo.
    Capped and scrollable so a long C/L/I/T list never pushes the photo away. */
 .ann-legend { display:flex; flex-direction:column; gap:4px; max-height:23vh; overflow-y:auto; margin-bottom:8px; }
-.ann-leg { display:flex; align-items:center; gap:8px; width:100%; min-height:34px; padding:4px 8px;
-  border:1px solid transparent; border-radius:8px; background:#1e293b; cursor:pointer; text-align:left; }
+/* 44px, not 34: the row IS the status control now (tap cycles it), so it has to
+   meet the touch-target floor rather than being a label that opened a sheet. */
+.ann-leg { display:flex; align-items:center; gap:8px; width:100%; min-height:44px; padding:6px 8px;
+  border:1px solid transparent; border-left:4px solid #475569; border-radius:8px;
+  background:#1e293b; cursor:pointer; text-align:left; touch-action:manipulation;
+  transition:background .12s ease, border-color .12s ease; }
 .ann-leg.here { border-color:#334155; }
+/* Status tints the whole row, so the list reads as a colour column at a glance.
+   Kept dark (a wash, not a fill) so the item text stays legible on the floor. */
+.ann-leg.pin-s0 { border-left-color:#64748b; }
+.ann-leg.pin-s1 { border-left-color:#16a34a; background:#14301f; }
+.ann-leg.pin-s2 { border-left-color:#dc2626; background:#331617; }
+.ann-leg:active { filter:brightness(1.35); }
 .ann-leg-n { width:20px; height:20px; flex-shrink:0; border-radius:5px; background:#475569; color:#fff;
   font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; }
 .ann-leg-x { flex:1; min-width:0; }
@@ -3075,6 +3118,10 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
         <!-- CLIT drives pins from the form's checkboxes, so there is nothing to
              add here; Checklist (free mode) still needs a way to drop a pin. -->
         <button class="ann-addpt" id="cl-annAddPt" onclick="clAnnOpenPoints()">+ Point</button>
+        <!-- Freehand markup on the current photo. Complements pins rather than
+             replacing them: a pin says WHICH item, a drawing says what is wrong
+             with it. -->
+        <button class="ann-addpt" id="cl-annDraw" onclick="clAnnDrawOnPhoto()">&#9998; Draw</button>
         <!-- Box mode only. Drawing is the drag itself, so there is no "add"
              affordance to offer — just a way to undo it and a way out. -->
         <button class="ann-boxbtn" id="cl-annBoxClear" hidden
@@ -3086,6 +3133,27 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
     <div class="ann-hint" id="cl-annHint"></div>
     <div class="ann-sheet" id="cl-annSheetPoints"></div>
     <div class="ann-sheet" id="cl-annSheetStatus"></div>
+  </div>
+
+  <!-- ── Freehand photo annotator (pen / arrow / circle / text) ──────────────
+       Ported from the 5S system's PMAnnot, which floor staff already use. Marks
+       are drawn on a canvas and BURNED INTO the JPEG on save — uploadHazardPhotos()
+       accepts a `pins` array but never reads it, so anything kept as coordinates
+       is silently dropped on upload. Used by Checklist, HIRA and Incident. -->
+  <div class="pma-overlay" id="pmaOverlay">
+    <div class="pma-tools">
+      <button class="pma-t on" id="pma-draw" onclick="PMAnnot.tool('draw')">&#9998; Draw</button>
+      <button class="pma-t" id="pma-arrow" onclick="PMAnnot.tool('arrow')">&#8599; Arrow</button>
+      <button class="pma-t" id="pma-circle" onclick="PMAnnot.tool('circle')">&#9711; Circle</button>
+      <button class="pma-t" id="pma-text" onclick="PMAnnot.tool('text')">T Text</button>
+      <span class="pma-colors" id="pmaColors"></span>
+    </div>
+    <div class="pma-stage"><canvas id="pmaCanvas"></canvas></div>
+    <div class="pma-acts">
+      <button class="pma-b undo" onclick="PMAnnot.undo()">&#8630; Undo</button>
+      <button class="pma-b cancel" onclick="PMAnnot.cancel()">Cancel</button>
+      <button class="pma-b save" onclick="PMAnnot.save()">Save</button>
+    </div>
   </div>
 
   <!-- Dedicated image upload inputs (global, outside any view) -->
@@ -5982,12 +6050,22 @@ function clHandlePhoto(src) {
       // operator did not place.
       _clSyncPhotoRow(id);
       clClosePhoto();
-      // Jump straight into the annotator on the shot just taken \u2014 the operator
-      // is looking at the machine right now, which is when they can place pins.
-      // Checklist photos belong to one timed task, so there is nothing to pick
-      // from: free mode drops plain numbered pins. A CLIT capture sets
-      // _clPhotoMode first, so re-entry from "+ Photo" keeps its legend.
-      clOpenAnnotator(id, _clPhotos[id].length - 1, _clPhotoMode || 'free', _clPhotoItems);
+      // Jump straight into annotation on the shot just taken \u2014 the operator is
+      // looking at the machine right now, which is when they can mark it.
+      var idx = _clPhotos[id].length - 1;
+      // 'mark' (HIRA/Incident): free drawing, no numbered points to key to.
+      // 'legend' (CLIT/PM): the pin editor, because pins ARE checklist items.
+      // 'free' (Checklist): plain numbered pins on a single timed task.
+      if ((_clPhotoMode || 'free') === 'mark') {
+        // Refresh runs INSIDE the save callback: annotation is async, so
+        // rendering here would paint the un-annotated photo and never update.
+        pmAnnotatePhoto(_clPhotos[id][idx], id, function() {
+          if (id === 'hira'     && typeof hzRenderPhotos === 'function') hzRenderPhotos();
+          if (id === 'incident' && typeof icRenderPhotos === 'function') icRenderPhotos();
+        });
+      } else {
+        clOpenAnnotator(id, idx, _clPhotoMode || 'free', _clPhotoItems);
+      }
     };
     img.src = e.target.result;
   };
@@ -6187,10 +6265,14 @@ function _annRefresh() {
 }
 
 /**
- * clAnnRenderLegend() — the key beside the photo: point number, item name and
- * its status icon. Legend mode only; in free mode a pin has no item to name,
- * so a legend would just repeat the numbers already visible on the image.
- * Tapping a row jumps to that pin's photo and selects it.
+ * clAnnRenderLegend() — the numbered point list beside the photo. Legend mode
+ * only; in free mode a pin has no item to name, so a list would just repeat the
+ * numbers already visible on the image.
+ *
+ * Tapping a row CYCLES its status in place: not done → done → problem → not
+ * done. It used to open a bottom sheet to pick from three buttons, which meant
+ * three taps and a covered photo to record the one fact an operator records
+ * most often. The row is the control now — no sheet, no picker.
  */
 function clAnnRenderLegend() {
   var box = document.getElementById('cl-annLegend');
@@ -6207,8 +6289,13 @@ function clAnnRenderLegend() {
   box.innerHTML = all.map(function(o) {
     var st = CL_PIN_STATUS[o.pin.s] || CL_PIN_STATUS[0];
     var t  = _clPointType(o.pin.p);
-    return '<button class="ann-leg' + (o.photo === _clAnnPhoto ? ' here' : '') + '"' +
-           ' onclick="clAnnJumpPin(' + o.photo + ',' + o.idx + ')">' +
+    // The whole row carries the status colour, so the list reads as a colour
+    // column at a glance rather than a set of identical rows with a small icon.
+    return '<button class="ann-leg ' + st.cls +
+           (o.photo === _clAnnPhoto ? ' here' : '') + '"' +
+           ' onclick="clAnnCycleStatus(' + o.photo + ',' + o.idx + ')"' +
+           ' aria-label="Point ' + esc(String(o.pin.p)) + ' — ' + st.label +
+           '. Tap to change.">' +
            '<span class="ann-leg-n t-' + t + '">' + esc(String(o.pin.p)) + '</span>' +
            '<span class="ann-leg-x">' +
              '<span class="ann-leg-en">' + esc(_clPointLabel(o.pin.p)) + '</span>' +
@@ -6219,7 +6306,34 @@ function clAnnRenderLegend() {
   }).join('');
 }
 
-/** Jump to the photo holding a pin and open its status sheet. */
+/**
+ * Advance one point's status by a tap on its row. Jumping photos on a status
+ * tap was deliberate to drop: on a multi-photo task the list would scroll away
+ * under the operator's finger mid-way through ticking off points.
+ */
+function clAnnCycleStatus(photoIdx, pinIdx) {
+  var list = _clAnnPhotos()[photoIdx];
+  var pin  = list && list.pins[pinIdx];
+  if (!pin) return;
+  pin.s = ((pin.s || 0) + 1) % CL_PIN_STATUS.length;
+  // The form remains the value that submits, so the tick has to travel back to
+  // it — otherwise the photo and the form would disagree about the same item.
+  if (typeof _annSetState === 'function') { _annSetState(pin.p, pin.s, true); }
+  if (typeof _annRefresh === 'function')  { _annRefresh(); }
+  clAnnRenderLegend();
+  clAnnRenderPins();
+  clAnnRenderTally();
+  clAnnRenderStrip();
+  if (_clAnnTask) _clSyncPhotoRow(_clAnnTask);
+}
+
+/** Highlight a pin without opening anything over the photo. */
+function clAnnSelectPin(i) {
+  _clAnnSel = i;
+  clAnnRenderPins();
+}
+
+/** Jump to the photo holding a pin (used by the free-mode pin tap path). */
 function clAnnJumpPin(photoIdx, pinIdx) {
   if (photoIdx !== _clAnnPhoto) { _clAnnPhoto = photoIdx; clAnnRender(); }
   clAnnOpenStatus(pinIdx);
@@ -6280,6 +6394,16 @@ function clAnnGoPhoto(i) {
   _clAnnPhoto = i; _clAnnSel = null; _clAnnPlacing = null;
   clAnnCloseSheets();
   clAnnRender();
+}
+
+/* Draw freehand on the photo currently open in the pin annotator. Strokes are
+   burned into the JPEG, so they persist through upload exactly like the pins'
+   burned-in markings do. */
+function clAnnDrawOnPhoto() {
+  var cur = _clAnnCur();
+  if (!cur) return;
+  clAnnCloseSheets();
+  pmAnnotatePhoto(cur, _clAnnTask);
 }
 
 function clAnnAddPhoto() {
@@ -6527,6 +6651,227 @@ function clAnnRemovePin() {
   if (_clAnnMode === 'legend' && typeof _annRefresh === 'function') _annRefresh();
 }
 
+/* ── PMAnnot — freehand photo annotator ─────────────────────────────────
+   Ported from the 5S system (QuickAudit.html), where floor staff already use
+   this exact tool. Same model: strokes are replayed onto a canvas over the
+   photo, then flattened into a new JPEG on save.
+
+   Burning in is required, not decorative: uploadHazardPhotos() accepts a
+   `pins` array but never reads it, so any mark left as coordinates is dropped
+   on upload. Whatever the operator draws must be IN the pixels to survive.
+
+   Kept from 5S: pen / arrow / circle / text, colour, undo, pointer handling.
+   Dropped: the zone/auditor watermark strip (MMT stamps its own metadata
+   server-side) and the postMessage/iframe host handshake (MMT is same-document
+   on GitHub Pages, so the callback is called directly). */
+var PMAnnot = (function() {
+  var canvas, ctx, baseImg = null, strokes = [], cur = null, onSave = null, onCancel = null;
+  var tool = 'draw', color = '#ef4444', lineW = 5;
+
+  var COLORS = [
+    { v:'#ef4444', n:'Red'    }, { v:'#f59e0b', n:'Amber' },
+    { v:'#22c55e', n:'Green'  }, { v:'#3b82f6', n:'Blue'  },
+    { v:'#ffffff', n:'White'  }
+  ];
+  /* Downscale cap mirrors the 5S budget — a raw phone photo re-encoded with
+     strokes on top is several MB, which google.script.run will not carry. */
+  var MAX_EDGE = 1024, QUALITY = 0.72;
+
+  function el(id) { return document.getElementById(id); }
+
+  function drawOne(s) {
+    ctx.strokeStyle = s.color; ctx.fillStyle = s.color; ctx.lineWidth = s.lineW;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    if (s.type === 'draw') {
+      if (!s.pts.length) return;
+      ctx.beginPath();
+      s.pts.forEach(function(p, i) { i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); });
+      ctx.stroke();
+    } else if (s.type === 'circle') {
+      ctx.beginPath();
+      ctx.ellipse((s.sx + s.ex) / 2, (s.sy + s.ey) / 2,
+                  Math.abs(s.ex - s.sx) / 2, Math.abs(s.ey - s.sy) / 2, 0, 0, 2 * Math.PI);
+      ctx.stroke();
+    } else if (s.type === 'arrow') {
+      ctx.beginPath(); ctx.moveTo(s.sx, s.sy); ctx.lineTo(s.ex, s.ey); ctx.stroke();
+      var a = Math.atan2(s.ey - s.sy, s.ex - s.sx), h = 8 + s.lineW * 2;
+      ctx.beginPath(); ctx.moveTo(s.ex, s.ey);
+      ctx.lineTo(s.ex - h * Math.cos(a - 0.4), s.ey - h * Math.sin(a - 0.4));
+      ctx.lineTo(s.ex - h * Math.cos(a + 0.4), s.ey - h * Math.sin(a + 0.4));
+      ctx.closePath(); ctx.fill();
+    } else if (s.type === 'text') {
+      // Dark plate behind the label so light colours stay readable on any photo.
+      var tf = s.fontPx || 24;
+      ctx.font = 'bold ' + tf + 'px Arial'; ctx.textBaseline = 'top';
+      var tw = ctx.measureText(s.text).width, pad = Math.round(tf * 0.28);
+      ctx.fillStyle = 'rgba(0,0,0,.55)';
+      ctx.fillRect(s.sx - pad, s.sy - pad, tw + pad * 2, tf + pad * 2);
+      ctx.fillStyle = s.color;
+      ctx.fillText(s.text, s.sx, s.sy);
+    }
+  }
+
+  function redraw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (baseImg) ctx.drawImage(baseImg, 0, 0);
+    strokes.forEach(drawOne);
+    if (cur) drawOne(cur);
+  }
+
+  function pos(ev) {
+    var r = canvas.getBoundingClientRect();
+    var t = (ev.touches && ev.touches[0]) ? ev.touches[0] : ev;
+    return { x: (t.clientX - r.left) * (canvas.width / r.width),
+             y: (t.clientY - r.top)  * (canvas.height / r.height) };
+  }
+
+  function down(ev) {
+    ev.preventDefault();
+    var p = pos(ev);
+    // Text is placed by a single tap, not a drag: prompt, commit at that point.
+    if (tool === 'text') {
+      var t = window.prompt('Label text:');
+      if (t && t.trim()) {
+        strokes.push({ type:'text', color:color, text:t.trim(), sx:p.x, sy:p.y,
+                       fontPx: Math.max(18, Math.round((baseImg ? baseImg.width : 800) * 0.035)) });
+        redraw();
+      }
+      return;
+    }
+    cur = (tool === 'draw')
+      ? { type:'draw', color:color, lineW:lineW, pts:[p] }
+      : { type:tool, color:color, lineW:lineW, sx:p.x, sy:p.y, ex:p.x, ey:p.y };
+  }
+  function move(ev) {
+    if (!cur) return;
+    ev.preventDefault();
+    var p = pos(ev);
+    if (cur.type === 'draw') cur.pts.push(p); else { cur.ex = p.x; cur.ey = p.y; }
+    redraw();
+  }
+  function up() {
+    if (!cur) return;
+    // A tap with a shape tool leaves a zero-size mark that is invisible but
+    // still burns in. Discard it rather than record something unseeable.
+    var tiny = cur.type !== 'draw' &&
+               Math.abs(cur.ex - cur.sx) < 6 && Math.abs(cur.ey - cur.sy) < 6;
+    if (!tiny) strokes.push(cur);
+    cur = null; redraw();
+  }
+
+  function paintColors() {
+    var wrap = el('pmaColors');
+    if (!wrap) return;
+    wrap.innerHTML = COLORS.map(function(c) {
+      return '<button class="pma-c' + (c.v === color ? ' on' : '') + '"' +
+             ' onclick="PMAnnot.color(\'' + c.v + '\')" aria-label="' + c.n + '">' +
+             '<i style="background:' + c.v + '"></i></button>';
+    }).join('');
+  }
+
+  /**
+   * open(dataUrl, cb, cancelCb) — show the annotator; cb(annotatedDataUrl) on
+   * save. Cancel never calls cb, so the caller keeps the original photo
+   * untouched; cancelCb only lets it refresh whatever it was showing.
+   */
+  function open(dataUrl, cb, cancelCb) {
+    onSave = cb || null; onCancel = cancelCb || null; strokes = []; cur = null;
+    tool = 'draw'; color = '#ef4444';
+    canvas = el('pmaCanvas'); ctx = canvas.getContext('2d');
+    api.tool('draw'); paintColors();
+
+    var img = new Image();
+    img.onerror = function() { alert('Could not open that photo for annotation.'); };
+    img.onload = function() {
+      // Downscale BEFORE it becomes baseImg so stroke coordinates and the final
+      // encode share one coordinate space.
+      var scale = Math.min(1, MAX_EDGE / Math.max(img.width, img.height));
+      if (scale < 1) {
+        var tw = Math.max(1, Math.round(img.width * scale));
+        var th = Math.max(1, Math.round(img.height * scale));
+        var tc = document.createElement('canvas'); tc.width = tw; tc.height = th;
+        var tx = tc.getContext('2d');
+        tx.imageSmoothingEnabled = true; tx.imageSmoothingQuality = 'high';
+        tx.drawImage(img, 0, 0, tw, th);
+        var small = new Image();
+        small.onload = function() { mount(small); };
+        small.src = tc.toDataURL('image/jpeg', 0.92);
+        return;
+      }
+      mount(img);
+    };
+    function mount(im) {
+      baseImg = im;
+      canvas.width = im.width; canvas.height = im.height;
+      redraw();
+      el('pmaOverlay').classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+    img.src = dataUrl;
+
+    if (!canvas._wired) {
+      canvas._wired = true;
+      canvas.addEventListener('mousedown', down);
+      canvas.addEventListener('mousemove', move);
+      window.addEventListener('mouseup', up);
+      canvas.addEventListener('touchstart', down, { passive:false });
+      canvas.addEventListener('touchmove', move, { passive:false });
+      canvas.addEventListener('touchend', up);
+    }
+  }
+
+  function close() {
+    var o = el('pmaOverlay');
+    if (o) o.classList.remove('show');
+    // The pin annotator may still be open underneath, and it owns the lock too.
+    var pinOpen = document.getElementById('cl-annModal');
+    if (!pinOpen || !pinOpen.classList.contains('show')) document.body.style.overflow = '';
+  }
+
+  var api = {
+    open: open,
+    tool: function(t) {
+      tool = t;
+      ['draw','arrow','circle','text'].forEach(function(x) {
+        var b = el('pma-' + x); if (b) b.classList.toggle('on', x === t);
+      });
+    },
+    color: function(c) { color = c; paintColors(); },
+    undo:  function() { strokes.pop(); redraw(); },
+    cancel: function() {
+      var c = onCancel;
+      onSave = null; onCancel = null;
+      close();
+      if (c) c();
+    },
+    save: function() {
+      close();
+      var d = canvas.toDataURL('image/jpeg', QUALITY);
+      var s = onSave;
+      onSave = null; onCancel = null;
+      if (s) s(d);
+    }
+  };
+  return api;
+})();
+
+/* Open the annotator for a stored photo and write the marked-up copy back.
+   Shared by every caller (Checklist, HIRA, Incident) so the burn-and-persist
+   step exists in exactly one place. */
+function pmAnnotatePhoto(photo, taskId, after) {
+  if (!photo || !photo.url) { if (after) after(); return; }
+  PMAnnot.open(photo.url, function(dataUrl) {
+    photo.url = dataUrl;
+    photo.annotated = true;
+    if (taskId) _clSyncPhotoRow(taskId);
+    if (typeof clAnnRender === 'function' &&
+        document.getElementById('cl-annModal').classList.contains('show')) {
+      clAnnRender();
+    }
+    if (after) after();
+  }, after);   // cancel still repaints — the photo was captured either way
+}
+
 /* ── Box annotation (HIRA evidence) ─────────────────────────────────────
    HIRA does not use pins: the register wants "the hazard is HERE", not a
    numbered legend keyed to checklist items. One dragged rectangle says that.
@@ -6698,8 +7043,13 @@ function clAnnBurnBox(photo, cb) {
 
   document.addEventListener('pointerup', function() {
     if (!drag || !_clAnnTask) { drag = null; return; }
-    // A tap (no movement) opens the status sheet; a drag just commits position.
-    if (!drag.moved && !_clAnnPlacing) clAnnOpenStatus(drag.i);
+    // A tap (no movement) sets status; a drag just commits position.
+    // Legend mode cycles in place — same one-tap rule as the list beside it.
+    // Free mode still opens the sheet, which is also where its note field lives.
+    if (!drag.moved && !_clAnnPlacing) {
+      if (_clAnnMode === 'legend') clAnnCycleStatus(_clAnnPhoto, drag.i);
+      else clAnnOpenStatus(drag.i);
+    }
     drag = null;
   });
 })();
@@ -8135,7 +8485,10 @@ function pmJumpToPoint(pt) {
   var at = _pmFindPin(pt);
   if (at) {
     clOpenAnnotator('pm', at.at, 'legend', _pmItemDefs);
-    setTimeout(function(){ clAnnOpenStatus(at.idx); }, 250);
+    // Highlight the pin rather than opening a status sheet: legend mode sets
+    // status by tapping the row or the pin itself, so a sheet here would be a
+    // second way to do the same thing — and it would cover the photo.
+    setTimeout(function(){ clAnnSelectPin(at.idx); }, 250);
     return;
   }
   if (!list.length) { showStatus('Add a photo first, then pin this point.', 'info', 3500); return; }
@@ -8551,7 +8904,8 @@ function clitJumpToPoint(pt) {
     for (var j = 0; j < list[i].pins.length; j++) {
       if (String(list[i].pins[j].p) === String(pt)) {
         clOpenAnnotator('clit', i, 'legend', _clitItemDefs);
-        setTimeout(function(){ clAnnOpenStatus(j); }, 250);
+        // Select, don't open a sheet — see pmJumpToPoint.
+        (function(pinIdx){ setTimeout(function(){ clAnnSelectPin(pinIdx); }, 250); })(j);
         return;
       }
     }
@@ -9898,7 +10252,7 @@ function sfHazardDetail(sr){
        implementation — same capture, same downscaling, same pin editor. */
     '<label>Evidence Photos</label>'+
     '<div class="hf-coc-hint">Add photos of the hazard or the control in place. '+
-      'Tap a photo, then drag a box around the hazard.</div>'+
+      'Tap a photo to draw on it.</div>'+
     '<div id="hz-photo-row" class="hz-photo-row"></div>'+
     '<button type="button" class="hf-coc-add" onclick="hzAddPhoto()">+ Add photo</button>'+
     '<button class="sf-btn-primary" onclick="sfSaveHazard('+(isNew?'null':sr)+')">'+
@@ -9920,9 +10274,10 @@ function sfHazardDetail(sr){
    second set of downscaling rules and a second set of bugs. */
 function hzAddPhoto(){
   if(typeof clOpenPhoto!=='function'){ showStatus('Photo tool unavailable','error',3000); return; }
-  /* 'box', not 'free': HIRA evidence marks WHERE the hazard is, which is an area,
-     not a numbered point keyed to a checklist item. */
-  _clPhotoMode='box';
+  /* 'mark', not 'free': HIRA evidence shows WHERE the hazard is and what about
+     it is wrong — free drawing, not a numbered point keyed to a checklist item.
+     (Was 'box', which could only frame a rectangle.) */
+  _clPhotoMode='mark';
   clOpenPhoto('hira');
 }
 function hzRenderPhotos(){
@@ -9933,17 +10288,29 @@ function hzRenderPhotos(){
   var bytes=0; list.forEach(function(p){ bytes+=p.url.length*0.75; });
   box.innerHTML=list.map(function(p,i){
     return '<div class="hz-photo">'+
-      '<img src="'+p.url+'" alt="Evidence '+(i+1)+'" onclick="clOpenAnnotator(\'hira\','+i+',\'box\')">'+
+      '<img src="'+p.url+'" alt="Evidence '+(i+1)+'" onclick="hzAnnotate('+i+')">'+
       '<button type="button" class="hz-photo-x" title="Remove" '+
         'onclick="hzDelPhoto('+i+')">&times;</button>'+
-      /* Badge says whether the hazard has been marked. Legacy photos carry pins
-         instead of a box, so both count as annotated. */
-      (p.box ? '<span class="hz-photo-pins" title="Hazard area marked">&#9633;</span>'
+      /* Badge says whether the hazard has been marked. Legacy photos carry a
+         box or pins instead of freehand strokes, so all three count as marked. */
+      (p.annotated ? '<span class="hz-photo-pins" title="Marked up">&#9998;</span>'
+        : p.box ? '<span class="hz-photo-pins" title="Hazard area marked">&#9633;</span>'
              : (p.pins&&p.pins.length?'<span class="hz-photo-pins">'+p.pins.length+'</span>':''))+
     '</div>';
   }).join('')+
   '<div class="hz-photo-meta">'+list.length+' photo'+(list.length>1?'s':'')+
     ' · ~'+Math.round(bytes/1024)+'KB</div>';
+}
+/* Tapping an evidence photo goes straight into the freehand annotator — the
+   same tool 5S uses. Replaces box mode, which could only say "somewhere in this
+   rectangle" and needed a separate drag-then-close flow to commit. */
+function hzAnnotate(i){
+  var p=(_clPhotos['hira']||[])[i];
+  if(!p) return;
+  PMAnnot.open(p.url, function(dataUrl){
+    p.url=dataUrl; p.annotated=true;
+    hzRenderPhotos();
+  });
 }
 function hzDelPhoto(i){
   var list=_clPhotos['hira']||[];
