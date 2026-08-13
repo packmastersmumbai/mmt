@@ -3192,6 +3192,23 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
     </div>
   </div>
 
+  <!-- ── CLIT item editor ───────────────────────────────────────────────────
+       CLIT lists were previously editable only by hand-editing the OPM_CLIT
+       sheet. Reuses the SOP editor's chrome so both authoring flows look and
+       behave the same. -->
+  <div class="sop-modal" id="clitEditorModal">
+    <div class="sop-bar">
+      <button class="sop-x" onclick="clitCloseEditor()" aria-label="Close editor">&#8249;</button>
+      <span>Edit CLIT</span>
+      <span class="sop-sp"></span>
+    </div>
+    <div class="sop-body" id="clitEditorBody"></div>
+    <div class="sop-foot">
+      <button class="sop-btn ghost" onclick="clitCloseEditor()">Cancel</button>
+      <button class="sop-btn ok" onclick="clitSaveItems()">&#10003; Save</button>
+    </div>
+  </div>
+
   <!-- ── Freehand photo annotator (pen / arrow / circle / text) ──────────────
        Ported from the 5S system's PMAnnot, which floor staff already use. Marks
        are drawn on a canvas and BURNED INTO the JPEG on save — uploadHazardPhotos()
@@ -7511,7 +7528,12 @@ function loadCLIT(machineId) {
         el.innerHTML = '<div class="spinner-inline" style="color:#dc2626">' + esc(d.error || 'Error') + '</div>';
         return;
       }
-      var html = '<div style="padding:4px 0 12px;font-size:12px;color:#64748b">C = Clean &nbsp; L = Lubricate &nbsp; I = Inspect &nbsp; T = Tighten</div>';
+      var html = '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 0 12px">' +
+        '<div style="font-size:12px;color:#64748b">C = Clean &nbsp; L = Lubricate &nbsp; I = Inspect &nbsp; T = Tighten</div>' +
+        '<button onclick="clitOpenEditor(\'' + esc(machineId) + '\')" ' +
+        'style="flex:none;min-height:34px;padding:0 14px;border:0;border-radius:7px;background:#0284c7;' +
+        'color:#fff;font-size:12px;font-weight:600;cursor:pointer">&#9998; Edit</button>' +
+      '</div>';
       html += (d.items || []).map(function(item, i) {
         return '<div class="pm-card">' +
           '<div class="pm-icon" style="background:#f0fdf4;color:#16a34a">' + (LETTERS[i % 4] || 'C') + '</div>' +
@@ -7975,6 +7997,180 @@ function sopApproveDirect() {
   _sopDraft = JSON.parse(JSON.stringify(_sopCur));
   SOP_SECTIONS.forEach(function(s){ if (!Array.isArray(_sopDraft[s[0]])) _sopDraft[s[0]] = []; });
   _sopSave('approve');
+}
+
+/* ══ CLIT item editor ══════════════════════════════════════════════════════
+   Edits the per-machine CLIT list that used to be reachable only by editing
+   the OPM_CLIT sheet by hand. Mirrors the SOP editor: load into a draft,
+   mutate the draft, send the whole list on save. */
+
+var CLIT_TYPES = [
+  ['C', 'Cleaning',    '#0284c7'],
+  ['L', 'Lubrication', '#ea580c'],
+  ['I', 'Inspection',  '#7c3aed'],
+  ['T', 'Tightening',  '#059669']
+];
+var _clitDraft = null;
+var _clitMeta  = null;
+
+function clitOpenEditor(machineId) {
+  var mid = machineId || (_clitMeta && _clitMeta.machineId) || '';
+  if (!mid) { showStatus('Select a machine first.', 'error', 3000); return; }
+  var modal = document.getElementById('clitEditorModal');
+  var body  = document.getElementById('clitEditorBody');
+  if (!modal || !body) return;
+  body.innerHTML = '<div class="loading-spinner"><div class="spinner-ring"></div>Loading CLIT…</div>';
+  modal.classList.add('show');
+
+  google.script.run
+    .withSuccessHandler(function(r) {
+      if (!r || !r.success) {
+        body.innerHTML = '<div style="padding:16px;color:#dc2626;font-size:13px">' +
+                         ((r && r.message) || 'Could not load CLIT.') + '</div>';
+        return;
+      }
+      _clitMeta  = r;
+      _clitDraft = (r.items || []).map(function(ci) {
+        return {type:ci.type||'C', en:ci.en||'', hi:ci.hi||'', freq:ci.freq||'', tool:ci.tool||''};
+      });
+      clitRenderEditor();
+    })
+    .withFailureHandler(function(e) {
+      body.innerHTML = '<div style="padding:16px;color:#dc2626;font-size:13px">' +
+                       ((e && e.message) || e) + '</div>';
+    })
+    .getMachineCLITData(mid);
+}
+
+function clitCloseEditor() {
+  var m = document.getElementById('clitEditorModal');
+  if (m) m.classList.remove('show');
+}
+
+function clitRenderEditor() {
+  var body = document.getElementById('clitEditorBody');
+  if (!body || !_clitDraft) return;
+  var h = '';
+
+  // Say where this list came from. Someone editing what they assume is a
+  // machine-specific list may actually be looking at a category default.
+  var srcNote = {
+    machine:  ['This machine has its own CLIT list.', '#065f46', '#d1fae5'],
+    category: ['Showing the ' + (_clitMeta.category || 'category') +
+               ' default. Saving creates a list specific to this machine.', '#92400e', '#fef3c7'],
+    override: ['Locked: this machine uses the built-in set "' + _clitMeta.overrideKey +
+               '", which overrides the sheet. Edits here will not take effect.', '#991b1b', '#fee2e2']
+  }[_clitMeta.source] || ['', '#475569', '#f1f5f9'];
+
+  h += '<div style="margin:10px 0;padding:8px 10px;border-radius:6px;font-size:11.5px;line-height:1.45;' +
+       'background:' + srcNote[2] + ';color:' + srcNote[1] + '">' + esc(srcNote[0]) + '</div>';
+
+  h += '<div style="font-size:11px;color:#64748b;margin:0 0 8px">' +
+       esc(_clitMeta.machineId) + (_clitMeta.machineName ? ' — ' + esc(_clitMeta.machineName) : '') +
+       '</div>';
+
+  if (!_clitDraft.length) {
+    h += '<div style="padding:14px;text-align:center;color:#94a3b8;font-size:12px">' +
+         'No items yet. Add one below.</div>';
+  }
+
+  _clitDraft.forEach(function(ci, i) {
+    var clr = (CLIT_TYPES.filter(function(t){ return t[0] === ci.type; })[0] || CLIT_TYPES[0])[2];
+    h += '<div class="sop-row" style="border-left:3px solid ' + clr + ';padding:8px 10px;margin-bottom:8px;' +
+         'background:#fff;border-radius:6px;box-shadow:0 1px 2px rgba(0,0,0,.06)">';
+
+    h += '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">';
+    CLIT_TYPES.forEach(function(t) {
+      var on = ci.type === t[0];
+      h += '<button onclick="clitSetType(' + i + ',\'' + t[0] + '\')" ' +
+           'style="flex:1;min-height:34px;border:1px solid ' + (on ? t[2] : '#cbd5e1') + ';' +
+           'background:' + (on ? t[2] : '#fff') + ';color:' + (on ? '#fff' : '#64748b') + ';' +
+           'border-radius:5px;font-size:11px;font-weight:700;cursor:pointer">' + t[0] + '</button>';
+    });
+    h += '<button onclick="clitDelRow(' + i + ')" class="sop-del" ' +
+         'style="min-width:38px;min-height:34px;border:1px solid #fecaca;background:#fef2f2;' +
+         'color:#dc2626;border-radius:5px;font-size:14px;cursor:pointer" aria-label="Delete item">&times;</button>';
+    h += '</div>';
+
+    h += _clitField(i, 'en',   'Task (English)', ci.en);
+    h += _clitField(i, 'hi',   'Task (Hindi)',   ci.hi);
+    h += '<div style="display:flex;gap:6px">' +
+           '<div style="flex:1">' + _clitField(i, 'freq', 'Frequency', ci.freq) + '</div>' +
+           '<div style="flex:1">' + _clitField(i, 'tool', 'Tool',      ci.tool) + '</div>' +
+         '</div>';
+    h += '</div>';
+  });
+
+  h += '<button onclick="clitAddRow()" class="sop-add" ' +
+       'style="width:100%;min-height:40px;margin:4px 0 80px;border:1px dashed #94a3b8;background:#f8fafc;' +
+       'color:#475569;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">+ Add CLIT item</button>';
+
+  body.innerHTML = h;
+}
+
+function _clitField(i, key, label, val) {
+  return '<div style="margin-bottom:5px">' +
+    '<div style="font-size:10px;color:#94a3b8;margin-bottom:2px">' + esc(label) + '</div>' +
+    '<input value="' + esc(val || '') + '" oninput="clitSetCell(' + i + ',\'' + key + '\',this.value)" ' +
+    'style="width:100%;box-sizing:border-box;min-height:34px;padding:6px 8px;border:1px solid #cbd5e1;' +
+    'border-radius:5px;font-size:12.5px">' +
+    '</div>';
+}
+
+/* Cell edits write straight to the draft without re-rendering — repainting on
+   every keystroke would drop focus mid-word. */
+function clitSetCell(i, key, val) {
+  if (_clitDraft && _clitDraft[i]) _clitDraft[i][key] = val;
+}
+
+function clitSetType(i, t) {
+  if (!_clitDraft || !_clitDraft[i]) return;
+  _clitDraft[i].type = t;
+  clitRenderEditor();
+}
+
+function clitAddRow() {
+  if (!_clitDraft) return;
+  _clitDraft.push({type:'C', en:'', hi:'', freq:'Daily', tool:''});
+  clitRenderEditor();
+}
+
+function clitDelRow(i) {
+  if (!_clitDraft || !_clitDraft[i]) return;
+  if (!confirm('Delete this CLIT item?')) return;
+  _clitDraft.splice(i, 1);
+  clitRenderEditor();
+}
+
+function clitSaveItems() {
+  if (!_clitDraft || !_clitMeta) return;
+
+  var clean = _clitDraft.filter(function(ci){ return String(ci.en || '').trim(); });
+  if (!clean.length) { showStatus('Add at least one item with a task name.', 'error', 4000); return; }
+
+  var by = '';
+  try { by = localStorage.getItem('pm_sop_author') || ''; } catch(e) {}
+  if (!by) {
+    by = prompt('Your name (recorded against this edit):') || '';
+    if (!by.trim()) { showStatus('Not saved — a name is required.', 'error', 4000); return; }
+    try { localStorage.setItem('pm_sop_author', by.trim()); } catch(e) {}
+  }
+
+  showStatus('Saving CLIT…', 'info', 0);
+  google.script.run
+    .withSuccessHandler(function(r) {
+      if (r && r.success) {
+        showStatus('Saved ' + r.count + ' CLIT items.', 'success', 4000);
+        clitCloseEditor();
+        if (typeof loadCLIT === 'function') loadCLIT(_clitMeta.machineId);
+      } else {
+        showStatus((r && r.message) || 'Not saved.', 'error', 6000);
+      }
+    })
+    .withFailureHandler(function(e) {
+      showStatus('Not saved: ' + ((e && e.message) || e), 'error', 5000);
+    })
+    .saveMachineCLIT({machineId:_clitMeta.machineId, items:clean, by:by.trim()});
 }
 
 var _imgUploadMachineId = '';
