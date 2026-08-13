@@ -3829,10 +3829,15 @@ document.addEventListener('keydown', function (ev) {
   el.click();
 });
 
+/* Escapes ' as well as ", so a value is safe in a single-quoted attribute or
+   inside an inline handler. No current caller interpolates user text into an
+   onclick — every one passes an integer index — but that is a convention, not
+   a guarantee, and one added string argument would otherwise be an XSS hole. */
 function esc(s) {
   return String(s == null ? '' : s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -7530,7 +7535,11 @@ function loadCLIT(machineId) {
       }
       var html = '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 0 12px">' +
         '<div style="font-size:12px;color:#64748b">C = Clean &nbsp; L = Lubricate &nbsp; I = Inspect &nbsp; T = Tighten</div>' +
-        '<button onclick="clitOpenEditor(\'' + esc(machineId) + '\')" ' +
+        // Machine ID goes in a data attribute rather than inline JS: it is the
+        // one string argument passed to a handler here, and reading it back via
+        // dataset keeps quoting out of the code path entirely.
+        '<button data-mid="' + esc(machineId) + '" ' +
+        'onclick="clitOpenEditor(this.dataset.mid)" ' +
         'style="flex:none;min-height:34px;padding:0 14px;border:0;border-radius:7px;background:#0284c7;' +
         'color:#fff;font-size:12px;font-weight:600;cursor:pointer">&#9998; Edit</button>' +
       '</div>';
