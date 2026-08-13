@@ -1255,6 +1255,46 @@ body {
 
 .ann-foot { flex-shrink:0; padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px)); background:#0f172a; }
 
+/* ── SOP editor ───────────────────────────────────────────────────────────
+   Light surface, unlike the photo tools: this is document authoring, often at
+   a desk, and long bilingual text is easier to read on white. */
+.sop-modal { display:none; position:fixed; inset:0; z-index:10001; background:#f1f5f9;
+  flex-direction:column; }
+.sop-modal.show { display:flex; }
+.sop-bar { display:flex; align-items:center; gap:10px; padding:10px 12px; background:#7c3aed; color:#fff;
+  font-size:15px; font-weight:700; padding-top:calc(10px + env(safe-area-inset-top,0px)); flex-shrink:0; }
+.sop-x { min-width:40px; min-height:40px; border:0; border-radius:8px; background:rgba(255,255,255,.16);
+  color:#fff; font-size:20px; cursor:pointer; }
+.sop-sp { margin-left:auto; }
+.sop-body { flex:1; min-height:0; overflow-y:auto; padding:12px 12px 24px; -webkit-overflow-scrolling:touch; }
+.sop-l { display:block; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.5px;
+  color:#475569; margin:12px 0 4px; }
+.sop-ta, .sop-in { width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:9px 10px;
+  font-size:13px; font-family:inherit; color:#0f172a; background:#fff; }
+.sop-ta:focus, .sop-in:focus { outline:2px solid #7c3aed; outline-offset:-1px; border-color:#7c3aed; }
+.sop-sec { background:#fff; border-radius:10px; border-left:4px solid #94a3b8; padding:10px 11px;
+  margin-top:14px; box-shadow:0 1px 2px rgba(15,23,42,.06); }
+.sop-sech { font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.6px;
+  display:flex; align-items:center; gap:7px; }
+.sop-cnt { background:#e2e8f0; color:#475569; border-radius:20px; padding:1px 8px; font-size:11px; }
+.sop-empty { font-size:12px; color:#94a3b8; padding:8px 2px; font-style:italic; }
+.sop-row { border:1px solid #e2e8f0; border-radius:9px; padding:8px 9px; margin-top:9px; background:#f8fafc; }
+.sop-rowh { display:flex; align-items:center; margin-bottom:4px; }
+.sop-rowh b { font-size:13px; font-weight:800; }
+.sop-del { margin-left:auto; min-width:34px; min-height:34px; border:0; border-radius:7px;
+  background:#fee2e2; color:#b91c1c; font-size:13px; font-weight:700; cursor:pointer; }
+.sop-fl { display:block; font-size:10px; font-weight:700; color:#64748b; margin:7px 0 3px;
+  text-transform:uppercase; letter-spacing:.4px; }
+.sop-add { width:100%; min-height:40px; margin-top:10px; border:1px dashed currentColor; border-radius:9px;
+  background:none; font-size:12px; font-weight:700; cursor:pointer; }
+.sop-foot { flex-shrink:0; display:flex; gap:8px; padding:10px 12px; background:#fff;
+  border-top:1px solid #e2e8f0; padding-bottom:calc(10px + env(safe-area-inset-bottom,0px)); }
+.sop-btn { flex:1; min-height:46px; border:0; border-radius:9px; font-size:14px; font-weight:700;
+  cursor:pointer; touch-action:manipulation; }
+.sop-btn.ghost { background:#f1f5f9; color:#475569; flex:0 0 90px; }
+.sop-btn.draft { background:#e0e7ff; color:#3730a3; }
+.sop-btn.ok    { background:#16a34a; color:#fff; }
+
 /* ── Freehand annotator (PMAnnot) ─────────────────────────────────────────
    Full-screen over everything, including the pin annotator (z 9999) so it can
    be opened from a checklist photo without the pin UI showing through. */
@@ -3133,6 +3173,23 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
     <div class="ann-hint" id="cl-annHint"></div>
     <div class="ann-sheet" id="cl-annSheetPoints"></div>
     <div class="ann-sheet" id="cl-annSheetStatus"></div>
+  </div>
+
+  <!-- ── SOP editor ─────────────────────────────────────────────────────────
+       Full-screen so a long procedure is editable on a phone. Save draft and
+       Approve are separate actions: approving is a signature, not a save. -->
+  <div class="sop-modal" id="sopEditorModal">
+    <div class="sop-bar">
+      <button class="sop-x" onclick="sopCloseEditor()" aria-label="Close editor">&#8249;</button>
+      <span>Edit SOP</span>
+      <span class="sop-sp"></span>
+    </div>
+    <div class="sop-body" id="sopEditorBody"></div>
+    <div class="sop-foot">
+      <button class="sop-btn ghost" onclick="sopCloseEditor()">Cancel</button>
+      <button class="sop-btn draft" onclick="sopSaveDraft()">Save draft</button>
+      <button class="sop-btn ok" onclick="sopApprove()">&#10003; Approve</button>
+    </div>
   </div>
 
   <!-- ── Freehand photo annotator (pen / arrow / circle / text) ──────────────
@@ -7699,10 +7756,35 @@ function loadSOPView(machineId) {
           }).join('')+
         '</div>';
       }
+      _sopCur = sop; _sopCurMachine = sop.machineId || machineId;
+      /* Status is stated on the document itself. Every machine has always
+         returned a full-looking SOP, so without this an unreviewed category
+         template is indistinguishable from a procedure someone signed. */
+      var st = sop.status || 'template';
+      var stMeta = SOP_STATUS_UI[st] || SOP_STATUS_UI.template;
+      var stampLine = st === 'approved' && sop.approvedBy
+        ? 'Approved by ' + esc(sop.approvedBy) + (sop.approvedAt ? ' · ' + esc(sop.approvedAt) : '') +
+          (sop.revision ? ' · rev ' + esc(String(sop.revision)) : '')
+        : (st === 'draft' && sop.modifiedBy
+            ? 'Draft by ' + esc(sop.modifiedBy) + (sop.modifiedAt ? ' · ' + esc(sop.modifiedAt) : '')
+            : 'Not yet reviewed — generated from the ' + esc(sop.category || 'category') + ' template');
+
       var html = '<div style="background:#7c3aed;color:white;padding:12px 16px;margin-bottom:8px;border-radius:8px">'+
         '<div style="font-size:12px;opacity:0.7">'+esc(sop.machineId||machineId)+' · '+esc(sop.category||'')+'</div>'+
-        '<div style="font-size:15px;font-weight:700;margin-top:2px">Standard Operating Procedure</div>'+
-        (sop.modifiedAt?'<div style="font-size:11px;opacity:0.6;margin-top:3px">Updated: '+esc(sop.modifiedAt)+'</div>':'')+
+        '<div style="display:flex;align-items:center;gap:8px;margin-top:2px;flex-wrap:wrap">'+
+          '<div style="font-size:15px;font-weight:700">Standard Operating Procedure</div>'+
+          '<span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;'+
+            'padding:3px 8px;border-radius:20px;background:'+stMeta.bg+';color:'+stMeta.fg+'">'+stMeta.label+'</span>'+
+        '</div>'+
+        '<div style="font-size:11px;opacity:0.75;margin-top:4px">'+stampLine+'</div>'+
+        '<div style="margin-top:9px;display:flex;gap:7px;flex-wrap:wrap">'+
+          '<button onclick="sopOpenEditor()" style="min-height:34px;padding:0 14px;border:0;border-radius:7px;'+
+            'background:rgba(255,255,255,.16);color:#fff;font-size:12px;font-weight:700;cursor:pointer">&#9998; Edit</button>'+
+          (st !== 'approved'
+            ? '<button onclick="sopApproveDirect()" style="min-height:34px;padding:0 14px;border:0;border-radius:7px;'+
+              'background:#16a34a;color:#fff;font-size:12px;font-weight:700;cursor:pointer">&#10003; Approve</button>'
+            : '')+
+        '</div>'+
       '</div>';
       if (sop.purpose) html += '<div style="padding:10px 12px;background:#f0f9ff;border-radius:6px;font-size:13px;color:#1e293b;margin-bottom:8px"><b>Purpose:</b> '+esc(sop.purpose)+'</div>';
       if (sop.scope)   html += '<div style="padding:8px 12px;background:#fffbeb;border-radius:6px;font-size:13px;color:#1e293b;margin-bottom:8px"><b>Scope:</b> '+esc(sop.scope)+'</div>';
@@ -7715,6 +7797,184 @@ function loadSOPView(machineId) {
     })
     .withFailureHandler(function(e) { el.innerHTML = '<div style="padding:16px;color:#dc2626;font-size:13px">Error: '+esc((e&&e.message)||'unknown')+'</div>'; })
     .getMachineSOPData(machineId);
+}
+
+/* ── SOP authoring ──────────────────────────────────────────────────────────
+   Every SOP starts as a category template that nobody has read. This turns the
+   viewer into an editor so the person responsible can correct it and sign it,
+   and makes the difference between "generated" and "approved" visible on the
+   document instead of implied by its existence.
+
+   The five sections are stored as arrays of rows. Row shape differs per
+   section (safety carries PPE + responsibility, steps carry expected result +
+   notes), so the editor is driven by a column spec rather than five separate
+   forms. Column 0 is always the row number and is renumbered on save — an
+   operator reordering steps should not have to fix the numbering by hand. */
+var SOP_STATUS_UI = {
+  template: { label:'Template',  bg:'rgba(255,255,255,.22)', fg:'#fff'    },
+  draft:    { label:'Draft',     bg:'#fbbf24',               fg:'#422006' },
+  approved: { label:'Approved',  bg:'#16a34a',               fg:'#fff'    }
+};
+
+/* [key, title, colour, column headings]. Headings after the first drive how
+   many fields each row edits — taken from the shape the backend already
+   stores, so an edited row round-trips into the same columns it came from. */
+var SOP_SECTIONS = [
+  ['safety',    'Safety Precautions',  '#dc2626', ['Precaution','PPE / Control','Responsibility']],
+  ['preChecks', 'Pre-Start Checks',    '#d97706', ['Check','Acceptance criteria','Method','Frequency','Ref']],
+  ['steps',     'Operating Steps',     '#7c3aed', ['Step','Expected result','Notes','Responsibility']],
+  ['shutdown',  'Shutdown Procedure',  '#0284c7', ['Action','Responsibility']],
+  ['abnormal',  'Abnormal Situations', '#be185d', ['Situation','Immediate action','Escalate to']]
+];
+
+var _sopCur = null;          // SOP currently displayed
+var _sopCurMachine = '';
+var _sopDraft = null;        // working copy while the editor is open
+
+function _sopWho() {
+  /* GAS serves this app anonymously, so the server cannot identify the author.
+     Ask once and remember — an approval signed by "unknown" is not a sign-off. */
+  var k = 'pm_sop_author';
+  var v = '';
+  try { v = localStorage.getItem(k) || ''; } catch(e) {}
+  if (!v) {
+    v = (window.prompt('Your name (recorded against this SOP):') || '').trim();
+    if (!v) return '';
+    try { localStorage.setItem(k, v); } catch(e) {}
+  }
+  return v;
+}
+
+function sopOpenEditor() {
+  if (!_sopCur) return;
+  // Deep copy: Cancel must leave the displayed SOP untouched.
+  _sopDraft = JSON.parse(JSON.stringify(_sopCur));
+  SOP_SECTIONS.forEach(function(s) {
+    if (!Array.isArray(_sopDraft[s[0]])) _sopDraft[s[0]] = [];
+  });
+  document.getElementById('sopEditorModal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+  sopRenderEditor();
+}
+
+function sopCloseEditor() {
+  document.getElementById('sopEditorModal').classList.remove('show');
+  document.body.style.overflow = '';
+  _sopDraft = null;
+}
+
+function sopRenderEditor() {
+  var d = _sopDraft; if (!d) return;
+  var h = '';
+  h += '<label class="sop-l">Purpose</label>' +
+       '<textarea class="sop-ta" rows="3" oninput="_sopDraft.purpose=this.value">' + esc(d.purpose || '') + '</textarea>';
+  h += '<label class="sop-l">Scope</label>' +
+       '<textarea class="sop-ta" rows="2" oninput="_sopDraft.scope=this.value">' + esc(d.scope || '') + '</textarea>';
+
+  SOP_SECTIONS.forEach(function(sec, si) {
+    var key = sec[0], title = sec[1], colour = sec[2], heads = sec[3];
+    var rows = d[key] || [];
+    h += '<div class="sop-sec" style="border-left-color:' + colour + '">' +
+         '<div class="sop-sech" style="color:' + colour + '">' + esc(title) +
+           '<span class="sop-cnt">' + rows.length + '</span></div>';
+    if (!rows.length) h += '<div class="sop-empty">Nothing here yet.</div>';
+    rows.forEach(function(row, ri) {
+      h += '<div class="sop-row">' +
+           '<div class="sop-rowh"><b style="color:' + colour + '">' + (ri + 1) + '</b>' +
+             '<button class="sop-del" onclick="sopDelRow(\'' + key + '\',' + ri + ')" ' +
+               'aria-label="Delete row ' + (ri + 1) + '">&#10005;</button></div>';
+      heads.forEach(function(hd, ci) {
+        // +1 skips the stored row number, which the editor renumbers itself.
+        var val = row[ci + 1] == null ? '' : String(row[ci + 1]);
+        var big = ci === 0;
+        h += '<label class="sop-fl">' + esc(hd) + '</label>' +
+             (big
+               ? '<textarea class="sop-in" rows="2" oninput="sopSetCell(\'' + key + '\',' + ri + ',' + (ci+1) + ',this.value)">' + esc(val) + '</textarea>'
+               : '<input class="sop-in" value="' + esc(val) + '" oninput="sopSetCell(\'' + key + '\',' + ri + ',' + (ci+1) + ',this.value)">');
+      });
+      h += '</div>';
+    });
+    h += '<button class="sop-add" style="color:' + colour + '" onclick="sopAddRow(\'' + key + '\',' + si + ')">+ Add ' + esc(title.replace(/s$/, '').toLowerCase()) + '</button>';
+    h += '</div>';
+  });
+  document.getElementById('sopEditorBody').innerHTML = h;
+}
+
+function sopSetCell(key, ri, ci, val) {
+  if (!_sopDraft || !_sopDraft[key] || !_sopDraft[key][ri]) return;
+  _sopDraft[key][ri][ci] = val;   // no re-render: it would blur the field mid-typing
+}
+
+function sopAddRow(key, si) {
+  if (!_sopDraft) return;
+  var heads = SOP_SECTIONS[si][3];
+  var row = [ (_sopDraft[key] || []).length + 1 ];
+  heads.forEach(function() { row.push(''); });
+  (_sopDraft[key] = _sopDraft[key] || []).push(row);
+  sopRenderEditor();
+  var body = document.getElementById('sopEditorBody');
+  if (body) body.scrollTop = body.scrollHeight;
+}
+
+function sopDelRow(key, ri) {
+  if (!_sopDraft || !_sopDraft[key]) return;
+  if (!confirm('Delete this row?')) return;
+  _sopDraft[key].splice(ri, 1);
+  sopRenderEditor();
+}
+
+/** Drop blank rows and renumber, so saved content matches what is on screen. */
+function _sopClean(d) {
+  var out = {};
+  SOP_SECTIONS.forEach(function(sec) {
+    var key = sec[0];
+    out[key] = (d[key] || [])
+      .filter(function(r) { return r.slice(1).some(function(c){ return String(c||'').trim(); }); })
+      .map(function(r, i) { return [i + 1].concat(r.slice(1).map(function(c){ return String(c == null ? '' : c); })); });
+  });
+  out.purpose = d.purpose || '';
+  out.scope   = d.scope   || '';
+  return out;
+}
+
+function _sopSave(action) {
+  var d = _sopDraft || _sopCur;
+  if (!d) return;
+  var who = _sopWho();
+  if (!who) { showStatus('Name is required to record who edited this SOP.', 'error', 3200); return; }
+  if (action === 'approve' &&
+      !confirm('Approve this SOP for ' + (_sopCurMachine || '') + '?\n\n' +
+               'It becomes the controlled procedure operators follow, signed in your name.')) return;
+
+  var payload = _sopClean(d);
+  payload.machineId = _sopCurMachine;
+  payload.category  = d.category || '';
+  payload.by        = who;
+  payload.action    = action;
+
+  showStatus(action === 'approve' ? 'Approving…' : 'Saving draft…', 'info', 0);
+  google.script.run
+    .withSuccessHandler(function(r) {
+      if (!r || !r.success) { showStatus('Not saved: ' + ((r && r.message) || 'unknown'), 'error', 5000); return; }
+      showStatus(r.message || 'Saved', 'success', 2600);
+      sopCloseEditor();
+      loadSOPView(_sopCurMachine);   // re-read from the server, never assume
+    })
+    .withFailureHandler(function(e) {
+      showStatus('Not saved: ' + ((e && e.message) || e), 'error', 5000);
+    })
+    .saveSOPEdits(payload);
+}
+
+function sopSaveDraft()   { _sopSave('draft'); }
+function sopApprove()     { _sopSave('approve'); }
+
+/** Approve straight from the viewer, without opening the editor. */
+function sopApproveDirect() {
+  if (!_sopCur) return;
+  _sopDraft = JSON.parse(JSON.stringify(_sopCur));
+  SOP_SECTIONS.forEach(function(s){ if (!Array.isArray(_sopDraft[s[0]])) _sopDraft[s[0]] = []; });
+  _sopSave('approve');
 }
 
 var _imgUploadMachineId = '';
