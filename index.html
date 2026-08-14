@@ -3209,6 +3209,22 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
     </div>
   </div>
 
+  <!-- ── PM task editor ─────────────────────────────────────────────────────
+       PM lists had no editor at all until now — they came from code constants,
+       so changing one meant a redeploy. Reuses the SOP/CLIT editor chrome. -->
+  <div class="sop-modal" id="pmEditorModal">
+    <div class="sop-bar">
+      <button class="sop-x" onclick="pmCloseEditor()" aria-label="Close editor">&#8249;</button>
+      <span>Edit PM</span>
+      <span class="sop-sp"></span>
+    </div>
+    <div class="sop-body" id="pmEditorBody"></div>
+    <div class="sop-foot">
+      <button class="sop-btn ghost" onclick="pmCloseEditor()">Cancel</button>
+      <button class="sop-btn ok" onclick="pmSaveItems()">&#10003; Save</button>
+    </div>
+  </div>
+
   <!-- ── Freehand photo annotator (pen / arrow / circle / text) ──────────────
        Ported from the 5S system's PMAnnot, which floor staff already use. Marks
        are drawn on a canvas and BURNED INTO the JPEG on save — uploadHazardPhotos()
@@ -7504,7 +7520,12 @@ function loadPM(machineId) {
         el.innerHTML = '<div class="spinner-inline" style="color:#dc2626">' + esc(d.error || 'Error') + '</div>';
         return;
       }
-      var html = '<div style="padding:4px 0 12px;font-size:12px;color:#64748b">PM Frequency: <b>' + esc(d.pmFreq) + '</b> &nbsp;|&nbsp; Category: <b>' + esc(d.category) + '</b></div>';
+      var html = '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 0 12px">' +
+        '<div style="font-size:12px;color:#64748b">PM Frequency: <b>' + esc(d.pmFreq) + '</b> &nbsp;|&nbsp; Category: <b>' + esc(d.category) + '</b></div>' +
+        '<button data-mid="' + esc(machineId) + '" onclick="pmOpenEditor(this.dataset.mid)" ' +
+        'style="flex:none;min-height:34px;padding:0 14px;border:0;border-radius:7px;background:#16a34a;' +
+        'color:#fff;font-size:12px;font-weight:600;cursor:pointer">&#9998; Edit</button>' +
+      '</div>';
       html += (d.items || []).map(function(item, i) {
         return '<div class="pm-card">' +
           '<div class="pm-icon">' + (i + 1) + '</div>' +
@@ -8186,6 +8207,171 @@ function clitSaveItems() {
       showStatus('Not saved: ' + ((e && e.message) || e), 'error', 5000);
     })
     .saveMachineCLIT({machineId:_clitMeta.machineId, items:clean, by:by.trim()});
+}
+
+/* ══ PM task editor ════════════════════════════════════════════════════════
+   Mirrors the CLIT editor. PM items are {en, hi, freq} — no type letter and no
+   tool column, so the row is simpler than CLIT's. */
+
+var PM_FREQS = ['Monthly','Quarterly','Half Yearly','Annually'];
+var _pmDraft = null;
+var _pmMeta  = null;
+
+function pmOpenEditor(machineId) {
+  var mid = machineId || (_pmMeta && _pmMeta.machineId) || '';
+  if (!mid) { showStatus('Select a machine first.', 'error', 3000); return; }
+  var modal = document.getElementById('pmEditorModal');
+  var body  = document.getElementById('pmEditorBody');
+  if (!modal || !body) return;
+  body.innerHTML = '<div class="loading-spinner"><div class="spinner-ring"></div>Loading PM…</div>';
+  modal.classList.add('show');
+
+  google.script.run
+    .withSuccessHandler(function(r) {
+      if (!r || !r.success) {
+        body.innerHTML = '<div style="padding:16px;color:#dc2626;font-size:13px">' +
+                         esc((r && r.message) || 'Could not load PM.') + '</div>';
+        return;
+      }
+      _pmMeta  = r;
+      _pmDraft = (r.items || []).map(function(pi) {
+        return {en:pi.en||'', hi:pi.hi||'', freq:pi.freq||'Quarterly'};
+      });
+      pmRenderEditor();
+    })
+    .withFailureHandler(function(e) {
+      body.innerHTML = '<div style="padding:16px;color:#dc2626;font-size:13px">' +
+                       esc((e && e.message) || e) + '</div>';
+    })
+    .getMachinePMData(mid);
+}
+
+function pmCloseEditor() {
+  var m = document.getElementById('pmEditorModal');
+  if (m) m.classList.remove('show');
+}
+
+function pmRenderEditor() {
+  var body = document.getElementById('pmEditorBody');
+  if (!body || !_pmDraft) return;
+  var h = '';
+
+  var srcNote = {
+    machine:  ['This machine has its own PM list.', '#065f46', '#d1fae5'],
+    category: ['Showing the ' + esc(_pmMeta.category || 'category') +
+               ' default. Saving creates a list specific to this machine.', '#92400e', '#fef3c7'],
+    override: ['Locked: this machine uses the built-in set "' + esc(_pmMeta.overrideKey) +
+               '", which overrides the sheet. Edits here will not take effect.', '#991b1b', '#fee2e2']
+  }[_pmMeta.source] || ['', '#475569', '#f1f5f9'];
+
+  h += '<div style="margin:10px 0;padding:8px 10px;border-radius:6px;font-size:11.5px;line-height:1.45;' +
+       'background:' + srcNote[2] + ';color:' + srcNote[1] + '">' + srcNote[0] + '</div>';
+
+  h += '<div style="font-size:11px;color:#64748b;margin:0 0 8px">' +
+       esc(_pmMeta.machineId) + (_pmMeta.machineName ? ' — ' + esc(_pmMeta.machineName) : '') +
+       '</div>';
+
+  if (!_pmDraft.length) {
+    h += '<div style="padding:14px;text-align:center;color:#94a3b8;font-size:12px">' +
+         'No PM tasks yet. Add one below.</div>';
+  }
+
+  _pmDraft.forEach(function(pi, i) {
+    h += '<div class="sop-row" style="border-left:3px solid #16a34a;padding:8px 10px;margin-bottom:8px;' +
+         'background:#fff;border-radius:6px;box-shadow:0 1px 2px rgba(0,0,0,.06)">';
+
+    h += '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">' +
+         '<span style="flex:1;font-size:11px;font-weight:700;color:#16a34a">PM task ' + (i+1) + '</span>' +
+         '<button onclick="pmDelRow(' + i + ')" class="sop-del" ' +
+         'style="min-width:38px;min-height:34px;border:1px solid #fecaca;background:#fef2f2;' +
+         'color:#dc2626;border-radius:5px;font-size:14px;cursor:pointer" aria-label="Delete task">&times;</button>' +
+         '</div>';
+
+    h += _pmField(i, 'en', 'Task (English)', pi.en);
+    h += _pmField(i, 'hi', 'Task (Hindi)',   pi.hi);
+
+    // Frequency is a fixed vocabulary — a dropdown prevents "Qtrly" / "3 monthly"
+    // drift that would break any future frequency-based scheduling.
+    h += '<div style="margin-bottom:5px">' +
+         '<div style="font-size:10px;color:#94a3b8;margin-bottom:2px">Frequency</div>' +
+         '<select onchange="pmSetCell(' + i + ',\'freq\',this.value)" ' +
+         'style="width:100%;box-sizing:border-box;min-height:34px;padding:6px 8px;' +
+         'border:1px solid #cbd5e1;border-radius:5px;font-size:12.5px;background:#fff">';
+    var known = PM_FREQS.indexOf(pi.freq) !== -1;
+    PM_FREQS.forEach(function(f){
+      h += '<option value="' + esc(f) + '"' + (pi.freq === f ? ' selected' : '') + '>' + esc(f) + '</option>';
+    });
+    // Preserve an unrecognised existing value rather than silently rewriting it.
+    if (!known && pi.freq) h += '<option value="' + esc(pi.freq) + '" selected>' + esc(pi.freq) + '</option>';
+    h += '</select></div>';
+
+    h += '</div>';
+  });
+
+  h += '<button onclick="pmAddRow()" class="sop-add" ' +
+       'style="width:100%;min-height:40px;margin:4px 0 80px;border:1px dashed #94a3b8;background:#f8fafc;' +
+       'color:#475569;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">+ Add PM task</button>';
+
+  body.innerHTML = h;
+}
+
+function _pmField(i, key, label, val) {
+  return '<div style="margin-bottom:5px">' +
+    '<div style="font-size:10px;color:#94a3b8;margin-bottom:2px">' + esc(label) + '</div>' +
+    '<input value="' + esc(val || '') + '" oninput="pmSetCell(' + i + ',\'' + key + '\',this.value)" ' +
+    'style="width:100%;box-sizing:border-box;min-height:34px;padding:6px 8px;border:1px solid #cbd5e1;' +
+    'border-radius:5px;font-size:12.5px">' +
+    '</div>';
+}
+
+/* Writes straight to the draft without re-rendering — repainting on every
+   keystroke would drop focus mid-word. */
+function pmSetCell(i, key, val) {
+  if (_pmDraft && _pmDraft[i]) _pmDraft[i][key] = val;
+}
+
+function pmAddRow() {
+  if (!_pmDraft) return;
+  _pmDraft.push({en:'', hi:'', freq:'Quarterly'});
+  pmRenderEditor();
+}
+
+function pmDelRow(i) {
+  if (!_pmDraft || !_pmDraft[i]) return;
+  if (!confirm('Delete this PM task?')) return;
+  _pmDraft.splice(i, 1);
+  pmRenderEditor();
+}
+
+function pmSaveItems() {
+  if (!_pmDraft || !_pmMeta) return;
+
+  var clean = _pmDraft.filter(function(pi){ return String(pi.en || '').trim(); });
+  if (!clean.length) { showStatus('Add at least one task with a name.', 'error', 4000); return; }
+
+  var by = '';
+  try { by = localStorage.getItem('pm_sop_author') || ''; } catch(e) {}
+  if (!by) {
+    by = prompt('Your name (recorded against this edit):') || '';
+    if (!by.trim()) { showStatus('Not saved — a name is required.', 'error', 4000); return; }
+    try { localStorage.setItem('pm_sop_author', by.trim()); } catch(e) {}
+  }
+
+  showStatus('Saving PM…', 'info', 0);
+  google.script.run
+    .withSuccessHandler(function(r) {
+      if (r && r.success) {
+        showStatus('Saved ' + r.count + ' PM tasks.', 'success', 4000);
+        pmCloseEditor();
+        if (typeof loadPM === 'function') loadPM(_pmMeta.machineId);
+      } else {
+        showStatus((r && r.message) || 'Not saved.', 'error', 6000);
+      }
+    })
+    .withFailureHandler(function(e) {
+      showStatus('Not saved: ' + ((e && e.message) || e), 'error', 5000);
+    })
+    .saveMachinePM({machineId:_pmMeta.machineId, items:clean, by:by.trim()});
 }
 
 var _imgUploadMachineId = '';
