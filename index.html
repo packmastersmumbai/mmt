@@ -6069,11 +6069,22 @@ function clToggleTask(id) {
   }
 }
 
-function clOpenPhoto(id) {
+/**
+ * clOpenPhoto(id, mode, title) — open the shared capture modal.
+ *
+ * `mode` is a PARAMETER, not a side-effect. It used to be hard-set to 'free'
+ * here, which silently undid whatever the caller had just assigned: hzAddPhoto
+ * set 'mark' on the line before and lost it, so HIRA's "+ Add photo" opened the
+ * wrong annotator and looked broken. Callers that open the modal themselves
+ * (pmAddPhoto, clitAddPhoto) were never affected — only this path was.
+ */
+function clOpenPhoto(id, mode, title) {
   _clPhotoTarget = id;
-  _clPhotoMode   = 'free';   // checklist capture — plain numbered pins
+  _clPhotoMode   = mode || 'free';   // 'free' = checklist numbered pins
   _clPhotoItems  = [];
-  document.getElementById('cl-photoTitle').textContent = 'Task ' + id + ' - Photo';
+  // 'Task <id>' reads as "Task hira" for non-checklist callers, so allow a
+  // caller-supplied title and fall back to the checklist wording.
+  document.getElementById('cl-photoTitle').textContent = title || ('Task ' + id + ' - Photo');
   document.getElementById('cl-photoModal').classList.add('show');
 }
 
@@ -11029,9 +11040,12 @@ function hzAddPhoto(){
   if(typeof clOpenPhoto!=='function'){ showStatus('Photo tool unavailable','error',3000); return; }
   /* 'mark', not 'free': HIRA evidence shows WHERE the hazard is and what about
      it is wrong — free drawing, not a numbered point keyed to a checklist item.
-     (Was 'box', which could only frame a rectangle.) */
-  _clPhotoMode='mark';
-  clOpenPhoto('hira');
+     (Was 'box', which could only frame a rectangle.)
+
+     Passed as an argument rather than assigned first: clOpenPhoto used to reset
+     the mode to 'free' internally, so setting it on the previous line was
+     silently discarded. */
+  clOpenPhoto('hira', 'mark', 'Hazard evidence — photo');
 }
 function hzRenderPhotos(){
   var box=document.getElementById('hz-photo-row');
