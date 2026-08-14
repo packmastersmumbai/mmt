@@ -3122,7 +3122,12 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
       </div>
       <input type="file" id="cl-photoInput" accept="image/*" capture="environment"
              onchange="clHandlePhoto()" style="display:none">
-      <input type="file" id="cl-photoPick" accept="image/*"
+      <!-- `multiple`: the gallery picker takes a batch. Everything downstream
+           already handled a list — _clPhotos is an array, the HIRA row renders
+           N thumbnails, and uploadHazardPhotos loops d.images — so a single-file
+           input was the only thing capping HIRA evidence at one photo per trip.
+           The camera input above stays single: it captures one shot at a time. -->
+      <input type="file" id="cl-photoPick" accept="image/*" multiple
              onchange="clHandlePhoto('pick')" style="display:none">
       <div class="cl-photo-hint" id="cl-photoHint"></div>
     </div>
@@ -5232,8 +5237,18 @@ function _renderRecordDetail(r, color) {
   body += row('Logged By', r.loggedBy);
   body += row('Logged On', r.loggedOn);
 
-  // Action button — open form for this machine
-  body += '<button class="form-submit-btn" style="background:'+color+';margin-top:12px" onclick="closeRecDetail();_recClick(\''+esc(r.machineId)+'\',\''+esc(r.machineName||r.machineId)+'\',\''+r.event.toLowerCase()+'\')">Open Machine &rsaquo;</button>';
+  /* Primary action is the thing you actually came here to do. An open BD gets
+     "Close Breakdown" right here; previously the only button was "Open Machine",
+     which dismissed this modal and dropped you in the machine view to hunt for
+     the same BD as a card and press Close there. Same form, one step instead of
+     four. "Open Machine" stays as a secondary link for browsing context. */
+  var isOpenBD = (r.event || '').toUpperCase() === 'BD' && r.isOpen && r.rowNum;
+  if (isOpenBD) {
+    body += '<button class="form-submit-btn" style="background:#16a34a;margin-top:12px" ' +
+            'onclick="closeRecDetail();showBDCloseForm(\''+esc(r.machineId)+'\',\''+esc(r.slip)+'\','+Number(r.rowNum)+')">' +
+            '&#10003; Close Breakdown</button>';
+  }
+  body += '<button class="form-submit-btn" style="background:'+(isOpenBD?'#64748b':color)+';margin-top:8px" onclick="closeRecDetail();_recClick(\''+esc(r.machineId)+'\',\''+esc(r.machineName||r.machineId)+'\',\''+r.event.toLowerCase()+'\')">Open Machine &rsaquo;</button>';
   body += '</div>';
 
   return header + body;
@@ -6106,10 +6121,23 @@ function _stampImage(ctx, w, h) {
   if (line2) ctx.fillText(line2, pad, h - barH + pad + fs + lineH);
 }
 
+/**
+ * clHandlePhoto(src) — ingest one or many selected images.
+ *
+ * The gallery input is `multiple`, so a user picking five pieces of HIRA
+ * evidence gets all five. Files are processed one at a time and appended in
+ * order; the annotator only opens automatically for a SINGLE pick, because
+ * chaining N modal annotators on a batch is unusable — for a batch the photos
+ * land in the row and each can be tapped to mark up individually.
+ */
 function clHandlePhoto(src) {
   var inputId = src === 'pick' ? 'cl-photoPick' : 'cl-photoInput';
-  var file = document.getElementById(inputId).files[0];
-  if (!file || !_clPhotoTarget) return;
+  var files = document.getElementById(inputId).files;
+  if (!files || !files.length || !_clPhotoTarget) return;
+
+  if (files.length > 1) { _clHandlePhotoBatch(Array.prototype.slice.call(files)); return; }
+
+  var file = files[0];
   var id = _clPhotoTarget;
   var hint = document.getElementById('cl-photoHint');
   if (hint) hint.textContent = 'Processing photo…';
@@ -6165,6 +6193,59 @@ function clHandlePhoto(src) {
     img.src = e.target.result;
   };
   reader.readAsDataURL(file);
+}
+
+/**
+ * _clHandlePhotoBatch(files) \u2014 add several images in one go.
+ *
+ * Sequential, not parallel: each file is decoded, resized and stamped before
+ * the next starts, so a batch of large photos cannot spike memory on a
+ * shop-floor phone. Unreadable files are skipped and counted rather than
+ * aborting the whole batch \u2014 one bad file should not lose the other four.
+ */
+function _clHandlePhotoBatch(files) {
+  var id = _clPhotoTarget;
+  var hint = document.getElementById('cl-photoHint');
+  var total = files.length, done = 0, failed = 0;
+
+  // A batch is always multi, so use the tighter budget for every shot.
+  var MAX = 500, q = 0.45;
+
+  function finish() {
+    _clSyncPhotoRow(id);
+    clClosePhoto();
+    if (id === 'hira'     && typeof hzRenderPhotos === 'function') hzRenderPhotos();
+    if (id === 'incident' && typeof icRenderPhotos === 'function') icRenderPhotos();
+    var msg = done + ' photo' + (done === 1 ? '' : 's') + ' added';
+    if (failed) msg += ', ' + failed + ' could not be read';
+    if (typeof showStatus === 'function') showStatus(msg, failed ? 'error' : 'success', 3000);
+  }
+
+  function next(i) {
+    if (i >= total) { finish(); return; }
+    if (hint) hint.textContent = 'Processing ' + (i + 1) + ' of ' + total + '\u2026';
+    var reader = new FileReader();
+    reader.onerror = function() { failed++; next(i + 1); };
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onerror = function() { failed++; next(i + 1); };
+      img.onload = function() {
+        var w = img.width, h = img.height;
+        if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+        if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
+        var c = document.createElement('canvas'); c.width = w; c.height = h;
+        var ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+        _stampImage(ctx, w, h);
+        if (!_clPhotos[id]) _clPhotos[id] = [];
+        _clPhotos[id].push({ url: c.toDataURL('image/jpeg', q), pins: [] });
+        done++;
+        next(i + 1);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(files[i]);
+  }
+  next(0);
 }
 
 /**
@@ -7496,7 +7577,11 @@ function loadBD(machineId) {
           '<div style="display:flex;gap:5px;align-items:center">' +
           waBtn + (isClosed ? '<span class="bd-status-closed">Closed</span>' : '<span class="bd-status-open">Open</span>') +
           '</div></div>' +
-          '<div class="bd-problem">' + esc(item.problem) + '</div>' +
+          // Tapping the body opens the full record, so the card and the record
+          // view are two doors to the same thing rather than parallel screens.
+          '<div class="bd-problem" role="button" tabindex="0" style="cursor:pointer" ' +
+            'onclick="openRecordDetail(\'' + esc(item.slip) + '\',\'bd\',\'' + esc(machineId) + '\')">' +
+            esc(item.problem) + '</div>' +
           '<div class="bd-meta">' + esc(item.date) + (item.rectified ? ' &nbsp;&#183;&nbsp; ' + esc(item.rectified) : '') + '</div>' +
           (!isClosed ? '<button onclick="showBDCloseForm(\'' + esc(machineId) + '\',\'' + esc(item.slip) + '\',' + item.rowNum + ')" style="display:block;width:100%;margin-top:10px;padding:10px;background:#16a34a;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px;letter-spacing:0.3px">&#x2713; Close BD</button>' : '') +
           '</div>';
