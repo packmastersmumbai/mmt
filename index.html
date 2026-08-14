@@ -8065,14 +8065,20 @@ function clitRenderEditor() {
   // machine-specific list may actually be looking at a category default.
   var srcNote = {
     machine:  ['This machine has its own CLIT list.', '#065f46', '#d1fae5'],
-    category: ['Showing the ' + (_clitMeta.category || 'category') +
+    // esc() at source as well as at the insertion point below. `category` comes
+    // from the MASTER sheet and is writable through spaUpdateMachine, so it is
+    // not trusted input; escaping only at the sink relies on that sink never
+    // being refactored.
+    category: ['Showing the ' + esc(_clitMeta.category || 'category') +
                ' default. Saving creates a list specific to this machine.', '#92400e', '#fef3c7'],
-    override: ['Locked: this machine uses the built-in set "' + _clitMeta.overrideKey +
+    override: ['Locked: this machine uses the built-in set "' + esc(_clitMeta.overrideKey) +
                '", which overrides the sheet. Edits here will not take effect.', '#991b1b', '#fee2e2']
   }[_clitMeta.source] || ['', '#475569', '#f1f5f9'];
 
   h += '<div style="margin:10px 0;padding:8px 10px;border-radius:6px;font-size:11.5px;line-height:1.45;' +
-       'background:' + srcNote[2] + ';color:' + srcNote[1] + '">' + esc(srcNote[0]) + '</div>';
+       // srcNote[0] is pre-escaped above (it mixes trusted markup-free prose
+       // with escaped sheet data), so it is inserted as-is here.
+       'background:' + srcNote[2] + ';color:' + srcNote[1] + '">' + srcNote[0] + '</div>';
 
   h += '<div style="font-size:11px;color:#64748b;margin:0 0 8px">' +
        esc(_clitMeta.machineId) + (_clitMeta.machineName ? ' — ' + esc(_clitMeta.machineName) : '') +
