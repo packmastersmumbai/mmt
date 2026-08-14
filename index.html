@@ -6090,6 +6090,11 @@ function clOpenPhoto(id, mode, title) {
 
 function clClosePhoto() {
   document.getElementById('cl-photoModal').classList.remove('show');
+  /* If the picker was opened from the annotator's '+', put the annotator back.
+     Without this, dismissing the picker left the user on the bare form having
+     lost the photo they were marking up. Deliberately does NOT jump to the last
+     photo: a cancel should return to where they were. */
+  if (_clAnnResumeAfterPick) _clAnnResume(false);
   // Clear BOTH inputs: a stale value means picking the same file twice in a row
   // fires no change event, so the second attempt looks like a dead button.
   document.getElementById('cl-photoInput').value = '';
@@ -6183,6 +6188,10 @@ function clHandlePhoto(src) {
       // carries the same information without putting anything on the image the
       // operator did not place.
       _clSyncPhotoRow(id);
+      /* Both branches below reopen an annotator on the NEW photo, so the
+         generic "resume where you were" path must not also fire \u2014 it would
+         restore the previously-selected photo instead. */
+      _clAnnResumeAfterPick = false;
       clClosePhoto();
       // Jump straight into annotation on the shot just taken \u2014 the operator is
       // looking at the machine right now, which is when they can mark it.
@@ -6224,7 +6233,13 @@ function _clHandlePhotoBatch(files) {
 
   function finish() {
     _clSyncPhotoRow(id);
+    /* A batch opens no annotator of its own, so if the picker came from the
+       annotator's '+', clClosePhoto's resume puts it back — showing the LAST
+       photo added, which is the one the user just chose. */
+    var cameFromAnnotator = _clAnnResumeAfterPick;
+    _clAnnResumeAfterPick = false;      // stop clClosePhoto consuming it first
     clClosePhoto();
+    if (cameFromAnnotator) { _clAnnResumeAfterPick = true; _clAnnResume(true); }
     if (id === 'hira'     && typeof hzRenderPhotos === 'function') hzRenderPhotos();
     if (id === 'incident' && typeof icRenderPhotos === 'function') icRenderPhotos();
     var msg = done + ' photo' + (done === 1 ? '' : 's') + ' added';
@@ -6598,13 +6613,42 @@ function clAnnDrawOnPhoto() {
   pmAnnotatePhoto(cur, _clAnnTask);
 }
 
+/* The '+' thumbnail inside the annotator strip.
+
+   The annotator (.ann-modal) is z-index 1100; the photo picker
+   (.cl-photo-modal) is 999. Showing the picker without hiding the annotator
+   opened it UNDERNEATH — invisible and unclickable, so the button read as
+   dead while the outer "+ Add photo" button (with nothing covering it) worked.
+
+   Hide the annotator while the picker is up and reopen it afterwards, so the
+   user returns to the photo they were marking instead of being dumped out. */
 function clAnnAddPhoto() {
   clAnnCloseSheets();
   _clPhotoTarget = _clAnnTask;
   _clPhotoMode   = _clAnnMode;
   _clPhotoItems  = _clAnnItems;
+  _clAnnResumeAfterPick = true;
+  var ann = document.getElementById('cl-annModal');
+  if (ann) ann.classList.remove('show');
   document.getElementById('cl-photoTitle').textContent = 'Task ' + _clAnnTask + ' - Add Photo';
   document.getElementById('cl-photoModal').classList.add('show');
+}
+
+/* Set when the picker was opened FROM the annotator, so cancelling or
+   finishing returns there rather than leaving the user on the bare form. */
+var _clAnnResumeAfterPick = false;
+
+/** Reopen the annotator after the picker closes, if that is where we came from. */
+function _clAnnResume(showLastPhoto) {
+  if (!_clAnnResumeAfterPick) return false;
+  _clAnnResumeAfterPick = false;
+  var list = (typeof _clAnnPhotos === 'function') ? _clAnnPhotos() : [];
+  if (!list.length) return false;
+  if (showLastPhoto) _clAnnPhoto = list.length - 1;
+  var ann = document.getElementById('cl-annModal');
+  if (ann) ann.classList.add('show');
+  if (typeof clAnnRender === 'function') clAnnRender();
+  return true;
 }
 
 function clAnnDeletePhoto() {
