@@ -967,6 +967,104 @@ body {
 .cat-machines { overflow:hidden; }
 .cat-group.collapsed .cat-machines { display:none; }
 
+/* ══════ PM PLANNER — planned vs actual, 12-month grid ══════
+   Follows DESIGN.md: flat + tonal, borders not shadows, teal as the only
+   interactive accent, mono tabular figures for every number, 44px targets.
+   The cell states are the five in DESIGN.md's status vocabulary; nothing here
+   introduces a colour that does not already carry meaning. */
+.pl-wrap { padding:10px 12px 24px; max-width:1440px; margin:0 auto; }
+.pl-hd { display:flex; align-items:baseline; justify-content:space-between;
+  gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+.pl-hd h2 { font-size:21px; font-weight:800; color:var(--flink);
+  letter-spacing:-0.03em; line-height:1.15; }
+/* Adherence is the one figure a supervisor reads first, so it is set at display
+   size in the mono face rather than buried in a sentence. */
+.pl-adh { display:flex; align-items:baseline; gap:7px; }
+.pl-adh b { font-family:'PMMono',ui-monospace,monospace; font-size:25px;
+  font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-0.02em; }
+.pl-adh span { font-size:11px; font-weight:700; color:var(--fldim); }
+
+/* Asset-class tabs. Two classes only — Machines, and Tools & Equipment. */
+.pl-tabs { display:flex; gap:6px; margin-bottom:10px; }
+.pl-tab { flex:1; min-height:44px; padding:8px 12px; border-radius:var(--r-sm);
+  border:1.5px solid var(--fledge); background:var(--flpanel); color:var(--fldim);
+  font-size:12.5px; font-weight:700; cursor:pointer; display:flex;
+  align-items:center; justify-content:center; gap:6px; }
+.pl-tab .n { font-family:'PMMono',ui-monospace,monospace; font-size:11px;
+  font-variant-numeric:tabular-nums; opacity:.75; }
+.pl-tab.on { background:var(--flacc); border-color:var(--flacc); color:#fff; }
+.pl-tab.on .n { opacity:.9; }
+
+/* Legend — the grid is colour-coded, so the key is not optional. */
+.pl-key { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;
+  font-size:11px; font-weight:700; color:var(--fldim); }
+.pl-key i { width:11px; height:11px; border-radius:3px; display:inline-block;
+  margin-right:4px; vertical-align:-1px; }
+
+/* The grid itself. Horizontal scroll is confined to THIS block and announced by
+   a sticky asset column, which is the one case DESIGN.md permits: 12 months
+   cannot compress below legibility on a phone. */
+.pl-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch;
+  border:1px solid var(--fledge); border-radius:var(--r-md);
+  background:var(--flpanel); }
+.pl-grid { width:100%; border-collapse:collapse; font-size:11px; }
+.pl-grid th { font-size:11px; font-weight:700; color:var(--fldim);
+  padding:8px 4px; text-align:center; background:var(--flpanel2);
+  border-bottom:1px solid var(--fledge); white-space:nowrap;
+  font-family:'PMMono',ui-monospace,monospace; }
+.pl-grid th.pl-asset-h { text-align:left; padding-left:10px; min-width:190px;
+  position:sticky; left:0; z-index:2; font-family:'Archivo',system-ui,sans-serif; }
+.pl-grid td { padding:0; border-bottom:1px solid var(--flpanel2); }
+.pl-grid tr:last-child td { border-bottom:none; }
+.pl-asset { position:sticky; left:0; z-index:1; background:var(--flpanel);
+  padding:7px 10px; min-width:190px; }
+.pl-row-freq .pl-asset { background:var(--flpanel2); padding-left:22px; }
+.pl-name { font-size:12.5px; font-weight:700; color:var(--flink);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:210px; }
+.pl-id { font-family:'PMMono',ui-monospace,monospace; font-size:10.5px;
+  font-weight:700; color:var(--fldim); }
+.pl-freq { font-size:11px; font-weight:700; color:var(--fldim); }
+.pl-last { font-family:'PMMono',ui-monospace,monospace; font-size:10.5px;
+  color:var(--flfaint); }
+/* Expand affordance — a caret, not a whole-row hover state. */
+.pl-exp { background:none; border:none; cursor:pointer; padding:2px 6px 2px 0;
+  color:var(--fldim); font-size:11px; min-height:24px; }
+
+/* Cells. Every state is shape + colour, never colour alone: done is filled,
+   planned is a ring, missed is filled red with a bar, extra is a small square. */
+.pl-c { width:100%; min-height:38px; border:none; background:none;
+  cursor:default; display:flex; align-items:center; justify-content:center; }
+.pl-c.tap { cursor:pointer; }
+.pl-c i { width:14px; height:14px; border-radius:50%; display:block; }
+.pl-s0 i { background:transparent; }                                   /* not due */
+.pl-s1 i { border:2px solid var(--flY); background:transparent; }         /* planned */
+.pl-s2 i { background:var(--flR); }                                    /* MISSED  */
+.pl-s3 i { background:var(--flgood); }                                 /* done    */
+.pl-s4 i { background:var(--flB); border-radius:0; }   /* square vs circles */                 /* unplanned extra */
+.pl-c.tap:active { background:var(--flaccw); }
+.pl-mo-now { background:rgba(15,118,110,.06); }
+
+.pl-empty { padding:26px 16px; text-align:center; color:var(--fldim);
+  font-size:12.5px; font-weight:600; }
+
+/* Per-machine strip — the same 12 cells, inline on a machine's own view. */
+.pl-strip { display:flex; align-items:center; gap:6px; padding:8px 10px;
+  border:1px solid var(--fledge); border-radius:var(--r-sm);
+  background:var(--flpanel); margin:8px 0; }
+.pl-strip-lbl { font-size:11px; font-weight:700; color:var(--fldim);
+  white-space:nowrap; }
+.pl-strip-cells { display:flex; gap:3px; flex:1; }
+.pl-strip-cells .m { flex:1; display:flex; flex-direction:column;
+  align-items:center; gap:2px; }
+/* Current month highlight and the miss count, as classes rather than inline
+   literals so the strip carries no values outside the token scale. */
+.pl-strip-cells .m.pl-mo-now { background:rgba(15,118,110,.08);
+  border-radius:var(--r-sm); }
+.pl-strip-missed { font-size:11px; font-weight:700; color:var(--flR);
+  white-space:nowrap; }
+.pl-strip-cells .m span { font-size:8.5px; font-weight:700; color:var(--flfaint);
+  font-family:'PMMono',ui-monospace,monospace; }
+
 /* Analytics */
 /* Analytics — compact */
 .an-wrap { padding:10px 12px 20px; }
@@ -3415,6 +3513,10 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
   </div>
 
   <!-- Reference view — MHC / SOP / Images combined -->
+  <div class="view" id="view-planner" style="padding:0">
+    <div id="planner-body"></div>
+  </div>
+
   <div class="view" id="view-ref" style="padding:0">
     <div class="lbl-type-chips" id="ref-type-chips" style="display:none">
       <button class="lbl-chip active" data-rtype="mhc">MHC</button>
@@ -3681,6 +3783,9 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
   </button>
   <button class="gnav-btn" data-hash="board" data-btab="">
     <span class="gn-icon" data-i="machines"></span>Machines
+  </button>
+  <button class="gnav-btn" data-hash="planner" data-btab="">
+    <span class="gn-icon" data-i="clock"></span>Planner
   </button>
   <button class="gnav-btn" data-hash="hira" data-btab="">
     <span class="gn-icon" data-i="hira"></span>HIRA
@@ -5474,10 +5579,10 @@ var ACTION_MAP = {
 // 'mhc', 'sop', 'image' are accepted but remapped to 'ref' inside navigate()
 // 'safety' stays valid: it is the target of live Telegram deep links and of the
 // KPI/chart drill-throughs inside the Safety view. It resolves to 'hira'.
-var VALID_HASHES = ['dashboard', 'board', 'labels', 'safety', 'hira', 'incidents', 'hk', 'readings', 'checklist', 'bd', 'pm', 'clit', 'ref', 'mhc', 'sop', 'image'];
+var VALID_HASHES = ['dashboard', 'board', 'planner', 'labels', 'safety', 'hira', 'incidents', 'hk', 'readings', 'checklist', 'bd', 'pm', 'clit', 'ref', 'mhc', 'sop', 'image'];
 
 // Global nav hashes — shown without machine context
-var GLOBAL_HASHES = ['dashboard', 'board', 'labels', 'safety', 'hira', 'incidents', 'hk', 'readings'];
+var GLOBAL_HASHES = ['dashboard', 'board', 'planner', 'labels', 'safety', 'hira', 'incidents', 'hk', 'readings'];
 
 // ═══════════════════════════════════════════════════════
 // NAVIGATION CORE
@@ -5575,6 +5680,7 @@ function navigate(hash, machineId, skipPush) {
     App.machineId = '';
     App.machineName = '';
   }
+  if (hash === 'planner')   loadPlanner();
   if (hash === 'labels')    loadLabels();
   if (hash === 'safety') {
     /* Preselect the tab the nav asked for. A pending Sr (safety deep link)
@@ -7972,6 +8078,7 @@ function loadMHCView(machineId) {
           '<div><div style="font-size:18px;font-weight:800">'+esc(r.lastPM||'—')+'</div><div style="font-size:10px;opacity:0.6">Last PM</div></div>'+
         '</div>'+
       '</div>';
+      html += '<div id="mhc-pm-strip"></div>';
       // History table
       if (r.records && r.records.length) {
         var EVENT_COLORS = {BD:'#dc2626',PM:'#16a34a',CLIT:'#0277bd'};
@@ -7993,6 +8100,7 @@ function loadMHCView(machineId) {
         html += '<div class="spinner-inline">No event history found.</div>';
       }
       el.innerHTML = html;
+      plMachineStrip(machineId, 'mhc-pm-strip');
     })
     .withFailureHandler(function(e) { el.innerHTML = '<div style="padding:16px;color:#dc2626;font-size:13px">Error: '+esc((e&&e.message)||'unknown')+'</div>'; })
     .getMachineMHCData(machineId);
@@ -8809,6 +8917,230 @@ function replaceMedia(fileId, mediaType) {
 
 
 var _labelsLoaded = false;
+// ═════════════════════════════════════════════════════
+// PM PLANNER — planned vs actual, 12 months, tap to mark done
+// ═════════════════════════════════════════════════════
+/* The plan is auto-generated once per FY and FROZEN server-side; that is what
+   makes "missed" and adherence mean anything. So this grid edits the ACTUAL,
+   never the plan: tapping a month records that the PM happened. A planned month
+   left untapped past its month-end becomes a miss, and nothing here can hide
+   that. */
+var PL = { fy:null, cls:'MACHINE', data:null, open:{}, busy:false };
+
+var PL_STATE = [
+  { k:0, label:'Not due',   cls:'pl-s0' },
+  { k:1, label:'Planned',   cls:'pl-s1' },
+  { k:2, label:'Missed',    cls:'pl-s2' },
+  { k:3, label:'Done',      cls:'pl-s3' },
+  { k:4, label:'Unplanned', cls:'pl-s4' }
+];
+
+function plFy(){
+  if (PL.fy) return PL.fy;
+  var d=new Date(), y=d.getFullYear();
+  PL.fy = (d.getMonth()>=3 ? y+'-'+(y+1) : (y-1)+'-'+y);
+  return PL.fy;
+}
+
+function plErr(msg){
+  var el=document.getElementById('planner-body');
+  if(!el) return;
+  el.innerHTML='<div class="pl-wrap"><div class="pl-empty">Could not load the plan. '+
+    esc(msg||'')+' <button class="sf-btn-primary" onclick="PL.data=null;loadPlanner()" '+
+    'style="margin-top:8px">Retry</button></div></div>';
+}
+
+function loadPlanner(){
+  var el=document.getElementById('planner-body');
+  if(!el) return;
+  if(PL.data){ plRender(); return; }
+  el.innerHTML='<div class="pl-wrap"><div class="loading-spinner" style="padding:40px">'+
+    '<div class="spinner-ring"></div>Loading plan&hellip;</div></div>';
+  google.script.run
+    .withSuccessHandler(function(d){
+      if(!d||!d.success){ plErr((d&&d.error)||''); return; }
+      PL.data=d; plRender();
+    })
+    .withFailureHandler(function(e){ plErr((e&&e.message)||e); })
+    .getPmPlanGrid(plFy(), 'ALL');
+}
+
+/* Two classes only: machines, and everything calibrated or checked. TOOL is what
+   the backend tags instruments with; anything non-MACHINE lands in the second tab
+   so a future EQUIPMENT class needs no new UI. */
+function plIsTool(a){ return a.assetClass !== 'MACHINE'; }
+
+function plFiltered(){
+  var all=(PL.data&&PL.data.assets)||[];
+  return all.filter(function(a){
+    return PL.cls==='MACHINE' ? !plIsTool(a) : plIsTool(a);
+  });
+}
+
+function plPickCls(c){ PL.cls=c; plRender(); }
+function plToggle(id){ PL.open[id]=!PL.open[id]; plRender(); }
+
+function plKeyStyle(k){
+  if(k===1) return 'border:2px solid var(--flY);background:transparent';
+  if(k===2) return 'background:var(--flR)';
+  if(k===3) return 'background:var(--flgood)';
+  if(k===4) return 'background:var(--flB);border-radius:0';
+  return 'background:transparent';
+}
+
+/* A cell is tappable only on an expanded frequency row, and only where a tap
+   means something: a planned or missed month not already done. */
+function plCell(state, asset, line, idx){
+  var s=PL_STATE[state]||PL_STATE[0];
+  var tappable = !!(asset && line && (state===1 || state===2));
+  var title=s.label + (tappable ? ' \u2014 tap to mark done' : '');
+  var act = tappable
+    ? 'onclick="plMarkDone(&quot;'+esc(asset.id)+'&quot;,&quot;'+esc(line.freq)+'&quot;,'+idx+')" '
+    : 'disabled ';
+  return '<button class="pl-c '+s.cls+(tappable?' tap':'')+'" '+act+
+    'title="'+title+'" aria-label="'+title+'"><i></i></button>';
+}
+
+function plRender(){
+  var el=document.getElementById('planner-body');
+  var d=PL.data; if(!el||!d) return;
+  var all=d.assets||[];
+  var nMac=all.filter(function(a){return !plIsTool(a);}).length;
+  var nTool=all.length-nMac;
+  var rows=plFiltered();
+
+  var adhColor = d.adherence===null ? 'var(--fldim)'
+    : d.adherence>=80 ? 'var(--flgood)' : d.adherence>=50 ? 'var(--flwarn)' : 'var(--flR)';
+
+  var html='<div class="pl-wrap">'+
+    '<div class="pl-hd"><h2>PM Planner</h2>'+
+      '<div class="pl-adh"><b style="color:'+adhColor+'">'+
+        (d.adherence===null?'\u2014':d.adherence+'%')+'</b>'+
+        '<span>adherence &middot; '+d.done+' of '+d.planned+' planned done</span></div>'+
+    '</div>'+
+    '<div class="pl-tabs">'+
+      '<button class="pl-tab'+(PL.cls==='MACHINE'?' on':'')+'" onclick="plPickCls(&quot;MACHINE&quot;)">'+
+        'Machines <span class="n">'+nMac+'</span></button>'+
+      '<button class="pl-tab'+(PL.cls==='TOOL'?' on':'')+'" onclick="plPickCls(&quot;TOOL&quot;)">'+
+        'Tools &amp; Equipment <span class="n">'+nTool+'</span></button>'+
+    '</div>'+
+    '<div class="pl-key">'+
+      PL_STATE.slice(1).map(function(s){
+        return '<span><i style="'+plKeyStyle(s.k)+'"></i>'+s.label+'</span>';
+      }).join('')+
+    '</div>';
+
+  if(!rows.length){
+    html+='<div class="pl-scroll"><div class="pl-empty">'+
+      (PL.cls==='MACHINE'?'No machines in this plan.'
+        :'No tools or equipment in the plan yet. Instruments appear here once the calibration register has entries.')+
+      '</div></div></div>';
+    el.innerHTML=html; return;
+  }
+
+  var months=d.months||['APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC','JAN','FEB','MAR'];
+  var cur=d.elapsed;
+
+  html+='<div class="pl-scroll"><table class="pl-grid"><thead><tr>'+
+    '<th class="pl-asset-h">Asset</th>'+
+    months.map(function(m,i){
+      return '<th'+(i===cur?' class="pl-mo-now"':'')+'>'+m+'</th>';
+    }).join('')+'</tr></thead><tbody>';
+
+  rows.forEach(function(a){
+    var open=!!PL.open[a.id];
+    html+='<tr>'+
+      '<td class="pl-asset">'+
+        '<button class="pl-exp" onclick="plToggle(&quot;'+esc(a.id)+'&quot;)" '+
+          'aria-expanded="'+(open?'true':'false')+'" '+
+          'aria-label="'+(open?'Collapse ':'Expand ')+esc(a.name)+'">'+
+          (open?'&#9662;':'&#9656;')+'</button>'+
+        '<span class="pl-name">'+esc(a.name)+'</span> '+
+        '<span class="pl-id">'+esc(a.id)+'</span>'+
+      '</td>'+
+      a.rollup.map(function(st,i){
+        return '<td'+(i===cur?' class="pl-mo-now"':'')+'>'+plCell(st,null,null,i)+'</td>';
+      }).join('')+
+    '</tr>';
+
+    if(open){
+      a.lines.forEach(function(l){
+        html+='<tr class="pl-row-freq">'+
+          '<td class="pl-asset">'+
+            '<span class="pl-freq">'+esc(l.activity)+' &middot; '+esc(l.freq)+'</span>'+
+            (l.lastDone?' <span class="pl-last">last '+esc(l.lastDone)+'</span>':'')+
+          '</td>'+
+          l.cells.map(function(st,i){
+            return '<td'+(i===cur?' class="pl-mo-now"':'')+'>'+plCell(st,a,l,i)+'</td>';
+          }).join('')+
+        '</tr>';
+      });
+    }
+  });
+
+  html+='</tbody></table></div>'+
+    '<div style="font-size:11px;color:var(--fldim);margin-top:8px;line-height:1.5">'+
+      'Expand a row, then tap a month to record that the PM was done. '+
+      'The plan is generated once a year and cannot be edited here \u2014 that is what keeps '+
+      '&ldquo;missed&rdquo; and adherence honest.</div>'+
+  '</div>';
+  el.innerHTML=html;
+}
+
+/* Record an actual. monthIdx is the FY position; the server maps it to a date. */
+function plMarkDone(assetId, freq, monthIdx){
+  if(PL.busy) return;
+  PL.busy=true;
+  showStatus('Recording PM\u2026','info',0);
+  google.script.run
+    .withSuccessHandler(function(r){
+      PL.busy=false;
+      if(r&&r.success){
+        showStatus('Recorded','success',1800);
+        PL.data=null; loadPlanner();
+      } else showStatus('Not recorded: '+((r&&r.error)||'unknown'),'error',4000);
+    })
+    .withFailureHandler(function(e){
+      PL.busy=false;
+      showStatus('Not recorded: '+((e&&e.message)||e),'error',4000);
+    })
+    .markPmPlanDone(plFy(), assetId, freq, monthIdx);
+}
+
+/* Per-machine PM strip — the same 12 cells as the Planner, for one asset.
+   Rendered under the machine header on its history view so the year's plan is
+   visible where the machine is already being looked at, without a trip to the
+   Planner. Read-only here: recording a PM is a deliberate act and belongs on
+   the Planner or the PM form, not one tap away from a history scroll. */
+function plMachineStrip(machineId, mountId){
+  var host=document.getElementById(mountId);
+  if(!host||!machineId) return;
+  function paint(d){
+    var a=((d&&d.assets)||[]).filter(function(x){ return x.id===machineId; })[0];
+    if(!a){ host.innerHTML=''; return; }
+    var months=d.months||[];
+    var cur=d.elapsed;
+    host.innerHTML='<div class="pl-strip">'+
+      '<span class="pl-strip-lbl">PM '+esc(d.fy)+'</span>'+
+      '<div class="pl-strip-cells">'+
+        a.rollup.map(function(st,i){
+          var s=PL_STATE[st]||PL_STATE[0];
+          return '<div class="m'+(i===cur?' pl-mo-now':'')+'"'+
+            ' title="'+esc(months[i]||'')+' \u2014 '+s.label+'">'+
+            '<i style="width:11px;height:11px;border-radius:50%;display:block;'+plKeyStyle(st)+'"></i>'+
+            '<span>'+esc((months[i]||'').slice(0,1))+'</span></div>';
+        }).join('')+
+      '</div>'+
+      (a.missed?'<span class="pl-strip-missed">'+a.missed+' missed</span>':'')+
+    '</div>';
+  }
+  if(PL.data){ paint(PL.data); return; }
+  google.script.run
+    .withSuccessHandler(function(d){ if(d&&d.success){ PL.data=d; paint(d); } })
+    .withFailureHandler(function(){ /* strip is supplementary; stay silent */ })
+    .getPmPlanGrid(plFy(), 'ALL');
+}
+
 function loadLabels() {
   if (_labelsLoaded) return;
   _labelsLoaded = true;
