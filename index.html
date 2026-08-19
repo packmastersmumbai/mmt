@@ -447,6 +447,14 @@ body {
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
 .rec-age { font-family:'PMMono',ui-monospace,monospace; font-size:10.5px; font-weight:700;
   white-space:nowrap; flex-shrink:0; margin-left:auto; }
+/* Right rail: time sits ABOVE the status tag, both hard against the right edge.
+   Time is a fact about the record, not about the machine, so it belongs with the
+   status rather than inline with the name — and stacking them keeps the third
+   grid column one column wide instead of two. */
+.rec-rail { display:flex; flex-direction:column; align-items:flex-end; gap:3px;
+  flex-shrink:0; }
+.rec-time { font-family:'PMMono',ui-monospace,monospace; font-size:10.5px;
+  font-weight:700; color:#475569; white-space:nowrap; }
 .rec-tag { font-size:10px; font-weight:700; padding:2px 7px; border-radius:4px;
   flex-shrink:0; white-space:nowrap; }
 .rec-tag-open    { background:#fee2e2; color:#dc2626; }
@@ -5358,7 +5366,10 @@ function renderBoardRecords(type, d) {
             (ageStr ? ' <span class="rec-age" style="color:'+ageColor+'">· '+ageStr+'</span>' : '')+
           '</div>'+
         '</div>'+
-        '<div class="rec-tag rec-tag-'+(isOpen?'open':'closed')+'">'+esc(item.status)+'</div>'+
+        '<div class="rec-rail">'+
+          (item.time?'<span class="rec-time">'+esc(item.time)+'</span>':'')+
+          '<span class="rec-tag rec-tag-'+(isOpen?'open':'closed')+'">'+esc(item.status)+'</span>'+
+        '</div>'+
       '</div>';
     }).join('');
   } else if (type === 'pm') {
@@ -5378,6 +5389,7 @@ function renderBoardRecords(type, d) {
           '</div>'+
           '<div class="rec-meta">'+esc(item.date)+(item.technician?' · '+esc(item.technician):'')+'</div>'+
         '</div>'+
+        (item.time?'<div class="rec-rail"><span class="rec-time">'+esc(item.time)+'</span></div>':'')+
         arrowIcon+
       '</div>';
     }).join('');
@@ -5398,6 +5410,7 @@ function renderBoardRecords(type, d) {
           '</div>'+
           '<div class="rec-meta">'+esc(item.date)+(item.performedBy?' · '+esc(item.performedBy):'')+'</div>'+
         '</div>'+
+        (item.time?'<div class="rec-rail"><span class="rec-time">'+esc(item.time)+'</span></div>':'')+
         arrowIcon+
       '</div>';
     }).join('');
@@ -5421,7 +5434,9 @@ function renderBoardRecords(type, d) {
           '</div>'+
           '<div class="rec-meta">'+esc(item.date)+'</div>'+
         '</div>'+
-        '<div class="rec-tag '+tagCls+'">'+esc(item.status||'pending')+'</div>'+
+        '<div class="rec-rail">'+
+          '<span class="rec-tag '+tagCls+'">'+esc(item.status||'pending')+'</span>'+
+        '</div>'+
         arrowIcon+
       '</div>';
     }).join('');
