@@ -3702,11 +3702,10 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 // google.script.run POLYFILL (GitHub Pages → GAS)
 // GET fetch for small payloads, POST fetch for large (images etc.)
 // GAS exec returns Access-Control-Allow-Origin: * on GET — no CORS issues.
-// Script-tag JSONP removed: Chrome ORB blocks it since 2024.
+// Transport is script-tag JSONP; see _attempt() for why fetch() cannot work.
 // ═══════════════════════════════════════════════════════
 (function() {
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbznhY-2hEreRwLK_7bQOmbvjusfT8OpycIx1FfDfBhNpKnYiGjWdG1kftG9x1Y2td13/exec';
-  var POST_THRESHOLD = 1800; // bytes — switch to POST if URL would exceed this
   var MAX_ATTEMPTS = 3;      // 1 try + 2 retries
   /* Per-attempt cap; fetch() has no built-in timeout, so without this a stalled
      request leaves BOTH handlers unfired and the caller hangs forever.
@@ -3767,7 +3766,7 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
   // Monotonic so two calls in the same millisecond cannot share a callback name.
   var _cbSeq = 0;
 
-  function _attempt(prop, args, argsJson, usePost, n) {
+  function _attempt(prop, args, argsJson, n) {
     var p;
     /* JSONP via a SCRIPT TAG — not fetch(). This is not a style preference.
        /exec answers with a 302 to a single-use user_content_key on
@@ -3820,7 +3819,7 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
       if (n >= MAX_ATTEMPTS) throw err;
       console.warn('API ' + prop + ' attempt ' + n + ' failed (' + err.message + ') — retrying');
       return _delay(n === 1 ? 400 : 1200).then(function() {
-        return _attempt(prop, args, argsJson, usePost, n + 1);
+        return _attempt(prop, args, argsJson, n + 1);
       });
     });
   }
@@ -3838,15 +3837,6 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
         var s = _s, f = _f;
         _s = function() {}; _f = function(e) { console.error('API call failed:', prop, e); };
         var argsJson = JSON.stringify(args);
-        /* POST for everything, not just large payloads. Measured in Chrome against
-           this deployment with four calls issued at once: every GET came back 404
-           (4/4 failed), while POST returned real data on 3 of 4. GET has to follow
-           the /exec 302 to a single-use user_content_key, and concurrent GETs burn
-           each other's keys; POST is answered without that hop. This is what made
-           forms hang on "Loading…" whenever they opened during the board's own
-           startup calls. POST_THRESHOLD is kept for reference but no longer gates
-           the choice. */
-        var usePost = true;
 
         /* Any WRITE invalidates the persistent read cache. Done here, at the one
            point every call passes through, rather than at each call site — a new
@@ -3858,7 +3848,7 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
           try { window.PMC.clear(); } catch(e) {}
         }
 
-        _enqueue(function() { return _attempt(prop, args, argsJson, usePost, 1); })
+        _enqueue(function() { return _attempt(prop, args, argsJson, 1); })
           .then(function(data) {
             // A throw inside the caller's success handler is the CALLER's bug, not a
             // transport failure — it must not be reported as a network error.
@@ -4145,7 +4135,6 @@ var _mbSearch = '';            // search query (lowercase)
 var _recType = 'bd';           // active record tab
 var _boardRecordsCache = {};   // type -> {success,items}
 var _recordsByMachine = {};    // {machineId:{bd,pm,clit,checklist}}
-var _bdStatusFilter = 'all';   // legacy — renderBoardRecords status filter (unused)
 var _clStatusFilter = 'all';
 
 function _cssId(s){ return String(s).replace(/[^a-zA-Z0-9]/g,'_'); }
@@ -5342,7 +5331,6 @@ function renderBoardRecords(type, d) {
   var arrowIcon = '<span style="color:#cbd5e1;font-size:15px;flex-shrink:0">&#8250;</span>';
 
   if (type === 'bd') {
-    if (_bdStatusFilter !== 'all') items = items.filter(function(i){return i.status === _bdStatusFilter;});
     var now = Date.now();
     el.innerHTML = items.map(function(item) {
       var isOpen = item.status !== 'Closed';
