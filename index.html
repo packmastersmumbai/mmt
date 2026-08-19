@@ -11789,7 +11789,7 @@ function sfHazardDetail(sr){
   hzRenderPhotos();
   if(!isNew) hzLoadSaved(sr, r.section);
   // Pre-fill sign-off panel from existing record
-  sfStatusChange(r.verifiedBy,r.verifiedDate);
+  sfStatusChange(r.completedBy,r.completedDate,r.verifiedBy,r.verifiedDate);
 }
 
 /* ── Hazard evidence photos ─────────────────────────────────────────────────
@@ -12210,23 +12210,50 @@ function sfMatrixPick(l,c){
 }
 
 /* Show/hide the sign-off (name + date) panel for Completed / Verified. */
-function sfStatusChange(preName,preDate){
+/* Completion and verification are two events, so the form shows two field pairs,
+   not one relabelled pair. The old version reused #hf-signby / #hf-signdate for
+   both, which meant moving a hazard from Completed to Verified overwrote the
+   person who did the work with the person who checked it \u2014 and the completion
+   date with the check date. ISO 45001 expects both to survive.
+
+   Completed shows one pair. Verified shows both, because a verification with no
+   record of who completed the work is exactly the gap the split exists to close. */
+function sfStatusChange(preCompBy, preCompDate, preVerBy, preVerDate){
   var st=document.getElementById('hf-status').value;
   var box=document.getElementById('hf-signoff-box');
   if(st!=='Completed' && st!=='Verified'){ box.innerHTML=''; return; }
-  var lbl=(st==='Verified')?'Verified':'Completed';
-  // Keep already-entered values when toggling between Completed/Verified
-  var cur=document.getElementById('hf-signby');
-  var name=(typeof preName==='string')?preName:(cur?cur.value:'');
-  var dEl=document.getElementById('hf-signdate');
-  var date=(typeof preDate==='string'&&preDate)?sfToDateInput(preDate)
-            :(dEl&&dEl.value?dEl.value:sfToDateInput(new Date()));
-  box.innerHTML='<div class="hf-signoff">'+
-    '<label>'+lbl+' By</label>'+
-    '<select id="hf-signby">'+sfPersonOptions(name)+'</select>'+
-    '<label>'+lbl+' Date</label>'+
-    '<input id="hf-signdate" type="date" value="'+sfEsc(date)+'">'+
+
+  /* Keep whatever is already on screen when toggling between the two statuses,
+     so a half-filled form is not wiped by a status change. */
+  function keep(id, pre, fallbackToday){
+    if(typeof pre==='string' && pre) return pre;
+    var el=document.getElementById(id);
+    if(el && el.value) return el.value;
+    return fallbackToday ? sfToDateInput(new Date()) : '';
+  }
+  var cBy  = keep('hf-compby',  preCompBy,  false);
+  var cDt  = keep('hf-compdate',preCompDate,true);
+  var vBy  = keep('hf-verby',   preVerBy,   false);
+  var vDt  = keep('hf-verdate', preVerDate, true);
+  if(typeof preCompDate==='string' && preCompDate) cDt=sfToDateInput(preCompDate);
+  if(typeof preVerDate ==='string' && preVerDate ) vDt=sfToDateInput(preVerDate);
+
+  var html='<div class="hf-signoff">'+
+    '<label for="hf-compby">Completed By</label>'+
+    '<select id="hf-compby">'+sfPersonOptions(cBy)+'</select>'+
+    '<label for="hf-compdate">Completed Date</label>'+
+    '<input id="hf-compdate" type="date" value="'+sfEsc(cDt)+'">'+
     '</div>';
+
+  if(st==='Verified'){
+    html+='<div class="hf-signoff hf-signoff-ver">'+
+      '<label for="hf-verby">Verified By</label>'+
+      '<select id="hf-verby">'+sfPersonOptions(vBy)+'</select>'+
+      '<label for="hf-verdate">Verified Date</label>'+
+      '<input id="hf-verdate" type="date" value="'+sfEsc(vDt)+'">'+
+      '</div>';
+  }
+  box.innerHTML=html;
 }
 function sfToDateInput(s){
   if(!s) return '';
@@ -12243,10 +12270,15 @@ function sfSaveHazard(sr){
   if(!d.activity){ showStatus('Activity is required','error',3000); return; }
   // Sign-off: Completed/Verified records the person + date in cols 16-17
   if(d.status==='Completed'||d.status==='Verified'){
-    var by=v('hf-signby'), dt=v('hf-signdate');
+    var by=v('hf-compby'), dt=v('hf-compdate');
     if(!by){ showStatus(d.status+' By name is required','error',3000); return; }
-    d.verifiedBy=by; d.verifiedDate=dt||'';
-  } else { d.verifiedBy=''; d.verifiedDate=''; }
+    d.completedBy=by; d.completedDate=dt||'';
+    /* Verification is only sent at status Verified. At Completed the verifier
+       fields are not on screen, and sending '' would clear a real prior value. */
+    if(v('hf-status')==='Verified'){
+      d.verifiedBy=v('hf-verby'); d.verifiedDate=v('hf-verdate')||'';
+    }
+  } else { d.completedBy=''; d.completedDate=''; d.verifiedBy=''; d.verifiedDate=''; }
   showStatus('Saving hazard…','info',0);
   google.script.run.withSuccessHandler(function(res){
     if(res&&res.success){
