@@ -8763,7 +8763,11 @@ function vidHandleUpload() {
   var file = document.getElementById('vid-upload-input').files[0];
   if (!file) return;
   if (!_imgUploadMachineId) { showStatus('No machine selected.', 'error', 3000); return; }
-  var MAX_MB = 30;
+  /* 25, not 30. spaUploadMachineImage rejects videos over 25 MB server-side, so a
+     26-30 MB file passed this check, was base64-encoded (+33%), sent over the
+     bridge, and only THEN refused — the worst possible place to fail on a factory
+     phone. The two limits must be the same number. */
+  var MAX_MB = 25;
   if (file.size > MAX_MB * 1024 * 1024) {
     showStatus('Video too large (max '+MAX_MB+' MB). Send via WhatsApp first to compress, then save & upload. / वीडियो बड़ा है — पहले WhatsApp में भेजें, सेव करें, फिर अपलोड करें।', 'error', 8000);
     return;
