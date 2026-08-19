@@ -1157,7 +1157,7 @@ body {
   border-radius:7px; font-size:13px; font-weight:800; line-height:1; cursor:pointer;
   display:flex; align-items:center; justify-content:center; transition:background .12s; }
 #f-clit-tasks .clit-state.s0, #f-pm-tasks .clit-state.s0 { background:#f1f5f9; border:1.5px solid #cbd5e1; color:#94a3b8; }
-#f-clit-tasks .clit-state.s1, #f-pm-tasks .clit-state.s1 { background:#16a34a; border:1.5px solid #16a34a; color:#fff; }
+#f-clit-tasks .clit-state.s1, #f-pm-tasks .clit-state.s1 { background:#15803d; border:1.5px solid #15803d; color:#fff; }
 #f-clit-tasks .clit-state.s2, #f-pm-tasks .clit-state.s2 { background:#dc2626; border:1.5px solid #dc2626; color:#fff; }
 /* The point chip is the same number the pin and the legend show. */
 .clit-pt { width:19px; height:19px; border-radius:5px; color:#fff; font-size:10px;
@@ -1169,7 +1169,7 @@ body {
   color:#0f172a; line-height:1.3; padding:6px 0; }
 .clit-pinned { font-size:10px; font-weight:700; color:#94a3b8; }
 .clit-pinned.on { color:#2563eb; }
-.clit-freq { width:17px; height:17px; border-radius:4px; background:#f1f5f9; color:#64748b;
+.clit-freq { width:17px; height:17px; border-radius:4px; background:#f1f5f9; color:#5b6a80;
   font-size:9px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .clit-more { width:22px; height:22px; display:flex; align-items:center; justify-content:center;
   color:#94a3b8; font-size:13px; flex-shrink:0; cursor:pointer; }
@@ -1339,7 +1339,7 @@ body {
   cursor:pointer; touch-action:manipulation; }
 .sop-btn.ghost { background:#f1f5f9; color:#475569; flex:0 0 90px; }
 .sop-btn.draft { background:#e0e7ff; color:#3730a3; }
-.sop-btn.ok    { background:#16a34a; color:#fff; }
+.sop-btn.ok    { background:#15803d; color:#fff; }
 
 /* ── Freehand annotator (PMAnnot) ─────────────────────────────────────────
    Full-screen over everything, including the pin annotator (z 9999) so it can
@@ -1367,9 +1367,9 @@ body {
   padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)); }
 .pma-b { min-height:44px; padding:10px 22px; border:0; border-radius:9px; font-size:14px;
   font-weight:700; cursor:pointer; touch-action:manipulation; }
-.pma-b.undo { background:#d97706; color:#fff; }
+.pma-b.undo { background:#b45309; color:#fff; }
 .pma-b.cancel { background:#374151; color:#e5e7eb; }
-.pma-b.save { background:#16a34a; color:#fff; flex:1; max-width:200px; }
+.pma-b.save { background:#15803d; color:#fff; flex:1; max-width:200px; }
 
 /* Legend (CLIT only): number + item name + status icon, beside the photo.
    Capped and scrollable so a long C/L/I/T list never pushes the photo away. */
@@ -1436,7 +1436,7 @@ body {
 .ann-hint.show { display:flex; }
 .ann-hint b { color:#38bdf8; }
 .ann-set { margin-left:auto; min-height:36px; padding:0 18px; border:none; border-radius:8px;
-  background:#16a34a; color:#fff; font-size:13px; font-weight:700; cursor:pointer; }
+  background:#15803d; color:#fff; font-size:13px; font-weight:700; cursor:pointer; }
 
 .ann-sheet { display:none; position:absolute; left:0; right:0; bottom:0; max-height:45vh; overflow-y:auto;
   background:#fff; border-radius:16px 16px 0 0; padding:0 14px calc(16px + env(safe-area-inset-bottom,0px));
@@ -1617,7 +1617,7 @@ body {
    rendered. Explicit rule restores it — the element stays in the DOM only so
    sfGoTab() and the drill-throughs can keep syncing '.sf-tab' active state. */
 .sf-tabs[hidden] { display:none; }
-.sf-tabs { display:flex; gap:4px; padding:8px 10px; background:#fff; border-bottom:1px solid #e2e8f0;
+.sf-tabs { display:flex; gap:4px; padding:8px 10px; background:#fff; border-bottom:1px solid var(--fledge);
   overflow-x:auto; position:sticky; top:0; z-index:5; }
 /* min-height 44px, was ~28px (7px padding + 12px text). These are the Safety
    module's primary navigation and were the one genuinely undersized target
@@ -1626,37 +1626,37 @@ body {
 .sf-tab { flex:0 0 auto; padding:7px 14px; min-height:44px; border:none;
   background:#f1f5f9; border-radius:8px; display:inline-flex; align-items:center;
   font-size:12px; font-weight:700; color:#475569; cursor:pointer; white-space:nowrap; }
-.sf-tab.active { background:#0f766e; color:#fff; }
+.sf-tab.active { background:var(--flacc); color:#fff; }
 .sf-wrap { padding:12px; }
 .sf-banner { font-size:11px; color:#64748b; padding:2px 2px 10px; }
 /* KPI hero tiles */
 .sf-kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
 @media (max-width:560px){ .sf-kpis { grid-template-columns:repeat(2,1fr); } }
-.sf-kpi { background:#fff; border-radius:10px; padding:12px 10px; border-left:4px solid #94a3b8;
+.sf-kpi { background:#fff; border-radius:10px; padding:12px 10px; border-left:4px solid var(--fledge3);
   cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.05); transition:transform .1s; }
 .sf-kpi:active { transform:scale(.97); }
 /* Tabular numerals + tight tracking: these are figures, and proportional
    digits made the six tiles read as ragged. */
-.sf-kpi .v { font-size:27px; font-weight:800; color:#0f172a; line-height:1;
+.sf-kpi .v { font-size:27px; font-weight:800; color:var(--flink); line-height:1;
   font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
-.sf-kpi .l { font-size:11.5px; color:#475569; font-weight:600; margin-top:5px;
+.sf-kpi .l { font-size:11.5px; color:var(--fldim); font-weight:600; margin-top:5px;
   letter-spacing:-.005em; }
 .sf-kpi.green { border-left-color:#16a34a; } .sf-kpi.amber { border-left-color:#d97706; }
-.sf-kpi.red { border-left-color:#dc2626; } .sf-kpi.teal { border-left-color:#0f766e; }
+.sf-kpi.red { border-left-color:#dc2626; } .sf-kpi.teal { border-left-color:var(--flacc); }
 /* chart cards */
 .sf-card { background:#fff; border-radius:10px; padding:12px; margin-top:12px;
   box-shadow:0 1px 2px rgba(0,0,0,.05); }
 /* 700, not 800, at a slightly larger size: a card title is a label, not a
    headline. At 800 it competed with the KPI numerals for first read.
    Hierarchy comes from weight and colour, not from shouting. */
-.sf-card h4 { font-size:13.5px; font-weight:700; color:#0f172a; margin-bottom:10px;
+.sf-card h4 { font-size:13.5px; font-weight:700; color:var(--flink); margin-bottom:10px;
   letter-spacing:-.01em; display:flex; justify-content:space-between;
   align-items:baseline; gap:10px; }
 /* Affordance hint — tells the reader the chart is a way in, in the recessive
    register so it never competes with the title. */
-.sf-card h4 .sf-hint { font-size:10.5px; font-weight:600; color:#94a3b8;
+.sf-card h4 .sf-hint { font-size:10.5px; font-weight:600; color:var(--fledge3);
   letter-spacing:0; flex:none; }
-.sf-card .ctype { font-size:10px; font-weight:700; color:#0f766e; background:#f0fdfa;
+.sf-card .ctype { font-size:10px; font-weight:700; color:var(--flacc); background:#f0fdfa;
   border:1px solid #99f6e4; border-radius:6px; padding:2px 8px; cursor:pointer; }
 .sf-canvas-box { position:relative; height:240px; }
 .sf-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -1689,7 +1689,7 @@ body {
 }
 /* Kanban column brought into view from an Action Status click. The ring fades
    after a moment so it marks the arrival without becoming permanent chrome. */
-.sf-kcol-hi { outline:2px solid #0f766e; outline-offset:2px; border-radius:10px;
+.sf-kcol-hi { outline:2px solid var(--flacc); outline-offset:2px; border-radius:10px;
   animation:sfkhi 2.4s ease-out forwards; }
 @keyframes sfkhi { 0%,60%{ outline-color:#0f766e; } 100%{ outline-color:transparent; } }
 @media (prefers-reduced-motion:reduce){
@@ -1710,7 +1710,7 @@ body {
   font-variant-numeric:tabular-nums; transition:transform .1s, box-shadow .1s; }
 .sf-heat .hc:hover, .sf-heat .hc:focus-visible {
   transform:scale(1.08); box-shadow:0 2px 8px rgba(15,23,42,.28); z-index:2; }
-.sf-heat .hl { font-size:11px; font-weight:700; color:#475569; display:flex;
+.sf-heat .hl { font-size:11px; font-weight:700; color:var(--fldim); display:flex;
   align-items:center; justify-content:center; padding:0 6px; }
 /* Empty cells must not read as a RISK BAND, but they must still read as CELLS.
    They were #f8fafc on a white card — effectively invisible — so the matrix
@@ -1736,14 +1736,14 @@ body {
    is what the rating MEANS and what to do about it — the ISO 45001 action for
    that band. SF_RISK_GUIDE already carried that text; it was only being shown
    on the HIRA entry form, never on this matrix. */
-.sf-heatinfo { border-left:3px solid var(--rc,#cbd5e1); padding:2px 0 2px 12px;
+.sf-heatinfo { border-left:3px solid var(--rc,var(--fledge2)); padding:2px 0 2px 12px;
   min-height:112px; max-width:340px; }
 .sf-heatinfo .ri-band { font-size:14px; font-weight:800; color:var(--rc,#334155);
   display:flex; align-items:baseline; gap:8px; }
 .sf-heatinfo .ri-score { font-size:11px; font-weight:700; color:#64748b;
   font-variant-numeric:tabular-nums; }
-.sf-heatinfo .ri-lc { font-size:11.5px; color:#475569; margin-top:6px; line-height:1.5; }
-.sf-heatinfo .ri-lc b { color:#0f172a; font-weight:700; }
+.sf-heatinfo .ri-lc { font-size:11.5px; color:var(--fldim); margin-top:6px; line-height:1.5; }
+.sf-heatinfo .ri-lc b { color:var(--flink); font-weight:700; }
 .sf-heatinfo .ri-guide { font-size:11.5px; color:#334155; margin-top:8px;
   line-height:1.5; }
 .sf-heatinfo .ri-count { font-size:11.5px; font-weight:700; margin-top:8px;
@@ -1793,12 +1793,12 @@ body {
 .sf-sect { display:flex; align-items:center; gap:8px; margin:14px 0 0;
   font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
   color:#475569; }
-.sf-sect .n { background:#e2e8f0; color:#334155; border-radius:20px;
+.sf-sect .n { background:var(--fledge); color:#334155; border-radius:20px;
   padding:1px 8px; font-size:11px; }
 .sf-sect.urgent { color:#b91c1c; }
 .sf-sect.urgent .n { background:#fee2e2; color:#b91c1c; }
 .sf-sect .sp { flex:1; }
-.sf-disc { background:none; border:none; font:inherit; color:#0f766e;
+.sf-disc { background:none; border:none; font:inherit; color:var(--flacc);
   cursor:pointer; padding:6px 12px; min-height:44px; min-width:56px;
   letter-spacing:.04em; font-weight:700; }
 .sf-disc:hover { text-decoration:underline; }
@@ -1828,13 +1828,13 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .nav-machine :where(button,a,[tabindex]):focus-visible,
 .app-header :where(button,a,[tabindex]):focus-visible { outline-color:#5eead4; }
 
-.sf-list { border-top:1px solid #e2e8f0; margin-top:6px; }
+.sf-list { border-top:1px solid var(--fledge); margin-top:6px; }
 .sf-row { position:relative; background:#fff; padding:11px 12px 11px 16px;
   border-bottom:1px solid #e2e8f0; cursor:pointer; min-height:44px;
   transition:background .15s ease; }
-.sf-row:hover { background:#f8fafc; }
+.sf-row:hover { background:var(--flpanel2); }
 .sf-row:active { background:#f1f5f9; }
-.sf-row:focus-visible { outline:2px solid #0f766e; outline-offset:-2px; }
+.sf-row:focus-visible { outline:2px solid var(--flacc); outline-offset:-2px; }
 /* Left rule carries the band colour; set per-row via --bar. */
 .sf-row::before { content:''; position:absolute; left:0; top:0; bottom:0;
   width:4px; background:var(--bar,#94a3b8); }
@@ -1845,14 +1845,14 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 
 .sf-row .top { display:flex; align-items:baseline; gap:8px; }
 /* The score/ID is the scan anchor — largest thing in the row. */
-.sf-row .score { font-size:17px; font-weight:700; color:#0f172a; line-height:1.1;
+.sf-row .score { font-size:17px; font-weight:700; color:var(--flink); line-height:1.1;
   font-variant-numeric:tabular-nums; min-width:26px; }
-.sf-row .act { font-size:15px; font-weight:600; color:#0f172a; flex:1;
+.sf-row .act { font-size:15px; font-weight:600; color:var(--flink); flex:1;
   line-height:1.25; }
-.sf-row .haz { font-size:13px; color:#475569; margin-top:3px; line-height:1.4;
+.sf-row .haz { font-size:13px; color:var(--fldim); margin-top:3px; line-height:1.4;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
   overflow:hidden; }
-.sf-row .meta { font-size:13px; color:#475569; margin-top:6px; display:flex;
+.sf-row .meta { font-size:13px; color:var(--fldim); margin-top:6px; display:flex;
   gap:6px 12px; flex-wrap:wrap; align-items:center; }
 .sf-row .meta .sr { color:#64748b; font-size:12px; font-variant-numeric:tabular-nums; }
 
@@ -1883,7 +1883,7 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .sf-bhead svg { width:15px; height:15px; flex:none; }
 
 /* Skeleton + empty states (both design skills require these explicitly). */
-.sf-skel { padding:11px 12px 11px 16px; border-bottom:1px solid #e2e8f0; }
+.sf-skel { padding:11px 12px 11px 16px; border-bottom:1px solid var(--fledge); }
 .sf-skel i { display:block; height:11px; border-radius:5px; background:#e9eef4;
   animation:sfsh 1.3s ease-in-out infinite; }
 .sf-skel i + i { margin-top:7px; }
@@ -1958,7 +1958,7 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   .sf-board { grid-auto-flow:row; grid-auto-columns:none;
     grid-template-columns:repeat(var(--cols,5),minmax(0,1fr)); overflow-x:visible; }
 }
-.sf-bcol { background:#f1f5f9; border-radius:10px; border-top:3px solid var(--bar,#94a3b8);
+.sf-bcol { background:#f1f5f9; border-radius:10px; border-top:3px solid var(--bar,var(--fledge3));
   display:flex; flex-direction:column; min-height:110px; }
 .sf-bhead { display:flex; align-items:center; gap:7px; padding:9px 11px;
   font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase;
@@ -1968,24 +1968,24 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .sf-bbody { padding:0 7px 7px; display:flex; flex-direction:column; gap:7px; }
 .sf-kc { background:#fff; border-radius:8px; padding:9px 10px; cursor:pointer;
   border-left:3px solid var(--bar,#94a3b8); transition:background .15s ease; }
-.sf-kc:hover { background:#f8fafc; }
-.sf-kc .t { font-size:14px; font-weight:600; color:#0f172a; line-height:1.3; }
-.sf-kc .m { font-size:12px; color:#475569; margin-top:5px; display:flex;
+.sf-kc:hover { background:var(--flpanel2); }
+.sf-kc .t { font-size:14px; font-weight:600; color:var(--flink); line-height:1.3; }
+.sf-kc .m { font-size:12px; color:var(--fldim); margin-top:5px; display:flex;
   gap:5px 9px; flex-wrap:wrap; align-items:center; }
 .sf-bdots { display:flex; gap:6px; justify-content:center; padding:8px 0 2px; }
-.sf-bdots i { width:7px; height:7px; border-radius:50%; background:#cbd5e1; }
-.sf-bdots i.on { background:#0f766e; }
+.sf-bdots i { width:7px; height:7px; border-radius:50%; background:var(--fledge2); }
+.sf-bdots i.on { background:var(--flacc); }
 @media (min-width:1025px){ .sf-bdots { display:none; } }
 
 /* View switch (list / board). */
-.sf-vsw { display:inline-flex; border:1px solid #cbd5e1; border-radius:8px;
+.sf-vsw { display:inline-flex; border:1px solid var(--fledge2); border-radius:8px;
   overflow:hidden; margin-left:auto; flex:none; }
 .sf-vsw button { background:#fff; border:none; padding:0 11px; min-height:44px;
   min-width:44px; font:inherit; font-size:12px; font-weight:700; color:#64748b;
   cursor:pointer; display:inline-flex; align-items:center; gap:5px;
   transition:background .15s ease,color .15s ease; }
-.sf-vsw button + button { border-left:1px solid #cbd5e1; }
-.sf-vsw button.on { background:#0f766e; color:#fff; }
+.sf-vsw button + button { border-left:1px solid var(--fledge2); }
+.sf-vsw button.on { background:var(--flacc); color:#fff; }
 .sf-vsw svg { width:15px; height:15px; }
 
 /* Active-filter chips: state visible, not hidden inside a <select>. */
@@ -1993,14 +1993,14 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .sf-fchip { display:inline-flex; align-items:center; gap:6px; background:#e6f2f1;
   color:#0f766e; border:1px solid #b9dedb; border-radius:20px; padding:5px 6px 5px 11px;
   font-size:12px; font-weight:600; }
-.sf-fchip button { background:none; border:none; color:#0f766e; cursor:pointer;
+.sf-fchip button { background:none; border:none; color:var(--flacc); cursor:pointer;
   font-size:14px; line-height:1; padding:3px 5px; border-radius:50%; min-width:26px;
   min-height:26px; }
 .sf-fchip button:hover { background:#cfe8e6; }
 .sf-clr { background:none; border:none; color:#64748b; font:inherit; font-size:12px;
   text-decoration:underline; cursor:pointer; padding:6px 4px; min-height:34px; }
 /* Settings entry point — a dot appears when live data has drifted from config. */
-.sf-gear { position:relative; background:#fff; border:1px solid #cbd5e1;
+.sf-gear { position:relative; background:#fff; border:1px solid var(--fledge2);
   border-radius:8px; min-height:44px; min-width:44px; cursor:pointer; color:#475569;
   display:inline-flex; align-items:center; justify-content:center; flex:none;
   transition:background .15s ease; }
@@ -2014,17 +2014,17 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .sf-prow { display:flex; align-items:center; gap:12px; padding:11px 0;
   border-bottom:1px solid #e2e8f0; }
 .sf-prow > div:first-child { flex:1; min-width:0; }
-.sf-prow b { display:block; font-size:13px; color:#0f172a; font-weight:600; }
+.sf-prow b { display:block; font-size:13px; color:var(--flink); font-weight:600; }
 .sf-prow span { display:block; font-size:12px; color:#64748b; margin-top:2px;
   line-height:1.4; }
-.sf-segrow { display:inline-flex; border:1px solid #cbd5e1; border-radius:8px;
+.sf-segrow { display:inline-flex; border:1px solid var(--fledge2); border-radius:8px;
   overflow:hidden; flex:none; }
 .sf-segb { background:#fff; border:none; font:inherit; font-size:12px; font-weight:600;
   color:#64748b; padding:0 12px; min-height:44px; min-width:48px; cursor:pointer;
   transition:background .15s ease,color .15s ease; }
-.sf-segb + .sf-segb { border-left:1px solid #cbd5e1; }
-.sf-segb.on { background:#0f766e; color:#fff; }
-.sf-vocab { border-top:1px solid #e2e8f0; }
+.sf-segb + .sf-segb { border-left:1px solid var(--fledge2); }
+.sf-segb.on { background:var(--flacc); color:#fff; }
+.sf-vocab { border-top:1px solid var(--fledge); }
 .sf-vrow { display:flex; gap:12px; padding:9px 0; border-bottom:1px solid #f1f5f9;
   align-items:flex-start; }
 .sf-vrow .k { flex:0 0 40%; font-size:12px; font-weight:600; color:#334155; }
@@ -2053,11 +2053,11 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .sf-wrap { padding-bottom:76px; }
 .sf-kpitable { width:100%; font-size:11px; border-collapse:collapse; }
 .sf-kpitable td, .sf-kpitable th { padding:5px 6px; border-bottom:1px solid #f1f5f9; text-align:left; }
-.sf-kpitable .bar { height:9px; border-radius:4px; background:#0f766e; }
+.sf-kpitable .bar { height:9px; border-radius:4px; background:var(--flacc); }
 .sf-dom { font-size:11px; font-weight:800; margin:10px 0 4px; padding:3px 8px; border-radius:6px; }
 /* hazard edit form */
 .sf-form { display:flex; flex-direction:column; gap:4px; font-size:12px; }
-.sf-form label { font-weight:700; color:#475569; margin-top:6px; font-size:11px; }
+.sf-form label { font-weight:700; color:var(--fldim); margin-top:6px; font-size:11px; }
 .sf-form input, .sf-form select, .sf-form textarea { font-size:12px; padding:7px 8px;
   border:1px solid #cbd5e1; border-radius:7px; width:100%; font-family:inherit; }
 /* Incident detail — read-only facts panel above the editable fields. */
@@ -2085,10 +2085,10 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 /* Explains the auto-stamp so an empty date field does not read as a missing value. */
 .sf-form .if-hint { font-size:10.5px; color:#64748b; line-height:1.4; margin-top:6px; }
 .sf-form .hf-3 { display:grid; grid-template-columns:1fr 1fr auto; gap:8px; align-items:end; }
-.hf-risk { font-size:18px; font-weight:800; color:#fff; background:#16a34a;
+.hf-risk { font-size:18px; font-weight:800; color:#fff; background:#15803d;
   border-radius:7px; padding:6px 14px; text-align:center; min-width:48px; }
 .hf-classline { font-size:11px; color:#475569; margin-top:4px; }
-.sf-btn-primary { background:#0f766e; color:#fff; border:none; padding:10px;
+.sf-btn-primary { background:var(--flacc); color:#fff; border:none; padding:10px;
   border-radius:8px; font-weight:700; margin-top:12px; font-size:13px; cursor:pointer; }
 /* segmented click controls */
 .hf-seg { display:flex; flex-wrap:wrap; gap:6px; }
@@ -2278,9 +2278,9 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
    A worklist, so it is denser than the edit form: the reviewer is reading a
    measure and tapping one chip, not filling in fields. */
 .sf-rvq { display:flex; flex-direction:column; gap:6px; }
-.sf-rvq-head { font-size:11.5px; line-height:1.45; color:#475569; background:#f8fafc;
+.sf-rvq-head { font-size:11.5px; line-height:1.45; color:var(--fldim); background:var(--flpanel2);
   border:1px solid #e2e8f0; border-radius:9px; padding:9px 11px; margin-bottom:2px; }
-.sf-rvq-head b { color:#0f172a; }
+.sf-rvq-head b { color:var(--flink); }
 .sf-rvq-head em { color:#9a3412; font-style:normal; font-weight:700; }
 /* Hazard header: the context a measure is being judged against. Sticky so the
    hazard stays visible while working down its measures. */
@@ -2291,13 +2291,13 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   color:#fff; background:#64748b; white-space:nowrap; }
 .sf-rvq-intolerable { background:#dc2626; } .sf-rvq-substantial { background:#ea580c; }
 .sf-rvq-tolerable  { background:#ca8a04; } .sf-rvq-negligible  { background:#16a34a; }
-.sf-rvq-sr { font-size:10.5px; font-weight:800; color:#475569; }
-.sf-rvq-hazard { font-size:11.5px; font-weight:700; color:#0f172a; flex:1; min-width:0; }
-.sf-rvq-row { border:1.5px solid #e2e8f0; border-radius:9px; padding:7px 8px;
+.sf-rvq-sr { font-size:10.5px; font-weight:800; color:var(--fldim); }
+.sf-rvq-hazard { font-size:11.5px; font-weight:700; color:var(--flink); flex:1; min-width:0; }
+.sf-rvq-row { border:1.5px solid var(--fledge); border-radius:9px; padding:7px 8px;
   background:#fff; display:flex; flex-direction:column; gap:5px; }
-.sf-rvq-text { font-size:12px; line-height:1.35; color:#0f172a; }
-.sf-rvq-why { font-size:10.5px; line-height:1.3; color:#475569; }
-.sf-rvq-why b { color:#0f172a; }
+.sf-rvq-text { font-size:12px; line-height:1.35; color:var(--flink); }
+.sf-rvq-why { font-size:10.5px; line-height:1.3; color:var(--fldim); }
+.sf-rvq-why b { color:var(--flink); }
 .sf-rvq-nosug { font-weight:700; color:#9a3412; }
 /* The suggestion is a DASHED outline, never a filled chip. A filled chip would
    look identical to a confirmed choice, and the difference between "the text
@@ -2316,11 +2316,11 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   grid-template-columns:none; grid-auto-columns:78vw; } }
 .sf-kcol-h { font-size:11px; font-weight:800; letter-spacing:.4px; text-transform:uppercase;
   padding:8px 9px 6px; display:flex; gap:6px; align-items:baseline; }
-.sf-kempty { font-size:11px; color:#94a3b8; padding:6px 9px 10px; }
-.sf-kcard { background:#fff; border:1px solid #e2e8f0; border-radius:7px; padding:7px 9px;
+.sf-kempty { font-size:11px; color:var(--fledge3); padding:6px 9px 10px; }
+.sf-kcard { background:#fff; border:1px solid var(--fledge); border-radius:7px; padding:7px 9px;
   margin:0 7px 6px; cursor:pointer; }
 .sf-kcard.od { border-color:#fecaca; background:#fff7f7; }
-.sf-kcard-t { font-size:12px; font-weight:700; color:#0f172a; line-height:1.25; }
+.sf-kcard-t { font-size:12px; font-weight:700; color:var(--flink); line-height:1.25; }
 .sf-kcard-m { display:flex; gap:8px; flex-wrap:wrap; margin-top:3px;
   font-size:10px; color:#64748b; font-weight:600; }
 .sf-kcard-m .od { color:#b91c1c; }
@@ -2331,10 +2331,10 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .sf-kcount { background:rgba(255,255,255,.3); border-radius:9px; padding:1px 7px;
   font-size:11px; margin-left:4px; }
 .sf-klist { padding:7px; display:flex; flex-direction:column; gap:7px; min-height:60px; }
-.sf-kcard { background:#fff; border-radius:8px; padding:9px; border-left:4px solid #94a3b8;
+.sf-kcard { background:#fff; border-radius:8px; padding:9px; border-left:4px solid var(--fledge3);
   box-shadow:0 1px 3px rgba(0,0,0,.08); cursor:pointer; }
 .sf-kcard.ovd { background:#fef2f2; }
-.sf-kc-top { font-size:11px; font-weight:800; color:#0f172a; display:flex;
+.sf-kc-top { font-size:11px; font-weight:800; color:var(--flink); display:flex;
   justify-content:space-between; align-items:center; }
 .sf-kc-act { font-size:11px; color:#334155; margin:4px 0; line-height:1.3; }
 .sf-kc-meta { font-size:10px; color:#64748b; }
@@ -7732,7 +7732,7 @@ function loadBD(machineId) {
             'onclick="openRecordDetail(\'' + esc(item.slip) + '\',\'bd\',\'' + esc(machineId) + '\')">' +
             esc(item.problem) + '</div>' +
           '<div class="bd-meta">' + esc(item.date) + (item.rectified ? ' &nbsp;&#183;&nbsp; ' + esc(item.rectified) : '') + '</div>' +
-          (!isClosed ? '<button onclick="showBDCloseForm(\'' + esc(machineId) + '\',\'' + esc(item.slip) + '\',' + item.rowNum + ')" style="display:block;width:100%;margin-top:10px;padding:10px;background:#16a34a;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px;letter-spacing:0.3px">&#x2713; Close BD</button>' : '') +
+          (!isClosed ? '<button onclick="showBDCloseForm(\'' + esc(machineId) + '\',\'' + esc(item.slip) + '\',' + item.rowNum + ')" style="display:block;width:100%;margin-top:10px;padding:10px;background:#15803d;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px;letter-spacing:0.3px">&#x2713; Close BD</button>' : '') +
           '</div>';
       }).join('');
     })
@@ -8068,7 +8068,7 @@ function loadSOPView(machineId) {
             'background:rgba(255,255,255,.16);color:#fff;font-size:12px;font-weight:700;cursor:pointer">&#9998; Edit</button>'+
           (st !== 'approved'
             ? '<button onclick="sopApproveDirect()" style="min-height:34px;padding:0 14px;border:0;border-radius:7px;'+
-              'background:#16a34a;color:#fff;font-size:12px;font-weight:700;cursor:pointer">&#10003; Approve</button>'
+              'background:#15803d;color:#fff;font-size:12px;font-weight:700;cursor:pointer">&#10003; Approve</button>'
             : '')+
         '</div>'+
       '</div>';
