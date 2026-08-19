@@ -9080,11 +9080,16 @@ function plCell(state, asset, line, idx){
            : state===0 ? 'tap to record an unplanned PM'
            : 'tap to mark done';
   var title = when + ' \u2014 ' + s.label + (editable ? ' \u00b7 ' + verb : '');
+  /* A DISABLED button swallows the click instead of letting it bubble, so a tap
+     on a collapsed cell reached nothing at all — which is exactly what made the
+     grid feel read-only. Read-only cells are now a plain <span>: no pointer
+     interception, so the tap reaches the row and expands the asset. */
   var act = editable
     ? 'onclick="plMarkDone(&quot;'+esc(asset.id)+'&quot;,&quot;'+esc(line.freq)+'&quot;,'+idx+')" '
-    : 'disabled ';
-  return '<button class="pl-c '+s.cls+(editable?' tap':'')+'" '+act+
-    'title="'+title+'" aria-label="'+title+'"><i></i></button>';
+    : '';
+  var tag = editable ? 'button' : 'span';
+  return '<'+tag+' class="pl-c '+s.cls+(editable?' tap':'')+'" '+act+
+    'title="'+title+'" aria-label="'+title+'"><i></i></'+tag+'>';
 }
 
 function plRender(){
