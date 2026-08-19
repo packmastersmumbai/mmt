@@ -1060,6 +1060,36 @@ body {
    literals so the strip carries no values outside the token scale. */
 .pl-strip-cells .m.pl-mo-now { background:rgba(15,118,110,.08);
   border-radius:var(--r-sm); }
+/* Evidence capture. A tap that records maintenance has to say WHO — ISO 45001
+   wants a named person against the work, and a green dot cannot carry one.
+   Deliberately a small sheet, not a full form: three fields is the most that can
+   be asked at the moment of ticking without the tick being abandoned. */
+.ple-back { position:fixed; inset:0; background:rgba(15,23,42,.45);
+  z-index:1150; display:flex; align-items:flex-end; justify-content:center; }
+.ple-sheet { background:var(--flpanel); width:100%; max-width:460px;
+  border-radius:var(--r-lg) var(--r-lg) 0 0; padding:16px 16px 20px;
+  max-height:88vh; overflow-y:auto; }
+@media (min-width:560px){ .ple-back { align-items:center; }
+  .ple-sheet { border-radius:var(--r-lg); } }
+.ple-hd { font-size:16px; font-weight:800; color:var(--flink); margin-bottom:2px; }
+.ple-sub { font-size:11px; font-weight:700; color:var(--fldim); margin-bottom:12px; }
+.ple-f { margin-bottom:10px; }
+.ple-f label { display:block; font-size:11px; font-weight:700;
+  color:var(--fldim); margin-bottom:4px; }
+.ple-f select, .ple-f input, .ple-f textarea { width:100%; min-height:44px;
+  padding:10px; border:1px solid var(--fledge); border-radius:var(--r-sm);
+  font-family:inherit; font-size:14px; color:var(--flink);
+  background:var(--flfield); }
+.ple-f textarea { min-height:64px; resize:vertical; }
+.ple-act { display:flex; gap:8px; margin-top:14px; }
+.ple-act button { flex:1; min-height:44px; border-radius:var(--r-sm);
+  border:none; font-size:13px; font-weight:700; cursor:pointer; }
+.ple-ok { background:var(--flacc); color:#fff; }
+.ple-ok:active { background:var(--flaccd); }
+.ple-no { background:var(--flpanel2); color:var(--fldim);
+  border:1px solid var(--fledge) !important; }
+.ple-del { background:var(--flR); color:#fff; }
+.ple-note { font-size:11px; color:var(--fldim); line-height:1.5; margin-top:10px; }
 .pl-strip-missed { font-size:11px; font-weight:700; color:var(--flR);
   white-space:nowrap; }
 .pl-strip-cells .m span { font-size:8.5px; font-weight:700; color:var(--flfaint);
@@ -9112,23 +9142,119 @@ function plRender(){
 }
 
 /* Record an actual. monthIdx is the FY position; the server maps it to a date. */
+/* A tap now opens an evidence sheet rather than writing a bare bit. Clearing
+   asks for confirmation, because it withdraws a maintenance record. */
 function plMarkDone(assetId, freq, monthIdx){
   if(PL.busy) return;
+  var a=((PL.data&&PL.data.assets)||[]).filter(function(x){return x.id===assetId;})[0];
+  var line=a&&a.lines.filter(function(l){return l.freq===freq;})[0];
+  var state=line?line.cells[monthIdx]:0;
+  var isClear=(state===3||state===4);
+  plEvOpen({ assetId:assetId, assetName:(a&&a.name)||assetId, freq:freq,
+    monthIdx:monthIdx, month:plMonthLabel(monthIdx), clearing:isClear });
+}
+
+var PLE = null;
+
+function plEvOpen(ctx){
+  PLE = ctx;
+  var host=document.getElementById('ple-host');
+  if(!host){ host=document.createElement('div'); host.id='ple-host';
+    document.body.appendChild(host); }
+
+  if(ctx.clearing){
+    host.innerHTML='<div class="ple-back" onclick="if(event.target===this)plEvClose()">'+
+      '<div class="ple-sheet" role="dialog" aria-modal="true">'+
+        '<div class="ple-hd">Withdraw this record?</div>'+
+        '<div class="ple-sub">'+esc(ctx.assetName)+' &middot; '+esc(ctx.freq)+' &middot; '+esc(ctx.month)+'</div>'+
+        '<div class="ple-note">The evidence entry is kept and stamped as withdrawn, '+
+          'not deleted \u2014 an audit trail that can be erased is not an audit trail. '+
+          'If the month is already past, it returns to <b>missed</b>.</div>'+
+        '<div class="ple-act">'+
+          '<button class="ple-no" onclick="plEvClose()">Cancel</button>'+
+          '<button class="ple-del" onclick="plEvSubmit(true)">Withdraw</button>'+
+        '</div>'+
+      '</div></div>';
+    return;
+  }
+
+  /* App.personnelList is the app-wide cache filled by getDashboardBootstrap /
+     preloadPersonnel. It can be empty on a deep link straight to the Planner,
+     so the sheet fetches once and reopens rather than showing a blank select. */
+  var people=(App&&App.personnelList)||[];
+  if(!people.length){
+    google.script.run.withSuccessHandler(function(list){
+      if(list&&list.length){ App.personnelList=list; if(PLE) plEvOpen(PLE); }
+    }).withFailureHandler(function(){}).getPersonnelList();
+  }
+  var opts='<option value="">\u2014 select \u2014</option>'+
+    people.map(function(p){ return '<option>'+esc(p)+'</option>'; }).join('');
+
+  host.innerHTML='<div class="ple-back" onclick="if(event.target===this)plEvClose()">'+
+    '<div class="ple-sheet" role="dialog" aria-modal="true">'+
+      '<div class="ple-hd">Record PM</div>'+
+      '<div class="ple-sub">'+esc(ctx.assetName)+' &middot; '+esc(ctx.freq)+' &middot; '+esc(ctx.month)+'</div>'+
+      '<div class="ple-f"><label for="ple-by">Performed by</label>'+
+        '<select id="ple-by">'+opts+'</select></div>'+
+      '<div class="ple-f"><label for="ple-on">Date performed</label>'+
+        '<input type="date" id="ple-on" value="'+esc(plEvDefaultDate(ctx.monthIdx))+'"></div>'+
+      '<div class="ple-f"><label for="ple-vf">Verified by <span style="font-weight:400">(optional)</span></label>'+
+        '<select id="ple-vf">'+opts+'</select></div>'+
+      '<div class="ple-f"><label for="ple-rm">Remarks <span style="font-weight:400">(optional)</span></label>'+
+        '<textarea id="ple-rm" placeholder="What was done, parts replaced, anything found"></textarea></div>'+
+      '<div class="ple-act">'+
+        '<button class="ple-no" onclick="plEvClose()">Cancel</button>'+
+        '<button class="ple-ok" onclick="plEvSubmit(false)">Record</button>'+
+      '</div>'+
+      '<div class="ple-note">For a full PM with checklist and photos, use the '+
+        'PM form on the machine instead \u2014 this records that scheduled work happened.</div>'+
+    '</div></div>';
+  var by=document.getElementById('ple-by'); if(by) by.focus();
+}
+
+/* Default to the 1st of the month being ticked, not today: a PM recorded for
+   April in August happened in April, and dating it today would be false. */
+function plEvDefaultDate(idx){
+  var d=PL.data; if(!d) return '';
+  var y=parseInt(String(d.fy).split('-')[0],10);
+  var mo=(idx>=9)?(idx-9):(idx+3);
+  var yy=(idx>=9)?y+1:y;
+  return yy+'-'+('0'+(mo+1)).slice(-2)+'-01';
+}
+
+function plEvClose(){
+  var h=document.getElementById('ple-host'); if(h) h.innerHTML='';
+  PLE=null;
+}
+
+function plEvSubmit(clearing){
+  if(!PLE||PL.busy) return;
+  var ev=null;
+  if(!clearing){
+    var by=(document.getElementById('ple-by')||{}).value||'';
+    if(!by){ showStatus('Select who performed the PM','error',3000); return; }
+    ev={ doneBy:by,
+         doneOn:(document.getElementById('ple-on')||{}).value||'',
+         verified:(document.getElementById('ple-vf')||{}).value||'',
+         remarks:(document.getElementById('ple-rm')||{}).value||'',
+         source:'planner' };
+  }
   PL.busy=true;
-  showStatus('Recording PM\u2026','info',0);
+  showStatus(clearing?'Withdrawing\u2026':'Recording PM\u2026','info',0);
+  var ctx=PLE; plEvClose();
   google.script.run
     .withSuccessHandler(function(r){
       PL.busy=false;
       if(r&&r.success){
-        showStatus(r.cleared?'Cleared':'Recorded','success',1800);
+        showStatus(r.cleared?'Withdrawn':'Recorded','success',1800);
         PL.data=null; loadPlanner();
-      } else showStatus('Not recorded: '+((r&&r.error)||'unknown'),'error',4000);
+      } else showStatus('Not saved: '+((r&&r.error)||'unknown'),'error',4000);
     })
     .withFailureHandler(function(e){
       PL.busy=false;
-      showStatus('Not recorded: '+((e&&e.message)||e),'error',4000);
+      showStatus('Not saved: '+((e&&e.message)||e),'error',4000);
     })
-    .markPmPlanDone(plFy(), assetId, freq, monthIdx);
+    .markPmPlanDone(plFy(), ctx.assetId, ctx.freq, ctx.monthIdx, ev);
 }
 
 /* Per-machine PM strip — the same 12 cells as the Planner, for one asset.
