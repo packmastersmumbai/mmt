@@ -1008,7 +1008,7 @@ body {
   border:1px solid var(--fledge); border-radius:var(--r-md);
   background:var(--flpanel); }
 .pl-grid { width:100%; border-collapse:collapse; font-size:11px; }
-.pl-grid th { font-size:11px; font-weight:700; color:var(--fldim);
+.pl-grid th { min-width:56px; font-size:11px; font-weight:700; color:var(--fldim);
   padding:8px 4px; text-align:center; background:var(--flpanel2);
   border-bottom:1px solid var(--fledge); white-space:nowrap;
   font-family:'PMMono',ui-monospace,monospace; }
@@ -1044,26 +1044,48 @@ body {
   border-color:var(--flacc); color:#fff; }
 /* Collapsed rows summarise; only expanded rows accept a tap. Making that
    visible beats explaining it in a footnote nobody scrolls to. */
-.pl-c { cursor:default; }
+/* Cells carry text now, not just a dot. What each state can honestly show:
+     done / extra  -> the DAY it happened  (real, from the PM slip)
+     planned       -> the MONTH only       (the plan is generated per month;
+                      printing a day would invent precision it never had)
+     missed        -> the month, struck
+   Colour still carries state, and the letter/text means it survives a
+   black-and-white print \u2014 the same rule the PDF report follows. */
+.pl-c { display:flex; align-items:center; justify-content:center;
+  width:100%; min-height:34px; padding:3px 2px; border:none;
+  cursor:default; font-family:'PMMono',ui-monospace,monospace; font-size:10px;
+  font-weight:700; line-height:1.15; white-space:nowrap; border-radius:var(--r-sm); }
 .pl-c.tap { cursor:pointer; }
-.pl-c.tap:hover i { outline:2px solid var(--flacc); outline-offset:2px; }
+.pl-c.tap:hover { outline:2px solid var(--flacc); outline-offset:-2px; }
+.pl-s0 { color:transparent; }
+.pl-c.pl-s1 { color:var(--flY);    background-color:var(--flYw); }
+.pl-c.pl-s2 { color:var(--flR);    background-color:var(--flRw); }
+.pl-c.pl-s3 { color:var(--flgood); background-color:var(--flgoodw); }
+.pl-c.pl-s4 { color:var(--flB);    background-color:var(--flBb); }
+.pl-c.pl-s2 span { text-decoration:line-through; }
+/* The old dot markup is still emitted inside the button for the legend; hide it
+   in the grid so the text is the whole cell. */
+.pl-c > i { display:none; }
+.pl-key i { display:inline-block; }
 .pl-hint { display:flex; align-items:center; gap:7px; padding:9px 11px;
   margin-bottom:10px; border:1px solid var(--fledge); border-left:3px solid var(--flacc);
   border-radius:var(--r-sm); background:var(--flpanel);
   font-size:12px; font-weight:600; color:var(--fldim); line-height:1.45; }
 .pl-hint b { color:var(--flink); }
 
-/* Cells. Every state is shape + colour, never colour alone: done is filled,
-   planned is a ring, missed is filled red with a bar, extra is a small square. */
+/* Legend swatches only. The GRID no longer draws dots — each cell shows the
+   date or month as text, which is both more informative and survives a
+   black-and-white print. These rules are scoped to .pl-key so they cannot
+   reach back into the grid. */
 .pl-c { width:100%; min-height:38px; border:none; background:none;
   cursor:default; display:flex; align-items:center; justify-content:center; }
 .pl-c.tap { cursor:pointer; }
 .pl-c i { width:14px; height:14px; border-radius:50%; display:block; }
-.pl-s0 i { background:transparent; }                                   /* not due */
-.pl-s1 i { border:2px solid var(--flY); background:transparent; }         /* planned */
-.pl-s2 i { background:var(--flR); }                                    /* MISSED  */
-.pl-s3 i { background:var(--flgood); }                                 /* done    */
-.pl-s4 i { background:var(--flB); border-radius:0; }   /* square vs circles */                 /* unplanned extra */
+.pl-key .pl-s0 i { background:transparent; }                                   /* not due */
+.pl-key .pl-s1 i { border:2px solid var(--flY); background:transparent; }         /* planned */
+.pl-key .pl-s2 i { background:var(--flR); }                                    /* MISSED  */
+.pl-key .pl-s3 i { background:var(--flgood); }                                 /* done    */
+.pl-key .pl-s4 i { background:var(--flB); border-radius:0; }   /* square vs circles */                 /* unplanned extra */
 .pl-c.tap:active { background:var(--flaccw); }
 .pl-mo-now { background:rgba(15,118,110,.06); }
 
@@ -9073,22 +9095,29 @@ function plMonthLabel(idx){
    The rollup row stays read-only: a machine-level tap has no single frequency
    to attribute the work to. */
 function plCell(state, asset, line, idx){
-  var s=PL_STATE[state]||PL_STATE[0];
+  var st=PL_STATE[state]||PL_STATE[0];
   var editable = !!(asset && line);
   var when = plMonthLabel(idx);
+  var mon = (PL.data&&PL.data.months&&PL.data.months[idx])||'';
+
+  /* The visible text, by state. Only done/extra can show a real day. */
+  var actual = (line && line.dates && line.dates[idx]) || '';
+  var text = '';
+  if(state===3 || state===4) text = actual || mon;
+  else if(state===1 || state===2) text = mon;
+
   var verb = state===3 || state===4 ? 'tap to withdraw'
            : 'tap to open the PM form';
-  var title = when + ' \u2014 ' + s.label + (editable ? ' \u00b7 ' + verb : '');
-  /* A DISABLED button swallows the click instead of letting it bubble, so a tap
-     on a collapsed cell reached nothing at all — which is exactly what made the
-     grid feel read-only. Read-only cells are now a plain <span>: no pointer
-     interception, so the tap reaches the row and expands the asset. */
+  var detail = (state===3||state===4) && actual ? ' \u00b7 done ' + actual : '';
+  var title = when + ' \u2014 ' + st.label + detail + (editable ? ' \u00b7 ' + verb : '');
+
   var act = editable
     ? 'onclick="plMarkDone(&quot;'+esc(asset.id)+'&quot;,&quot;'+esc(line.freq)+'&quot;,'+idx+')" '
     : '';
   var tag = editable ? 'button' : 'span';
-  return '<'+tag+' class="pl-c '+s.cls+(editable?' tap':'')+'" '+act+
-    'title="'+title+'" aria-label="'+title+'"><i></i></'+tag+'>';
+  return '<'+tag+' class="pl-c '+st.cls+(editable?' tap':'')+'" '+act+
+    'title="'+title+'" aria-label="'+title+'">'+
+    (text?'<span>'+esc(text)+'</span>':'')+'</'+tag+'>';
 }
 
 function plRender(){
@@ -9122,6 +9151,7 @@ function plRender(){
       PL_STATE.slice(1).map(function(s){
         return '<span><i style="'+plKeyStyle(s.k)+'"></i>'+s.label+'</span>';
       }).join('')+
+      '<span style="opacity:.8">Done cells show the date the PM was performed; planned and missed show the month.</span>'+
     '</div>'+
     /* Above the grid, not below it. The old hint sat under 58 rows — past the
        point anyone scrolls, which is why the grid read as read-only. */
