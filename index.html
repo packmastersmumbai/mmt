@@ -9915,7 +9915,10 @@ function preloadPersonnel(startHash) {
    entry point that does not name a tab — a bare #safety, a legacy link — lands
    on the HIRA register. */
 var SF = { tab:'hira', dash:null, hira:null, charts:null, lists:null,
-  heatmap:null, chartObjs:[], chartTypes:{} };
+  heatmap:null, chartObjs:[], chartTypes:{},
+  /* Evidence already stored in Drive for the hazard whose sheet is open.
+     null = not fetched · 'loading' · [] = none · [{...}] · {error} */
+  hzSaved:null };
 
 (function init() {
   var startHash = 'dashboard';
@@ -11163,7 +11166,14 @@ function sfHazardDetail(sr){
   sfBuildControls(r.controls);
   // Photos are per-open, not carried between hazards.
   if(typeof _clPhotos!=='undefined') _clPhotos['hira']=[];
+  /* Saved evidence lives in Drive, not in _clPhotos, and was never fetched — so a
+     photo added and saved simply vanished when the hazard was reopened. The two
+     sets are kept apart on purpose: _clPhotos holds NEW captures pending upload,
+     SF.hzSaved holds what is already stored. Only the pending ones get uploaded
+     on save; re-uploading the saved ones would duplicate them on every edit. */
+  SF.hzSaved = null;
   hzRenderPhotos();
+  if(!isNew) hzLoadSaved(sr, r.section);
   // Pre-fill sign-off panel from existing record
   sfStatusChange(r.verifiedBy,r.verifiedDate);
 }
@@ -11183,13 +11193,56 @@ function hzAddPhoto(){
      silently discarded. */
   clOpenPhoto('hira', 'mark', 'Hazard evidence — photo');
 }
+/* Fetch evidence already stored for this hazard. Failure is shown in place
+   rather than silently leaving the row empty — "no photos" and "could not read
+   the photos" are different facts and were previously indistinguishable. */
+function hzLoadSaved(sr, section){
+  if(typeof google==='undefined'||!google.script||!google.script.run) return;
+  SF.hzSaved='loading'; hzRenderPhotos();
+  google.script.run.withSuccessHandler(function(res){
+    SF.hzSaved=(res&&res.success)?(res.photos||[]):{error:(res&&res.message)||'unknown'};
+    hzRenderPhotos();
+  }).withFailureHandler(function(err){
+    SF.hzSaved={error:(err&&err.message)||String(err)};
+    hzRenderPhotos();
+  }).getHazardPhotos(sr, section||'');
+}
+/* Opens a saved photo full-size. A separate function because the URL cannot be
+   quoted safely inside an inline onclick — nesting quotes there produced a
+   syntax error that broke the whole renderer. The URL rides on a data attribute
+   instead, which needs no escaping beyond the HTML escaping already applied. */
+function hzOpenSaved(img){
+  var u = img && img.getAttribute('data-full');
+  if (u) window.open(u, '_blank');
+}
 function hzRenderPhotos(){
   var box=document.getElementById('hz-photo-row');
   if(!box) return;
   var list=_clPhotos['hira']||[];
-  if(!list.length){ box.innerHTML='<div class="hz-photo-none">No photos yet</div>'; return; }
+  /* Saved-in-Drive photos render first and are NOT removable here: deleting one
+     would need a Drive delete the app cannot undo, so removal stays a Drive
+     action. They carry a check badge to distinguish them from pending captures. */
+  var saved='';
+  if(SF.hzSaved==='loading'){
+    saved='<div class="hz-photo-none">Loading saved photos…</div>';
+  } else if(SF.hzSaved&&SF.hzSaved.error){
+    saved='<div class="hz-photo-none">Could not load saved photos ('+
+      sfEsc(SF.hzSaved.error)+')</div>';
+  } else if(Array.isArray(SF.hzSaved)&&SF.hzSaved.length){
+    saved=SF.hzSaved.map(function(p,i){
+      return '<div class="hz-photo">'+
+        '<img src="'+sfEsc(p.thumb||p.url)+'" alt="Saved evidence '+(i+1)+'" '+
+          'loading="lazy" data-full="'+sfEsc(p.url)+'" onclick="hzOpenSaved(this)">'+
+        '<span class="hz-photo-pins" title="Saved">&#10003;</span>'+
+      '</div>';
+    }).join('');
+  }
+  if(!list.length){
+    box.innerHTML = saved || '<div class="hz-photo-none">No photos yet</div>';
+    return;
+  }
   var bytes=0; list.forEach(function(p){ bytes+=p.url.length*0.75; });
-  box.innerHTML=list.map(function(p,i){
+  box.innerHTML=saved+list.map(function(p,i){
     return '<div class="hz-photo">'+
       '<img src="'+p.url+'" alt="Evidence '+(i+1)+'" onclick="hzAnnotate('+i+')">'+
       '<button type="button" class="hz-photo-x" title="Remove" '+
