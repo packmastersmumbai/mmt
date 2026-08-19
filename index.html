@@ -9992,6 +9992,17 @@ var SF = { tab:'hira', dash:null, hira:null, charts:null, lists:null,
   }
 
   // 7. Facility-log deep-links (Telegram) — land on the relevant page/report.
+  /* MEDIA QR sticker (?action=media&machine=...). The GAS-rendered media page it
+     used to open has been removed — the SPA modal replaced it — but the printed
+     stickers are already on the machines, so the action must still land somewhere
+     useful. Route to the machine board and open the media picker for it. */
+  if (INIT_ACTION === 'media' && INIT_MACHINE_ID) {
+    startHash = 'board';
+    setTimeout(function(){
+      _imgUploadMachineId = INIT_MACHINE_ID;
+      if (typeof openMediaModal === 'function') openMediaModal();
+    }, 900);
+  }
   if (INIT_ACTION === 'viewhk') { startHash = 'hk'; setTimeout(function(){
     var s=document.querySelector('#hk-seg .fl-segbtn[data-hkview="report"]'); if(s) s.click(); }, 400); }
   if (INIT_ACTION === 'viewelec' || INIT_ACTION === 'viewwater' || INIT_ACTION === 'viewsolar') {
