@@ -1062,7 +1062,10 @@ body {
 .pl-c.pl-s2 { color:var(--flR);    background-color:var(--flRw); }
 .pl-c.pl-s3 { color:var(--flgood); background-color:var(--flgoodw); }
 .pl-c.pl-s4 { color:var(--flB);    background-color:var(--flBb); }
-.pl-c.pl-s2 span { text-decoration:line-through; }
+/* No strikethrough on missed cells: they now show a real DUE DATE, and a
+   struck-through date reads as "cancelled" when it means "overdue". The red
+   tint plus the M letter already carry the missed state. */
+.pl-c.pl-s2 span { font-weight:600; }
 /* The old dot markup is still emitted inside the button for the legend; hide it
    in the grid so the text is the whole cell. */
 .pl-c > i { display:none; }
@@ -9158,7 +9161,7 @@ function plRender(){
       PL_STATE.slice(1).map(function(s){
         return '<span><i style="'+plKeyStyle(s.k)+'"></i>'+s.label+'</span>';
       }).join('')+
-      '<span style="opacity:.8">Done cells show the date the PM was performed; planned and missed show the month.</span>'+
+      '<span style="opacity:.8">Done cells show the date the PM was performed; planned and missed show the date it is due (last PM + interval).</span>'+
     '</div>'+
     /* Above the grid, not below it. The old hint sat under 58 rows — past the
        point anyone scrolls, which is why the grid read as read-only. */
