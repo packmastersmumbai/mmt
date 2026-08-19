@@ -408,16 +408,39 @@ body {
    records meant five screens of scrolling on a device held one-handed.
    Now: title and status share the top line, meta is a single non-wrapping row that
    ellipsises, and the whole row is a two-column grid rather than nested flex. ~72px. */
+/* align-items:start, not center: the body is now 3 lines, and a centred dot and
+   status tag floated in the middle of it with no relationship to any line. Both
+   now sit on the first line, beside the machine they describe. */
 .rec-row { background:white; border-radius:8px; padding:8px 10px; margin-bottom:5px;
   border:1px solid #e2e8f0; display:grid; grid-template-columns:auto 1fr auto;
-  gap:9px; align-items:center; }
-.rec-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  gap:9px; align-items:start; }
+.rec-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:6px; }
 .rec-body { min-width:0; }
-.rec-head { display:flex; align-items:baseline; gap:7px; min-width:0; }
+/* nowrap: the head is name + number + age on ONE line. Without it the number
+   wraps under a long machine name and the card grows a 4th and 5th line —
+   measured: "FORM-FILL-SEAL M/C-01" + "PM/FFS/028" did exactly that. The name
+   carries min-width:0 so IT ellipsises instead, since the number is the shorter
+   and more identifying half. */
+.rec-head { display:flex; align-items:baseline; gap:7px; min-width:0;
+  flex-wrap:nowrap; }
 .rec-title { font-size:13.5px; font-weight:700; color:#0f172a; white-space:nowrap;
   overflow:hidden; text-overflow:ellipsis; min-width:0; }
+/* Machine number sits ON the title line, not on the meta line below.
+   It is the machine's identity, so it belongs next to its name; moving it up
+   also frees the third line to carry only the date. Mono keeps the IDs aligned
+   down the column, and shrink:0 stops a long machine name from squeezing the
+   number out — the name ellipsises instead, because the number is the part that
+   must stay readable to identify the asset. */
+.rec-id { font-family:'PMMono',ui-monospace,monospace; font-size:10.5px; font-weight:700;
+  color:#64748b; white-space:nowrap; flex-shrink:0; }
 .rec-sub { font-size:11.5px; color:#64748b; line-height:1.35; white-space:nowrap;
   overflow:hidden; text-overflow:ellipsis; }
+/* Line 2 = the record itself: its number then what happened. The number is mono
+   and fixed-width so the descriptions start at the same x down the list; the
+   description takes the remaining width and ellipsises. */
+.rec-line2 { display:flex; align-items:baseline; gap:6px; min-width:0; }
+.rec-no { font-family:'PMMono',ui-monospace,monospace; font-size:10.5px; font-weight:700;
+  color:#475569; white-space:nowrap; flex-shrink:0; }
 /* The identifier line: mono for alignment down the column, and it must NEVER wrap —
    a doc number broken across two lines is unreadable and cost a third row of height. */
 .rec-meta { font-family:'PMMono',ui-monospace,monospace; font-size:10.5px; color:#94a3b8;
@@ -5321,10 +5344,19 @@ function renderBoardRecords(type, d) {
         '<div class="rec-body">'+
           '<div class="rec-head">'+
             '<span class="rec-title">'+mn+'</span>'+
-            (ageStr ? '<span class="rec-age" style="color:'+ageColor+'">'+ageStr+'</span>' : '')+
+            '<span class="rec-id">'+mid+'</span>'+
           '</div>'+
-          (item.problem?'<div class="rec-sub">'+esc(item.problem)+'</div>':'')+
-          '<div class="rec-meta">'+mid+' · '+esc(item.date)+(slip?' · '+slip:'')+'</div>'+
+          '<div class="rec-line2">'+
+            (slip?'<span class="rec-no">'+slip+'</span>':'')+
+            (item.problem?'<span class="rec-sub">'+esc(item.problem)+'</span>':'')+
+          '</div>'+
+          /* Age rides the DATE line, not the name line. Three items competing on
+             line 1 truncated the machine name to "FORM-FILL-SEAL M/C..." — and the
+             name is the thing being identified. Age belongs next to the date it is
+             measured from anyway. */
+          '<div class="rec-meta">'+esc(item.date)+
+            (ageStr ? ' <span class="rec-age" style="color:'+ageColor+'">· '+ageStr+'</span>' : '')+
+          '</div>'+
         '</div>'+
         '<div class="rec-tag rec-tag-'+(isOpen?'open':'closed')+'">'+esc(item.status)+'</div>'+
       '</div>';
@@ -5336,9 +5368,15 @@ function renderBoardRecords(type, d) {
       return '<div class="rec-row" role="button" tabindex="0" style="cursor:pointer" onclick="openRecordDetail(\''+slip+'\',\'pm\',\''+mid+'\',\''+mn+'\')">'+
         '<div class="rec-dot" style="background:#1b5e20"></div>'+
         '<div class="rec-body">'+
-          '<div class="rec-title">'+mn+'</div>'+
-          '<div class="rec-sub">'+esc(item.summary||'')+'</div>'+
-          '<div class="rec-meta">'+mid+' · '+esc(item.date)+(item.technician?' · '+esc(item.technician):'')+'</div>'+
+          '<div class="rec-head">'+
+            '<span class="rec-title">'+mn+'</span>'+
+            '<span class="rec-id">'+mid+'</span>'+
+          '</div>'+
+          '<div class="rec-line2">'+
+            (slip?'<span class="rec-no">'+slip+'</span>':'')+
+            '<span class="rec-sub">'+esc(item.summary||'')+'</span>'+
+          '</div>'+
+          '<div class="rec-meta">'+esc(item.date)+(item.technician?' · '+esc(item.technician):'')+'</div>'+
         '</div>'+
         arrowIcon+
       '</div>';
@@ -5350,9 +5388,15 @@ function renderBoardRecords(type, d) {
       return '<div class="rec-row" role="button" tabindex="0" style="cursor:pointer" onclick="openRecordDetail(\''+slip+'\',\'clit\',\''+mid+'\',\''+mn+'\')">'+
         '<div class="rec-dot" style="background:#0277bd"></div>'+
         '<div class="rec-body">'+
-          '<div class="rec-title">'+mn+'</div>'+
-          '<div class="rec-sub">'+esc(item.summary||'')+'</div>'+
-          '<div class="rec-meta">'+mid+' · '+esc(item.date)+(item.performedBy?' · '+esc(item.performedBy):'')+'</div>'+
+          '<div class="rec-head">'+
+            '<span class="rec-title">'+mn+'</span>'+
+            '<span class="rec-id">'+mid+'</span>'+
+          '</div>'+
+          '<div class="rec-line2">'+
+            (slip?'<span class="rec-no">'+slip+'</span>':'')+
+            '<span class="rec-sub">'+esc(item.summary||'')+'</span>'+
+          '</div>'+
+          '<div class="rec-meta">'+esc(item.date)+(item.performedBy?' · '+esc(item.performedBy):'')+'</div>'+
         '</div>'+
         arrowIcon+
       '</div>';
@@ -5367,9 +5411,15 @@ function renderBoardRecords(type, d) {
       return '<div class="rec-row" role="button" tabindex="0" style="cursor:pointer" onclick="openChecklistRecord('+rowNum+',\''+mid+'\',\''+mn+'\')">'+
         '<div class="rec-dot" style="background:'+dotColor+'"></div>'+
         '<div class="rec-body">'+
-          '<div class="rec-title">'+mn+'</div>'+
-          '<div class="rec-meta">'+mid+' · '+esc(item.date)+' · '+esc(item.shift||'')+'</div>'+
-          '<div class="rec-sub">'+esc(item.operator||'')+'</div>'+
+          '<div class="rec-head">'+
+            '<span class="rec-title">'+mn+'</span>'+
+            '<span class="rec-id">'+mid+'</span>'+
+          '</div>'+
+          '<div class="rec-line2">'+
+            '<span class="rec-sub">'+esc(item.operator||'')+
+              (item.shift?' · '+esc(item.shift):'')+'</span>'+
+          '</div>'+
+          '<div class="rec-meta">'+esc(item.date)+'</div>'+
         '</div>'+
         '<div class="rec-tag '+tagCls+'">'+esc(item.status||'pending')+'</div>'+
         arrowIcon+
