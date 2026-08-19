@@ -12052,6 +12052,16 @@ function sfIncidentDetail(sr){
       '<div><label for="if-eff">Effectiveness verified</label>'+
         '<input type="date" id="if-eff" value="'+sfEsc(r.effectiveDate||'')+'" /></div>'+
     '</div>'+
+    /* Who closed it and who verified effectiveness. Dates alone evidenced WHEN but
+       not BY WHOM; HIRA has had this dropdown all along, so incidents were the
+       asymmetry. Same PERSONS master as HIRA — sfPersonOptions — rather than a
+       free-text box, so the register cannot collect three spellings of one name. */
+    '<div class="if-dates">'+
+      '<div><label for="if-closedby">CAPA closed by</label>'+
+        '<select id="if-closedby">'+sfPersonOptions(r.closedBy||'')+'</select></div>'+
+      '<div><label for="if-effby">Effectiveness verified by</label>'+
+        '<select id="if-effby">'+sfPersonOptions(r.verifiedBy||'')+'</select></div>'+
+    '</div>'+
     '<div class="if-hint">Left blank, these are stamped automatically — closing a CAPA '+
       'sets the closed date, and “Closed - Effective” sets the verified date.'+
       (r.daysToClose!=null? ' Closed in '+r.daysToClose+' day'+(r.daysToClose===1?'':'s')+'.':'')+
@@ -12077,6 +12087,11 @@ function sfSaveIncident(sr){
   var _cd=v('if-closed'), _ed=v('if-eff');
   if(_cd) d.closedDate=_cd;
   if(_ed) d.effectiveDate=_ed;
+  /* Same undefined-vs-'' rule as the dates: send only what was chosen. Sending ''
+     for a select nobody touched would CLEAR a recorded sign-off. */
+  var _cb=v('if-closedby'), _vb=v('if-effby');
+  if(_cb) d.closedBy=_cb;
+  if(_vb) d.verifiedBy=_vb;
   if(!d.rootCause.trim()){ showStatus('Root cause is required to act on an incident','error',3500); return; }
   if(!d.capa.trim()){ showStatus('Corrective action is required','error',3500); return; }
   showStatus('Saving incident…','info',0);
