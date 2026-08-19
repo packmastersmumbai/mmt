@@ -1027,8 +1027,31 @@ body {
 .pl-last { font-family:'PMMono',ui-monospace,monospace; font-size:10.5px;
   color:var(--flfaint); }
 /* Expand affordance — a caret, not a whole-row hover state. */
-.pl-exp { background:none; border:none; cursor:pointer; padding:2px 6px 2px 0;
-  color:var(--fldim); font-size:11px; min-height:24px; }
+/* The caret was 24px — below the 44px floor this design system mandates — and
+   was the ONLY way to reach the editable rows. On a phone it read as decoration,
+   so the grid looked read-only: tap a dot, nothing happens, conclude it is broken.
+   The whole asset cell is now the target, the caret is a visible chip, and a
+   summary row carries a hint. */
+.pl-asset { cursor:pointer; }
+.pl-asset:active { background:var(--flaccw); }
+.pl-row-freq .pl-asset { cursor:default; }
+.pl-row-freq .pl-asset:active { background:var(--flpanel2); }
+.pl-exp { background:var(--flpanel2); border:1px solid var(--fledge);
+  border-radius:var(--r-sm); cursor:pointer; padding:0; margin-right:7px;
+  color:var(--flacc); font-size:11px; font-weight:700; width:26px; height:26px;
+  line-height:1; flex-shrink:0; vertical-align:middle; }
+.pl-asset[aria-expanded="true"] .pl-exp { background:var(--flacc);
+  border-color:var(--flacc); color:#fff; }
+/* Collapsed rows summarise; only expanded rows accept a tap. Making that
+   visible beats explaining it in a footnote nobody scrolls to. */
+.pl-c { cursor:default; }
+.pl-c.tap { cursor:pointer; }
+.pl-c.tap:hover i { outline:2px solid var(--flacc); outline-offset:2px; }
+.pl-hint { display:flex; align-items:center; gap:7px; padding:9px 11px;
+  margin-bottom:10px; border:1px solid var(--fledge); border-left:3px solid var(--flacc);
+  border-radius:var(--r-sm); background:var(--flpanel);
+  font-size:12px; font-weight:600; color:var(--fldim); line-height:1.45; }
+.pl-hint b { color:var(--flink); }
 
 /* Cells. Every state is shape + colour, never colour alone: done is filled,
    planned is a ring, missed is filled red with a bar, extra is a small square. */
@@ -9095,6 +9118,13 @@ function plRender(){
       PL_STATE.slice(1).map(function(s){
         return '<span><i style="'+plKeyStyle(s.k)+'"></i>'+s.label+'</span>';
       }).join('')+
+    '</div>'+
+    /* Above the grid, not below it. The old hint sat under 58 rows — past the
+       point anyone scrolls, which is why the grid read as read-only. */
+    '<div class="pl-hint">'+
+      '<span style="font-size:15px">&#9656;</span>'+
+      '<span>Tap an asset to open its <b>frequency rows</b>, then tap any month '+
+        'to record or clear a PM.</span>'+
     '</div>';
 
   if(!rows.length){
@@ -9117,16 +9147,24 @@ function plRender(){
   rows.forEach(function(a){
     var open=!!PL.open[a.id];
     html+='<tr>'+
-      '<td class="pl-asset">'+
-        '<button class="pl-exp" onclick="plToggle(&quot;'+esc(a.id)+'&quot;)" '+
-          'aria-expanded="'+(open?'true':'false')+'" '+
-          'aria-label="'+(open?'Collapse ':'Expand ')+esc(a.name)+'">'+
-          (open?'&#9662;':'&#9656;')+'</button>'+
+      '<td class="pl-asset" role="button" tabindex="0" '+
+        'aria-expanded="'+(open?'true':'false')+'" '+
+        'aria-label="'+(open?'Collapse ':'Expand ')+esc(a.name)+'" '+
+        'onclick="plToggle(&quot;'+esc(a.id)+'&quot;)" '+
+        'onkeydown="if(event.key===&quot;Enter&quot;||event.key===&quot; &quot;)'+
+          '{event.preventDefault();this.click();}">'+
+        '<span class="pl-exp">'+(open?'&#9662;':'&#9656;')+'</span>'+
         '<span class="pl-name">'+esc(a.name)+'</span> '+
         '<span class="pl-id">'+esc(a.id)+'</span>'+
       '</td>'+
+      /* Collapsed cells are a SUMMARY of the frequency rows beneath, so they are
+         not editable — a machine-level tap has no single frequency to attribute
+         work to. Tapping one now expands the asset instead of doing nothing
+         silently, which is what made the grid read as read-only. */
       a.rollup.map(function(st,i){
-        return '<td'+(i===cur?' class="pl-mo-now"':'')+'>'+plCell(st,null,null,i)+'</td>';
+        return '<td'+(i===cur?' class="pl-mo-now"':'')+
+          ' onclick="plToggle(&quot;'+esc(a.id)+'&quot;)" style="cursor:pointer">'+
+          plCell(st,null,null,i)+'</td>';
       }).join('')+
     '</tr>';
 
@@ -9147,7 +9185,7 @@ function plRender(){
 
   html+='</tbody></table></div>'+
     '<div style="font-size:11px;color:var(--fldim);margin-top:8px;line-height:1.5">'+
-      'Expand a row, then tap any month to record or clear a PM. Hover a cell for its date. '+
+      'Hover any cell for its month and state. '+
       'The plan is generated once a year and cannot be edited here \u2014 that is what keeps '+
       '&ldquo;missed&rdquo; and adherence honest.</div>'+
   '</div>';
