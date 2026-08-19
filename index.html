@@ -8990,14 +8990,38 @@ function plKeyStyle(k){
 
 /* A cell is tappable only on an expanded frequency row, and only where a tap
    means something: a planned or missed month not already done. */
+/* FY month index -> a real date label. The grid header shows APR/MAY/...; on
+   hover the cell says which month of which YEAR, because an FY spans two and
+   "JAN" alone is ambiguous on a planner that runs Apr-Mar. */
+function plMonthLabel(idx){
+  var d=PL.data; if(!d) return '';
+  var y=parseInt(String(d.fy).split('-')[0],10);
+  var names=['April','May','June','July','August','September',
+             'October','November','December','January','February','March'];
+  return names[idx]+' '+(idx>=9 ? y+1 : y);
+}
+
+/* Every cell on an expanded frequency row is now actionable, not just planned
+   and missed ones:
+     planned / missed -> tap records the PM
+     done             -> tap CLEARS it (a mis-tap was previously only fixable
+                         by editing the sheet, the workflow this screen replaces)
+     not due          -> tap records an unplanned PM, which is a real event: work
+                         done outside the schedule should still appear
+   The rollup row stays read-only: a machine-level tap has no single frequency
+   to attribute the work to. */
 function plCell(state, asset, line, idx){
   var s=PL_STATE[state]||PL_STATE[0];
-  var tappable = !!(asset && line && (state===1 || state===2));
-  var title=s.label + (tappable ? ' \u2014 tap to mark done' : '');
-  var act = tappable
+  var editable = !!(asset && line);
+  var when = plMonthLabel(idx);
+  var verb = state===3 || state===4 ? 'tap to clear'
+           : state===0 ? 'tap to record an unplanned PM'
+           : 'tap to mark done';
+  var title = when + ' \u2014 ' + s.label + (editable ? ' \u00b7 ' + verb : '');
+  var act = editable
     ? 'onclick="plMarkDone(&quot;'+esc(asset.id)+'&quot;,&quot;'+esc(line.freq)+'&quot;,'+idx+')" '
     : 'disabled ';
-  return '<button class="pl-c '+s.cls+(tappable?' tap':'')+'" '+act+
+  return '<button class="pl-c '+s.cls+(editable?' tap':'')+'" '+act+
     'title="'+title+'" aria-label="'+title+'"><i></i></button>';
 }
 
@@ -9080,7 +9104,7 @@ function plRender(){
 
   html+='</tbody></table></div>'+
     '<div style="font-size:11px;color:var(--fldim);margin-top:8px;line-height:1.5">'+
-      'Expand a row, then tap a month to record that the PM was done. '+
+      'Expand a row, then tap any month to record or clear a PM. Hover a cell for its date. '+
       'The plan is generated once a year and cannot be edited here \u2014 that is what keeps '+
       '&ldquo;missed&rdquo; and adherence honest.</div>'+
   '</div>';
@@ -9096,7 +9120,7 @@ function plMarkDone(assetId, freq, monthIdx){
     .withSuccessHandler(function(r){
       PL.busy=false;
       if(r&&r.success){
-        showStatus('Recorded','success',1800);
+        showStatus(r.cleared?'Cleared':'Recorded','success',1800);
         PL.data=null; loadPlanner();
       } else showStatus('Not recorded: '+((r&&r.error)||'unknown'),'error',4000);
     })
