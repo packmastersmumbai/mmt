@@ -9076,9 +9076,8 @@ function plCell(state, asset, line, idx){
   var s=PL_STATE[state]||PL_STATE[0];
   var editable = !!(asset && line);
   var when = plMonthLabel(idx);
-  var verb = state===3 || state===4 ? 'tap to clear'
-           : state===0 ? 'tap to record an unplanned PM'
-           : 'tap to mark done';
+  var verb = state===3 || state===4 ? 'tap to withdraw'
+           : 'tap to open the PM form';
   var title = when + ' \u2014 ' + s.label + (editable ? ' \u00b7 ' + verb : '');
   /* A DISABLED button swallows the click instead of letting it bubble, so a tap
      on a collapsed cell reached nothing at all — which is exactly what made the
@@ -9128,8 +9127,8 @@ function plRender(){
        point anyone scrolls, which is why the grid read as read-only. */
     '<div class="pl-hint">'+
       '<span style="font-size:15px">&#9656;</span>'+
-      '<span>Tap an asset to open its <b>frequency rows</b>, then tap any month '+
-        'to record or clear a PM.</span>'+
+      '<span>Tap an asset to open its <b>frequency rows</b>, then tap a month '+
+        'to open the <b>PM form</b> for it.</span>'+
     '</div>';
 
   if(!rows.length){
@@ -9190,7 +9189,8 @@ function plRender(){
 
   html+='</tbody></table></div>'+
     '<div style="font-size:11px;color:var(--fldim);margin-top:8px;line-height:1.5">'+
-      'Hover any cell for its month and state. '+
+      'Hover any cell for its month and state. PMs are recorded on the PM form, '+
+      'never here \u2014 the planner shows what is due and what was missed. '+
       'The plan is generated once a year and cannot be edited here \u2014 that is what keeps '+
       '&ldquo;missed&rdquo; and adherence honest.</div>'+
   '</div>';
@@ -9198,131 +9198,63 @@ function plRender(){
 }
 
 /* Record an actual. monthIdx is the FY position; the server maps it to a date. */
-/* A tap now opens an evidence sheet rather than writing a bare bit. Clearing
-   asks for confirmation, because it withdraws a maintenance record. */
+/* ONE way to record a PM: the PM form.
+
+   This sheet used to offer its own lightweight capture — performed-by, date,
+   remarks — which meant the app had TWO ways to record the same event producing
+   records of different quality: a real slip with checklist, photos and a PDF, or
+   a name and a date. Two grades of maintenance record is exactly what an audit
+   punishes, and the weaker one would win because it was quicker.
+
+   So the planner no longer records anything. Tapping a month that needs a PM
+   opens the real form for that machine. The planner's job is to show WHAT IS DUE
+   and WHAT WAS MISSED; the form's job is to record the work. */
 function plMarkDone(assetId, freq, monthIdx){
   if(PL.busy) return;
   var a=((PL.data&&PL.data.assets)||[]).filter(function(x){return x.id===assetId;})[0];
   var line=a&&a.lines.filter(function(l){return l.freq===freq;})[0];
   var state=line?line.cells[monthIdx]:0;
-  var isClear=(state===3||state===4);
-  plEvOpen({ assetId:assetId, assetName:(a&&a.name)||assetId, freq:freq,
-    monthIdx:monthIdx, month:plMonthLabel(monthIdx), clearing:isClear });
+
+  /* A recorded month can still be withdrawn — a mis-tap or a slip logged against
+     the wrong machine has to be correctable, and the evidence row is retired
+     rather than deleted so the trail survives. */
+  if(state===3||state===4){
+    plConfirmWithdraw({ assetId:assetId, assetName:(a&&a.name)||assetId,
+      freq:freq, monthIdx:monthIdx, month:plMonthLabel(monthIdx) });
+    return;
+  }
+
+  plOpenPmForm(assetId, (a&&a.name)||assetId, freq, plMonthLabel(monthIdx));
 }
 
 var PLE = null;
 
-function plEvOpen(ctx){
+/* Hand off to the real PM form. Nothing is written here; the form's own
+   submission lands in BD_LOG and the grid picks it up via refreshPmActuals. */
+function plOpenPmForm(assetId, assetName, freq, month){
+  showStatus('Opening the PM form for '+assetName+'\u2026','info',2200);
+  App.machineId = assetId;
+  PL.data = null;              // force a refresh when the user comes back
+  navigate('pm', assetId);
+}
+
+function plConfirmWithdraw(ctx){
   PLE = ctx;
   var host=document.getElementById('ple-host');
   if(!host){ host=document.createElement('div'); host.id='ple-host';
     document.body.appendChild(host); }
-
-  if(ctx.clearing){
-    host.innerHTML='<div class="ple-back" onclick="if(event.target===this)plEvClose()">'+
-      '<div class="ple-sheet" role="dialog" aria-modal="true">'+
-        '<div class="ple-hd">Withdraw this record?</div>'+
-        '<div class="ple-sub">'+esc(ctx.assetName)+' &middot; '+esc(ctx.freq)+' &middot; '+esc(ctx.month)+'</div>'+
-        '<div class="ple-note">The evidence entry is kept and stamped as withdrawn, '+
-          'not deleted \u2014 an audit trail that can be erased is not an audit trail. '+
-          'If the month is already past, it returns to <b>missed</b>.</div>'+
-        '<div class="ple-act">'+
-          '<button class="ple-no" onclick="plEvClose()">Cancel</button>'+
-          '<button class="ple-del" onclick="plEvSubmit(true)">Withdraw</button>'+
-        '</div>'+
-      '</div></div>';
-    return;
-  }
-
-  /* App.personnelList is the app-wide cache filled by getDashboardBootstrap /
-     preloadPersonnel. It can be empty on a deep link straight to the Planner,
-     so the sheet fetches once and reopens rather than showing a blank select. */
-  var people=(App&&App.personnelList)||[];
-  if(!people.length){
-    google.script.run.withSuccessHandler(function(list){
-      if(list&&list.length){ App.personnelList=list; if(PLE) plEvOpen(PLE); }
-    }).withFailureHandler(function(){}).getPersonnelList();
-  }
-  var opts='<option value="">\u2014 select \u2014</option>'+
-    people.map(function(p){ return '<option>'+esc(p)+'</option>'; }).join('');
-
   host.innerHTML='<div class="ple-back" onclick="if(event.target===this)plEvClose()">'+
     '<div class="ple-sheet" role="dialog" aria-modal="true">'+
-      '<div class="ple-hd">Record PM</div>'+
+      '<div class="ple-hd">Withdraw this record?</div>'+
       '<div class="ple-sub">'+esc(ctx.assetName)+' &middot; '+esc(ctx.freq)+' &middot; '+esc(ctx.month)+'</div>'+
-      '<div class="ple-f"><label for="ple-by">Performed by</label>'+
-        '<select id="ple-by">'+opts+'</select></div>'+
-      '<div class="ple-f"><label for="ple-on">Date performed</label>'+
-        '<input type="date" id="ple-on" value="'+esc(plEvDefaultDate(ctx.monthIdx))+'"></div>'+
-      '<div class="ple-f"><label for="ple-vf">Verified by <span style="font-weight:400">(optional)</span></label>'+
-        '<select id="ple-vf">'+opts+'</select></div>'+
-      '<div class="ple-f"><label for="ple-rm">Remarks <span style="font-weight:400">(optional)</span></label>'+
-        '<textarea id="ple-rm" placeholder="What was done, parts replaced, anything found"></textarea></div>'+
+      '<div class="ple-note">The entry is kept and stamped as withdrawn, not deleted '+
+        '\u2014 an audit trail that can be erased is not an audit trail. If the month '+
+        'is already past, it returns to <b>missed</b>.<br><br>'+
+        'This does not remove a PM slip filed through the PM form; those are '+
+        'corrected on the record itself.</div>'+
       '<div class="ple-act">'+
         '<button class="ple-no" onclick="plEvClose()">Cancel</button>'+
-        '<button class="ple-ok" onclick="plEvSubmit(false)">Record</button>'+
-      '</div>'+
-      '<div class="ple-note">This records that the scheduled work happened. '+
-        'For a full PM with checklist, photos and a signed slip, '+
-        '<a href="#" onclick="plOpenPmForm();return false" style="color:var(--flacc);'+
-          'font-weight:700">open the PM form</a> instead.</div>'+
-    '</div></div>';
-  var by=document.getElementById('ple-by'); if(by) by.focus();
-}
-
-/* Default to the 1st of the month being ticked, not today: a PM recorded for
-   April in August happened in April, and dating it today would be false. */
-function plEvDefaultDate(idx){
-  var d=PL.data; if(!d) return '';
-  var y=parseInt(String(d.fy).split('-')[0],10);
-  var mo=(idx>=9)?(idx-9):(idx+3);
-  var yy=(idx>=9)?y+1:y;
-  return yy+'-'+('0'+(mo+1)).slice(-2)+'-01';
-}
-
-/* Build the PDF server-side and hand back a link. Deliberately NOT auto-opened:
-   a popup fired from an async callback is blocked by every mobile browser, and a
-   silent block reads as a broken button. */
-function plExport(){
-  if(PL.busy) return;
-  var btn=document.querySelector('.pl-export');
-  if(btn){ btn.disabled=true; btn.textContent='Building\u2026'; }
-  PL.busy=true;
-  showStatus('Building the plan PDF\u2026 this takes a few seconds','info',0);
-  google.script.run
-    .withSuccessHandler(function(r){
-      PL.busy=false;
-      if(btn){ btn.disabled=false; btn.textContent='Export PDF'; }
-      if(r&&r.success){
-        showStatus('','info',1);
-        plExportDone(r);
-      } else showStatus('Export failed: '+((r&&r.error)||'unknown'),'error',5000);
-    })
-    .withFailureHandler(function(e){
-      PL.busy=false;
-      if(btn){ btn.disabled=false; btn.textContent='Export PDF'; }
-      showStatus('Export failed: '+((e&&e.message)||e),'error',5000);
-    })
-    .buildPmPlanReport(plFy(), 'ALL');
-}
-
-function plExportDone(r){
-  var host=document.getElementById('ple-host');
-  if(!host){ host=document.createElement('div'); host.id='ple-host';
-    document.body.appendChild(host); }
-  host.innerHTML='<div class="ple-back" onclick="if(event.target===this)plEvClose()">'+
-    '<div class="ple-sheet" role="dialog" aria-modal="true">'+
-      '<div class="ple-hd">Plan exported</div>'+
-      '<div class="ple-sub">'+esc(r.assets)+' assets &middot; adherence '+esc(String(r.adherence))+'% &middot; '+
-        esc(String(r.evidence))+' evidence '+(r.evidence===1?'entry':'entries')+'</div>'+
-      '<div class="ple-note">The PDF is saved in Drive under '+
-        '<b>PackMasters_MMS / Reports</b>. It carries the 12-month grid, the '+
-        'adherence figure and the evidence table.</div>'+
-      '<div class="ple-act">'+
-        '<button class="ple-no" onclick="plEvClose()">Close</button>'+
-        '<a class="ple-ok" style="flex:1;display:flex;align-items:center;'+
-          'justify-content:center;text-decoration:none;border-radius:var(--r-sm)" '+
-          'href="'+esc(r.url)+'" target="_blank" rel="noopener">Open PDF</a>'+
+        '<button class="ple-del" onclick="plEvSubmit(true)">Withdraw</button>'+
       '</div>'+
     '</div></div>';
 }
@@ -9332,36 +9264,16 @@ function plEvClose(){
   PLE=null;
 }
 
-/* Hand off to the real PM form for this machine. The planner tick and a full PM
-   slip record the same event, so doing both would double-count; the form's own
-   submission refreshes the plan through refreshPmActuals, which reads BD_LOG. */
-function plOpenPmForm(){
-  var ctx=PLE; plEvClose();
-  if(!ctx) return;
-  App.machineId = ctx.assetId;
-  navigate('pm', ctx.assetId);
-}
-
 function plEvSubmit(clearing){
   if(!PLE||PL.busy) return;
-  var ev=null;
-  if(!clearing){
-    var by=(document.getElementById('ple-by')||{}).value||'';
-    if(!by){ showStatus('Select who performed the PM','error',3000); return; }
-    ev={ doneBy:by,
-         doneOn:(document.getElementById('ple-on')||{}).value||'',
-         verified:(document.getElementById('ple-vf')||{}).value||'',
-         remarks:(document.getElementById('ple-rm')||{}).value||'',
-         source:'planner' };
-  }
   PL.busy=true;
-  showStatus(clearing?'Withdrawing\u2026':'Recording PM\u2026','info',0);
+  showStatus('Withdrawing\u2026','info',0);
   var ctx=PLE; plEvClose();
   google.script.run
     .withSuccessHandler(function(r){
       PL.busy=false;
       if(r&&r.success){
-        showStatus(r.cleared?'Withdrawn':'Recorded','success',1800);
+        showStatus('Withdrawn','success',1800);
         PL.data=null; loadPlanner();
       } else showStatus('Not saved: '+((r&&r.error)||'unknown'),'error',4000);
     })
@@ -9369,7 +9281,7 @@ function plEvSubmit(clearing){
       PL.busy=false;
       showStatus('Not saved: '+((e&&e.message)||e),'error',4000);
     })
-    .markPmPlanDone(plFy(), ctx.assetId, ctx.freq, ctx.monthIdx, ev);
+    .markPmPlanDone(plFy(), ctx.assetId, ctx.freq, ctx.monthIdx, null);
 }
 
 /* Per-machine PM strip — the same 12 cells as the Planner, for one asset.
