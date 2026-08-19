@@ -1064,6 +1064,15 @@ body {
    wants a named person against the work, and a green dot cannot carry one.
    Deliberately a small sheet, not a full form: three fields is the most that can
    be asked at the moment of ticking without the tick being abandoned. */
+/* Export sits beside the adherence figure because that is the number people
+   want on paper. Ghost weight, not primary: the button is a supervisor's
+   occasional act, not the screen's purpose. */
+.pl-export { min-height:44px; padding:8px 14px; border-radius:var(--r-sm);
+  border:1.5px solid var(--fledge); background:var(--flpanel);
+  color:var(--flacc); font-size:12.5px; font-weight:700; cursor:pointer;
+  white-space:nowrap; }
+.pl-export:active { background:var(--flaccw); }
+.pl-export[disabled] { opacity:.55; cursor:default; }
 .ple-back { position:fixed; inset:0; background:rgba(15,23,42,.45);
   z-index:1150; display:flex; align-items:flex-end; justify-content:center; }
 .ple-sheet { background:var(--flpanel); width:100%; max-width:460px;
@@ -9068,9 +9077,13 @@ function plRender(){
 
   var html='<div class="pl-wrap">'+
     '<div class="pl-hd"><h2>PM Planner</h2>'+
+      '<div style="display:flex;align-items:center;gap:10px">'+
+      '<button class="pl-export" onclick="plExport()" '+
+        'title="Annual plan + evidence as a PDF">Export PDF</button>'+
       '<div class="pl-adh"><b style="color:'+adhColor+'">'+
         (d.adherence===null?'\u2014':d.adherence+'%')+'</b>'+
         '<span>adherence &middot; '+d.done+' of '+d.planned+' planned done</span></div>'+
+      '</div>'+
     '</div>'+
     '<div class="pl-tabs">'+
       '<button class="pl-tab'+(PL.cls==='MACHINE'?' on':'')+'" onclick="plPickCls(&quot;MACHINE&quot;)">'+
@@ -9206,8 +9219,10 @@ function plEvOpen(ctx){
         '<button class="ple-no" onclick="plEvClose()">Cancel</button>'+
         '<button class="ple-ok" onclick="plEvSubmit(false)">Record</button>'+
       '</div>'+
-      '<div class="ple-note">For a full PM with checklist and photos, use the '+
-        'PM form on the machine instead \u2014 this records that scheduled work happened.</div>'+
+      '<div class="ple-note">This records that the scheduled work happened. '+
+        'For a full PM with checklist, photos and a signed slip, '+
+        '<a href="#" onclick="plOpenPmForm();return false" style="color:var(--flacc);'+
+          'font-weight:700">open the PM form</a> instead.</div>'+
     '</div></div>';
   var by=document.getElementById('ple-by'); if(by) by.focus();
 }
@@ -9222,9 +9237,66 @@ function plEvDefaultDate(idx){
   return yy+'-'+('0'+(mo+1)).slice(-2)+'-01';
 }
 
+/* Build the PDF server-side and hand back a link. Deliberately NOT auto-opened:
+   a popup fired from an async callback is blocked by every mobile browser, and a
+   silent block reads as a broken button. */
+function plExport(){
+  if(PL.busy) return;
+  var btn=document.querySelector('.pl-export');
+  if(btn){ btn.disabled=true; btn.textContent='Building\u2026'; }
+  PL.busy=true;
+  showStatus('Building the plan PDF\u2026 this takes a few seconds','info',0);
+  google.script.run
+    .withSuccessHandler(function(r){
+      PL.busy=false;
+      if(btn){ btn.disabled=false; btn.textContent='Export PDF'; }
+      if(r&&r.success){
+        showStatus('','info',1);
+        plExportDone(r);
+      } else showStatus('Export failed: '+((r&&r.error)||'unknown'),'error',5000);
+    })
+    .withFailureHandler(function(e){
+      PL.busy=false;
+      if(btn){ btn.disabled=false; btn.textContent='Export PDF'; }
+      showStatus('Export failed: '+((e&&e.message)||e),'error',5000);
+    })
+    .buildPmPlanReport(plFy(), 'ALL');
+}
+
+function plExportDone(r){
+  var host=document.getElementById('ple-host');
+  if(!host){ host=document.createElement('div'); host.id='ple-host';
+    document.body.appendChild(host); }
+  host.innerHTML='<div class="ple-back" onclick="if(event.target===this)plEvClose()">'+
+    '<div class="ple-sheet" role="dialog" aria-modal="true">'+
+      '<div class="ple-hd">Plan exported</div>'+
+      '<div class="ple-sub">'+esc(r.assets)+' assets &middot; adherence '+esc(String(r.adherence))+'% &middot; '+
+        esc(String(r.evidence))+' evidence '+(r.evidence===1?'entry':'entries')+'</div>'+
+      '<div class="ple-note">The PDF is saved in Drive under '+
+        '<b>PackMasters_MMS / Reports</b>. It carries the 12-month grid, the '+
+        'adherence figure and the evidence table.</div>'+
+      '<div class="ple-act">'+
+        '<button class="ple-no" onclick="plEvClose()">Close</button>'+
+        '<a class="ple-ok" style="flex:1;display:flex;align-items:center;'+
+          'justify-content:center;text-decoration:none;border-radius:var(--r-sm)" '+
+          'href="'+esc(r.url)+'" target="_blank" rel="noopener">Open PDF</a>'+
+      '</div>'+
+    '</div></div>';
+}
+
 function plEvClose(){
   var h=document.getElementById('ple-host'); if(h) h.innerHTML='';
   PLE=null;
+}
+
+/* Hand off to the real PM form for this machine. The planner tick and a full PM
+   slip record the same event, so doing both would double-count; the form's own
+   submission refreshes the plan through refreshPmActuals, which reads BD_LOG. */
+function plOpenPmForm(){
+  var ctx=PLE; plEvClose();
+  if(!ctx) return;
+  App.machineId = ctx.assetId;
+  navigate('pm', ctx.assetId);
 }
 
 function plEvSubmit(clearing){
