@@ -835,21 +835,36 @@ body {
 .mb-section-lbl { font-size:9px; font-weight:800; color:#64748b;
   text-transform:uppercase; letter-spacing:.6px; margin-bottom:5px;
   display:flex; align-items:center; justify-content:space-between; }
-/* Category chips — ONE scrolling row, not an unbounded wrap.
-   20 categories wrapped into 7 rows and claimed ~420px before a single record was
-   visible: the filter was pushing the content it filters off screen. A horizontal
-   strip costs one row instead.
-   The chips stay a scroller while .mb-mac-grid below now wraps, and that
-   asymmetry is deliberate: there are 19 categories (a genuinely long list where
-   one row is the only affordable form), but at most 10 machines inside any one
-   of them — few enough to show in full. */
-.mb-cat-chips { display:flex; gap:5px; overflow-x:auto; padding-bottom:2px;
-  -webkit-overflow-scrolling:touch; scrollbar-width:none; }
-.mb-cat-chips::-webkit-scrollbar { display:none; }
-.mb-chip { font-size:11.5px; font-weight:700; padding:5px 10px;
-  border-radius:14px; border:1.5px solid #e2e8f0; background:#fff; color:#64748b;
-  cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:4px;
-  flex:0 0 auto; }
+/* Category chips — a wrapping grid, fully visible. No hidden axis.
+   Both previous shapes failed, and for opposite reasons:
+   • unbounded wrap of FULL-SIZE chips — 7 rows / ~420px, pushing the records it
+     filters off screen;
+   • one horizontal strip — 15 chips run ~1650px, so the last category sat four
+     screens sideways behind a scrollbar-less affordance nothing announced.
+   Capping the height is a third failure and was tried here: it just moves the
+   same chips behind a silent vertical scroll (measured: 7 of 15 clipped).
+   What actually works is making the chips small enough that the honest full
+   height is affordable. A 4-column grid with a short label (mbCatChipLabel),
+   10px type and a wrapped 2-line cell puts all 15 in ~112px — a quarter of the
+   420px that made wrapping unacceptable before, and every category reachable
+   without discovering a scroll in any direction.
+   No max-height on purpose: a capped box is what hides content. If categories
+   grow the block grows with them, in the axis the page already scrolls. */
+.mb-cat-chips { display:grid; grid-template-columns:repeat(4, 1fr); gap:4px;
+  padding-bottom:2px; align-content:start; }
+/* More columns as room allows — 4 columns held at 1280px stretched each chip to
+   317px, which is a button the width of a paragraph. Column count rises with the
+   viewport so the chip stays a chip and the block gets shorter, not wider. */
+@media (min-width:560px){ .mb-cat-chips { grid-template-columns:repeat(6, 1fr); } }
+@media (min-width:900px){ .mb-cat-chips { grid-template-columns:repeat(8, 1fr);
+  font-size:11px; } }
+/* Sized to the grid cell, not to its own text. white-space:normal because a
+   4-column cell at 390px is ~92px and "Shrink Sleeve Tunnel" cannot sit on one
+   line there — nowrap would overflow the chip rather than wrap inside it. */
+.mb-chip { font-size:10px; font-weight:700; padding:4px 6px; line-height:1.2;
+  border-radius:10px; border:1.5px solid #e2e8f0; background:#fff; color:#64748b;
+  cursor:pointer; white-space:normal; display:flex; align-items:center;
+  justify-content:center; gap:3px; text-align:center; min-height:26px; }
 .mb-chip.on { background:#0f172a; border-color:#0f172a; color:#fff; }
 .mb-chip .mbc-n { font-size:10px; opacity:.7; }
 .mb-chip .mbc-bd { width:6px; height:6px; border-radius:50%; background:#dc2626; }
@@ -4176,6 +4191,18 @@ function _orderedCats(data) {
   return ordered;
 }
 
+/* Chip label — shorter than the category's real name.
+   The category name is a full noun phrase because it names a machine class; as a
+   filter chip the trailing noun carries no information (every chip in the row is
+   a machine). Dropping it is what lets 15 chips fit two rows instead of one
+   1650px scroller. The full name is kept as the title attribute and is still what
+   the section heading below shows, so nothing becomes unidentifiable. */
+function mbCatChipLabel(cat) {
+  return String(cat)
+    .replace(/\s+Machine$/i, '')
+    .replace(/\s+Printer$/i, ' Print');
+}
+
 function _renderCatChips(data) {
   var box = document.getElementById('mb-cat-chips');
   var html = '<button class="mb-chip' + (_mbCat==='all'?' on':'') +
@@ -4184,8 +4211,8 @@ function _renderCatChips(data) {
     var ms = data.groups[cat]||[];
     var bd = ms.reduce(function(s,m){ return s+(m.openBD||0); },0);
     html += '<button class="mb-chip' + (_mbCat===cat?' on':'') +
-      '" onclick="mbPickCat(' + JSON.stringify(cat).replace(/"/g,'&quot;') + ')">' +
-      esc(cat) + ' <span class="mbc-n">' + ms.length + '</span>' +
+      '" title="' + esc(cat) + '" onclick="mbPickCat(' + JSON.stringify(cat).replace(/"/g,'&quot;') + ')">' +
+      esc(mbCatChipLabel(cat)) + ' <span class="mbc-n">' + ms.length + '</span>' +
       (bd>0?'<span class="mbc-bd"></span>':'') + '</button>';
   });
   box.innerHTML = html;
