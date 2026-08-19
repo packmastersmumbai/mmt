@@ -3764,33 +3764,47 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
     return _delay(wait).then(job);
   }
 
+  // Monotonic so two calls in the same millisecond cannot share a callback name.
+  var _cbSeq = 0;
+
   function _attempt(prop, args, argsJson, usePost, n) {
     var p;
-    if (usePost) {
-      p = fetch(GAS_URL, {
-        method: 'POST',
-        body: JSON.stringify({ fn: prop, args: args }),
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        redirect: 'follow'
-      }).then(function(resp) {
-        if (!resp.ok && resp.type === 'opaque') throw new Error('CORS blocked');
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        return resp.text();
-      }).then(function(text) {
-        try { return JSON.parse(text); }
-        catch(e) { throw new Error('Invalid response: ' + text.substring(0, 100)); }
-      });
-    } else {
-      // _r makes each attempt a distinct URL, so a retry cannot be served from cache
-      // and cannot reuse the previous attempt's spent redirect key.
+    /* JSONP via a SCRIPT TAG — not fetch(). This is not a style preference.
+       /exec answers with a 302 to a single-use user_content_key on
+       script.googleusercontent.com. The FINAL response carries
+       Access-Control-Allow-Origin:*, but the 302 itself does not, so a browser
+       fetch() is blocked at the redirect with
+         'No Access-Control-Allow-Origin header is present'
+       and POST additionally triggers a preflight Apps Script never answers.
+       Verified in Chrome: fetch() GET and POST both fail from the GitHub Pages
+       origin, while a script tag returns all 109 rows — script tags follow
+       redirects and are exempt from CORS entirely. A server-side fetch DOES
+       work, which is why this stayed invisible to curl-style testing.
+       Every request is therefore a fresh <script> with a unique callback. */
+    p = new Promise(function (resolve, reject) {
+      var cb = '_pmcb' + (_cbSeq++) + '_' + Date.now().toString(36);
       var url = GAS_URL + '?fn=' + encodeURIComponent(prop) +
         '&args=' + encodeURIComponent(argsJson) +
-        (n > 1 ? '&_r=' + n + '_' + Date.now() : '');
-      p = fetch(url, { redirect: 'follow' }).then(function(resp) {
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        return resp.json();
-      });
-    }
+        '&callback=' + cb +
+        (n > 1 ? '&_r=' + n : '');
+      var el = document.createElement('script');
+      var done = false;
+      function cleanup() {
+        try { delete window[cb]; } catch (e) { window[cb] = undefined; }
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+      }
+      window[cb] = function (data) {
+        if (done) return; done = true;
+        cleanup(); resolve(data);
+      };
+      el.onerror = function () {
+        if (done) return; done = true;
+        cleanup(); reject(new Error('script load failed'));
+      };
+      el.src = url;
+      (document.head || document.documentElement).appendChild(el);
+    });
+
     /* fetch() has no native timeout: a request that neither resolves nor rejects
        leaves the caller's success AND failure handlers unfired, which is exactly
        how a form hangs on "Loading…" with nothing to click. Cap each attempt so a
