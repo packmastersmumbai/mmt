@@ -9979,6 +9979,65 @@ function plRender(){
    So the planner no longer records anything. Tapping a month that needs a PM
    opens the real form for that machine. The planner's job is to show WHAT IS DUE
    and WHAT WAS MISSED; the form's job is to record the work. */
+/* PDF export of the annual plan.
+
+   The button has called this since the planner was built, but the function was
+   never written — clicking Export PDF threw
+   "Uncaught ReferenceError: plExport is not defined" and nothing happened.
+   buildPmPlanReport has existed and worked on the backend the whole time.
+
+   The report is generated server-side and lands in Drive; the browser is handed
+   the resulting URL. It is opened via a link the user clicks rather than
+   window.open() inside the async callback, because a popup opened long after
+   the original tap is blocked by default on both mobile browsers here. */
+function plExport(){
+  if(PL.busy) return;
+  var btn=document.querySelector('.pl-export');
+  var restore=function(t){ if(btn){ btn.disabled=false; btn.textContent=t||'Export PDF'; } };
+  PL.busy=true;
+  if(btn){ btn.disabled=true; btn.textContent='Building\u2026'; }
+  showStatus('Building the PDF\u2026 this takes a few seconds.','info',0);
+
+  google.script.run
+    .withSuccessHandler(function(r){
+      PL.busy=false; restore();
+      if(!r||!r.success){
+        showStatus('Export failed: '+((r&&r.error)||'unknown'),'error',5000);
+        return;
+      }
+      showStatus('PDF ready \u2014 '+r.assets+' assets.','success',2500);
+      plShowExport(r);
+    })
+    .withFailureHandler(function(e){
+      PL.busy=false; restore();
+      showStatus('Export failed: '+((e&&e.message)||'unknown'),'error',5000);
+    })
+    .buildPmPlanReport(plFy(), PL.cls || 'ALL');
+}
+
+/* A tap target for the finished file. A PDF that silently appears in Drive is
+   a file nobody finds; this puts the link in front of the person who asked. */
+function plShowExport(r){
+  var host=document.getElementById('ple-host');
+  if(!host){ host=document.createElement('div'); host.id='ple-host'; document.body.appendChild(host); }
+  host.innerHTML='<div class="ple-back" onclick="if(event.target===this)plEvClose()">'+
+    '<div class="ple-sheet" role="dialog" aria-modal="true">'+
+      '<div class="ple-hd">PM plan PDF is ready</div>'+
+      '<div class="ple-sub">'+esc(r.name||'PM plan')+'</div>'+
+      '<div class="ple-note">'+esc(String(r.assets||0))+' assets'+
+        (r.adherence!==null&&r.adherence!==undefined?' &middot; '+esc(String(r.adherence))+'% adherence':'')+
+        (r.evidence?' &middot; '+esc(String(r.evidence))+' evidence rows':'')+
+      '</div>'+
+      '<div class="ple-act">'+
+        '<a class="ple-ok" href="'+esc(r.url)+'" target="_blank" rel="noopener" '+
+          'onclick="plEvClose()" style="text-decoration:none;text-align:center;display:flex;'+
+          'align-items:center;justify-content:center;flex:1;min-height:44px;'+
+          'border-radius:8px;font-size:13px;font-weight:700">Open PDF</a>'+
+        '<button class="ple-no" onclick="plEvClose()">Close</button>'+
+      '</div>'+
+    '</div></div>';
+}
+
 function plMarkDone(assetId, freq, monthIdx){
   if(PL.busy) return;
   var a=((PL.data&&PL.data.assets)||[]).filter(function(x){return x.id===assetId;})[0];
