@@ -4459,6 +4459,12 @@ function mbPickPane(pane) {
      a statement about the machine board and is false above a list of
      instruments. */
   setD('mb-scope', machines);
+  /* The count in the toolbar says '52 machines'; on the equipment pane it
+     should count what is actually on screen. */
+  var mc = document.getElementById('mb-count');
+  if (mc) mc.textContent = machines
+    ? ((_boardData && _boardData.total) || 0) + ' machines'
+    : (((_eqData && _eqData.items) || []).length || 0) + ' instruments';
   /* The search box filters machines only; leaving its machine placeholder on
      the equipment pane promises a filter that does not exist there. */
   var si = document.getElementById('mb-search-input');
@@ -4497,6 +4503,8 @@ function renderEquipment(r) {
   var items = r.items || [];
   var n = document.getElementById('mb-tab-n-eq');
   if (n) n.textContent = items.length;
+  var mc2 = document.getElementById('mb-count');
+  if (mc2 && _mbPane === 'equipment') mc2.textContent = items.length + ' instruments';
   if (!items.length) {
     el.innerHTML = '<div style="padding:18px;color:#64748b;font-size:13px">' +
       'No instruments in the CALIBRATION sheet yet.</div>';
