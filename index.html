@@ -9789,10 +9789,17 @@ function plCell(state, asset, line, idx){
       'aria-label="Record PM done in '+when+'" '+
       'onclick="event.stopPropagation();plQuickDone('+q(asset.id)+','+q(line.freq)+','+idx+')">+</button>';
 
-  return '<button class="pl-c '+st.cls+' tap'+(setByHand?' pl-hand':'')+'" '+
+  /* A DIV, not a button: the + is itself a button, and HTML forbids nesting
+     one button inside another - the browser silently hoists the inner one out
+     of the cell, which is exactly what made the + never appear on hover.
+     role+tabindex+keydown keep it operable from the keyboard. */
+  return '<div class="pl-c '+st.cls+' tap'+(setByHand?' pl-hand':'')+'" '+
+    'role="button" tabindex="0" '+
     'onclick="plMarkDone('+q(asset.id)+','+q(line.freq)+','+idx+')" '+
+    'onkeydown="if(event.key===&quot;Enter&quot;||event.key===&quot; &quot;)'+
+      '{event.preventDefault();this.click();}" '+
     'title="'+title+'" aria-label="'+title+'">'+
-    (text?'<span>'+esc(text)+'</span>':'')+plus+'</button>';
+    (text?'<span>'+esc(text)+'</span>':'')+plus+'</div>';
 }
 
 /* Record a PM straight from the grid. The date defaults to today when the month
