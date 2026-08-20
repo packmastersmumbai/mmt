@@ -1191,6 +1191,26 @@ body {
 .img-zoomable { cursor:zoom-in; transition:transform 0.25s ease, box-shadow 0.25s ease; }
 .img-zoomable:hover { transform:scale(1.5); box-shadow:0 8px 30px rgba(0,0,0,0.3); z-index:100; position:relative; border-radius:4px; }
 
+/* ── Tools & Equipment cards ───────────────────────────────────────────────
+   A calibration record is read for one thing first — is this instrument legal
+   to use right now — so the status pill and the next-due date outrank the
+   make and range, which are identification, not decision. */
+.eq-card { background:#fff; border:1px solid #e2e8f0; border-radius:10px;
+  padding:11px 12px; margin-bottom:9px; }
+.eq-hd { display:flex; align-items:flex-start; gap:10px; }
+.eq-name { font-size:14px; font-weight:800; color:#0f172a;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.eq-id { font-family:'PMMono',ui-monospace,monospace; font-size:11px; color:#64748b; margin-top:2px; }
+.eq-pill { flex-shrink:0; font-size:10px; font-weight:800; text-transform:uppercase;
+  letter-spacing:.5px; padding:4px 9px; border-radius:20px; white-space:nowrap; }
+.eq-meta { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.eq-meta span { font-size:11px; color:#475569; background:#f1f5f9;
+  border-radius:5px; padding:2px 7px; }
+.eq-due { font-size:12px; color:#334155; margin-top:8px; font-weight:600; }
+.eq-btn { margin-top:9px; min-height:44px; width:100%; border:1px solid #cbd5e1;
+  border-radius:8px; background:#f8fafc; color:#0f172a; font-size:13px;
+  font-weight:700; cursor:pointer; }
+
 /* ── SOP step thumbnails ──────────────────────────────────────────────────
    A photo of the actual part beats a sentence describing it, so each SOP row
    can carry one. Small on the page (a step list stays scannable), enlarged on
@@ -3196,8 +3216,19 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
       </button>
       <button onclick="showAddMachineForm()" aria-label="Add machine" style="flex-shrink:0;background:#f97316;color:#1a0d00;border:none;border-radius:8px;padding:8px 11px;font-size:13px;font-weight:700;cursor:pointer">+</button>
     </div>
+    <!-- Machines / Equipment. Instruments live in the CALIBRATION sheet, not
+         MASTER_MACHINES, and none of the seven machine actions (BD/PM/CLIT/SOP/
+         MHC/Media/Checklist) apply to a vernier caliper — so they get their own
+         pane rather than being mixed into the machine grid. Machines stays the
+         default: this tab adds a destination, it changes nothing existing. -->
+    <div class="pl-tabs" style="padding:10px 12px 0">
+      <button class="pl-tab on" id="mb-tab-machines" onclick="mbPickPane('machines')">
+        Machines <span class="n" id="mb-tab-n-mac"></span></button>
+      <button class="pl-tab" id="mb-tab-equipment" onclick="mbPickPane('equipment')">
+        Tools &amp; Equipment <span class="n" id="mb-tab-n-eq"></span></button>
+    </div>
     <!-- category chips — 2-row wrapped block -->
-    <div class="mb-section">
+    <div class="mb-section" id="mb-cat-section">
       <div class="mb-section-lbl">Category</div>
       <div class="mb-cat-chips" id="mb-cat-chips"></div>
     </div>
@@ -3205,6 +3236,12 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
     <div class="mb-section" id="mb-mac-section" style="display:none">
       <div class="mb-section-lbl"><span id="mb-mac-lbl">Machine</span></div>
       <div class="mb-mac-grid" id="mb-mac-grid"></div>
+    </div>
+    <!-- Equipment pane. Hidden until the tab is picked, so the Machines view
+         opens exactly as it did before. -->
+    <div class="mb-section" id="mb-eq-section" style="display:none">
+      <div class="mb-section-lbl">Tools &amp; Equipment</div>
+      <div id="mb-eq-list"></div>
     </div>
     <!-- fixed action bar -->
     <div class="mb-actionbar locked" id="mb-actionbar">
@@ -4384,6 +4421,129 @@ var _clStatusFilter = 'all';
 
 function _cssId(s){ return String(s).replace(/[^a-zA-Z0-9]/g,'_'); }
 
+/* ── Tools & Equipment pane ────────────────────────────────────────────────
+   getEquipmentList / submitEquipmentCheck have existed on the backend since the
+   calibration API was built, but nothing in the SPA called them, so the four
+   instruments in the CALIBRATION sheet were invisible everywhere except the
+   planner's Tools tab. This is that missing screen. */
+var _mbPane = 'machines';
+var _eqData = null;
+
+/* Calibration state -> colour + words. UNKNOWN is deliberately amber, not grey:
+   an instrument that has never been calibrated is a finding in an ISO audit,
+   not a neutral absence. */
+var EQ_CAL_UI = {
+  OK:      { bg:'#dcfce7', fg:'#15803d', label:'In calibration' },
+  DUE:     { bg:'#fef3c7', fg:'#a16207', label:'Due soon' },
+  OVERDUE: { bg:'#fee2e2', fg:'#b91c1c', label:'Overdue' },
+  UNKNOWN: { bg:'#fef3c7', fg:'#a16207', label:'Never calibrated' }
+};
+
+function mbPickPane(pane) {
+  _mbPane = pane;
+  var machines = pane === 'machines';
+  var setD = function(id, show) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = show ? '' : 'none';
+  };
+  /* The machine pane is three separate blocks plus the action bar and the
+     record tabs; all of them are machine-specific and would be meaningless
+     above a list of calipers. */
+  setD('mb-eq-section', !machines);
+  setD('mb-cat-section', machines);
+  setD('mb-mac-section', machines && _mbCat !== 'all');
+  setD('mb-actionbar', machines);
+  setD('rec-subtabs', machines);
+  setD('rec-list', machines);
+  var t1 = document.getElementById('mb-tab-machines'),
+      t2 = document.getElementById('mb-tab-equipment');
+  if (t1) t1.classList.toggle('on', machines);
+  if (t2) t2.classList.toggle('on', !machines);
+  if (!machines) loadEquipment();
+}
+
+function loadEquipment() {
+  var el = document.getElementById('mb-eq-list');
+  if (!el) return;
+  if (_eqData) { renderEquipment(_eqData); return; }
+  el.innerHTML = '<div class="loading-spinner" style="padding:30px"><div class="spinner-ring"></div>Loading equipment&hellip;</div>';
+  google.script.run
+    .withSuccessHandler(function(r) { _eqData = r; renderEquipment(r); })
+    .withFailureHandler(function(e) {
+      el.innerHTML = '<div style="padding:16px;color:#dc2626;font-size:13px">Error: ' +
+        esc((e && e.message) || 'unknown') + '</div>';
+    })
+    .getEquipmentList();
+}
+
+function renderEquipment(r) {
+  var el = document.getElementById('mb-eq-list');
+  if (!el) return;
+  if (!r || !r.success) {
+    el.innerHTML = '<div style="padding:16px;color:#dc2626;font-size:13px">' +
+      esc((r && r.error) || 'Could not load equipment.') + '</div>';
+    return;
+  }
+  var items = r.items || [];
+  var n = document.getElementById('mb-tab-n-eq');
+  if (n) n.textContent = items.length;
+  if (!items.length) {
+    el.innerHTML = '<div style="padding:18px;color:#64748b;font-size:13px">' +
+      'No instruments in the CALIBRATION sheet yet.</div>';
+    return;
+  }
+  el.innerHTML = items.map(function(it) {
+    var cal = EQ_CAL_UI[it.calStatus] || EQ_CAL_UI.UNKNOWN;
+    /* Next due is the number an auditor asks for first, so it gets its own
+       line rather than being folded into the status pill. */
+    var due = it.nextDue
+      ? 'Next due ' + esc(it.nextDue) + (it.calDays != null ? ' \u00b7 ' + esc(String(it.calDays)) + ' days' : '')
+      : 'No calibration recorded';
+    return '<div class="eq-card">' +
+      '<div class="eq-hd">' +
+        '<div style="min-width:0">' +
+          '<div class="eq-name">' + esc(it.name || it.id) + '</div>' +
+          '<div class="eq-id">' + esc(it.id) +
+            (it.location ? ' \u00b7 ' + esc(it.location) : '') + '</div>' +
+        '</div>' +
+        '<span class="eq-pill" style="background:' + cal.bg + ';color:' + cal.fg + '">' +
+          esc(cal.label) + '</span>' +
+      '</div>' +
+      '<div class="eq-meta">' +
+        (it.make ? '<span>' + esc(it.make) + '</span>' : '') +
+        (it.range ? '<span>' + esc(it.range) + '</span>' : '') +
+        (it.freq ? '<span>' + esc(it.freq) + '</span>' : '') +
+      '</div>' +
+      '<div class="eq-due">' + due + '</div>' +
+      (it.needsCheck
+        ? '<button class="eq-btn" onclick="eqCheck(' + JSON.stringify(it.id).replace(/"/g,'&quot;') + ')">' +
+            'Record monthly check</button>'
+        : '') +
+    '</div>';
+  }).join('');
+}
+
+/* Monthly check. The backend refuses a NOT_OK without remarks, so the prompt
+   for them is not optional politeness — it is the same rule, stated early. */
+function eqCheck(id) {
+  var ok = confirm('Monthly check for ' + id + '\n\nOK = pass, Cancel = record a problem.');
+  var remarks = '';
+  if (!ok) {
+    remarks = prompt('What is wrong with ' + id + '? (required)') || '';
+    if (!remarks.trim()) { alert('A problem needs remarks. Nothing was recorded.'); return; }
+  }
+  var by = prompt('Your name (recorded against this check):') || '';
+  if (!by.trim()) { alert('A check needs a name. Nothing was recorded.'); return; }
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res || !res.success) { alert('Failed: ' + ((res && res.error) || 'unknown')); return; }
+      _eqData = null;          // force a re-read so the card shows the new state
+      loadEquipment();
+    })
+    .withFailureHandler(function(e) { alert('Failed: ' + ((e && e.message) || 'unknown')); })
+    .submitEquipmentCheck({ id:id, result: ok ? 'OK' : 'NOT_OK', remarks:remarks, doneBy:by });
+}
+
 function loadBoard(highlightMachineId) {
   if (highlightMachineId) { _highlightId = highlightMachineId; _mbMachine = highlightMachineId; }
   _wireRecSubtabs();
@@ -4448,6 +4608,8 @@ function renderBoard(data) {
     return;
   }
   document.getElementById('mb-count').textContent = data.total + ' machines';
+  var _tn = document.getElementById('mb-tab-n-mac');
+  if (_tn) _tn.textContent = data.total;
   _renderCatChips(data);
   _renderMacTiles(data);
   _updateActionBar();
