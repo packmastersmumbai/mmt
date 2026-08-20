@@ -1190,6 +1190,45 @@ body {
 /* Image hover enlarge */
 .img-zoomable { cursor:zoom-in; transition:transform 0.25s ease, box-shadow 0.25s ease; }
 .img-zoomable:hover { transform:scale(1.5); box-shadow:0 8px 30px rgba(0,0,0,0.3); z-index:100; position:relative; border-radius:4px; }
+
+/* ── SOP step thumbnails ──────────────────────────────────────────────────
+   A photo of the actual part beats a sentence describing it, so each SOP row
+   can carry one. Small on the page (a step list stays scannable), enlarged on
+   hover by the existing .img-zoomable module, full-size on tap.
+   transform-origin:left keeps the enlarged image inside the column instead of
+   growing off the left edge of a phone. */
+.sop-thumbs { margin-top:6px; }
+.sop-thumb {
+  width:88px; height:66px; object-fit:cover; display:block;
+  border:1px solid #e2e8f0; border-radius:6px; background:#f8fafc;
+  transform-origin:left center;
+}
+/* Hover-enlarge is a pointer affordance; on touch it would fire on tap and
+   fight the tap-to-open handler, so it is scoped to devices that really hover. */
+@media (hover:none) {
+  .img-zoomable.sop-thumb:hover { transform:none; box-shadow:none; }
+}
+/* The row clips nothing, so a scaled thumbnail is not cut off by the divider. */
+.sop-thumbs, .sop-thumbs * { overflow:visible; }
+
+/* Full-size viewer: the hover preview is for scanning, this is for reading a
+   label or a gauge on the part. */
+/* Image cell inside the SOP editor: a preview plus one 44px action, so the
+   author never handles a Drive id by hand. */
+.sop-imgcell { display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-top:2px; }
+.sop-imgcell .sop-thumb { transform:none; }
+.sop-imgbtn { min-height:40px; padding:0 14px; border:1px dashed #7c3aed; border-radius:8px;
+  background:#f5f3ff; color:#7c3aed; font-size:12px; font-weight:700; cursor:pointer; }
+.sop-imgbtn.danger { border:1px solid #fecaca; background:#fef2f2; color:#b91c1c; border-style:solid; }
+.sop-imgwait { font-size:12px; color:#7c3aed; font-weight:700; }
+
+.sop-imgv { display:none; position:fixed; inset:0; z-index:10050;
+  background:rgba(15,23,42,.92); align-items:center; justify-content:center; padding:16px; }
+.sop-imgv.show { display:flex; }
+.sop-imgv img { max-width:100%; max-height:100%; object-fit:contain; border-radius:8px; }
+.sop-imgv-x { position:absolute; top:12px; right:12px; min-width:44px; min-height:44px;
+  border:0; border-radius:10px; background:rgba(255,255,255,.18); color:#fff;
+  font-size:22px; line-height:1; cursor:pointer; }
 /* Progress ring mini */
 .stat-bar-wrap { height:5px; background:#f1f5f9; border-radius:3px; margin-top:8px; overflow:hidden; }
 .stat-bar-fill { height:100%; border-radius:3px; transform-origin:left; transition:transform 0.6s ease; }
@@ -3414,6 +3453,13 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
   <!-- ── SOP editor ─────────────────────────────────────────────────────────
        Full-screen so a long procedure is editable on a phone. Save draft and
        Approve are separate actions: approving is a signature, not a save. -->
+  <!-- Full-size SOP step image. Sits outside the SOP view so it overlays the
+       editor too, and closes on backdrop tap the way the other viewers do. -->
+  <div class="sop-imgv" id="sopImgViewer" onclick="sopCloseImage()">
+    <button class="sop-imgv-x" onclick="sopCloseImage()" aria-label="Close image">&#10005;</button>
+    <img id="sopImgViewerImg" src="" alt="SOP step photo">
+  </div>
+
   <div class="sop-modal" id="sopEditorModal">
     <div class="sop-bar">
       <button class="sop-x" onclick="sopCloseEditor()" aria-label="Close editor">&#8249;</button>
@@ -8202,37 +8248,50 @@ function loadSOPView(machineId) {
     .withSuccessHandler(function(r) {
       if (!r || !r.success || !r.sop) { el.innerHTML = '<div style="padding:16px;color:#64748b;font-size:13px">'+(r&&r.error||'No SOP data found')+'</div>'; return; }
       var sop = r.sop;
-      function section(title, color, items) {
+      function section(title, color, items, key) {
         if (!items || !items.length) return '';
+        /* The image cell sits at a known index per section, so it is pulled out
+           before the remaining cells become the grey extras line. Without this
+           a raw Drive id would print as text under the step. */
+        var imgIdx = SOP_IMG_IDX[key] || -1;
         return '<div style="margin-bottom:10px">'+
           '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:'+color+';padding:6px 12px;background:'+color+'18;border-left:3px solid '+color+'">'+esc(title)+'</div>'+
           items.map(function(item, i) {
             // item may be a string, object, or array [stepNum, text, ...extra]
-            var label;
+            var label = '', extras = [], imgId = '';
             if (typeof item === 'string') {
               label = item;
             } else if (Array.isArray(item)) {
-              // Format: [stepNum, 'EN text / HI text', ...] — text is at index 1
+              // Format: [stepNum, 'EN text / HI text', ...extras, imageId]
               label = String(item[1] || '');
-              // Append extra fields (ppe/role/notes) as small secondary text
-              var extras = item.slice(2).filter(function(x){ return x && String(x).trim(); });
-              if (extras.length) {
-                return '<div style="padding:7px 12px;border-bottom:1px solid #f8fafc">'+
-                  '<div style="display:flex;gap:8px">'+
-                    '<span style="color:'+color+';font-weight:700;font-size:12px;flex-shrink:0;min-width:18px">'+(i+1)+'.</span>'+
-                    '<div>'+
-                      '<div style="font-size:13px;color:#1e293b">'+esc(label)+'</div>'+
-                      '<div style="font-size:11px;color:#64748b;margin-top:2px">'+extras.map(function(x){return esc(String(x));}).join(' · ')+'</div>'+
-                    '</div>'+
-                  '</div>'+
-                '</div>';
-              }
+              imgId = imgIdx > 0 ? String(item[imgIdx] || '').trim() : '';
+              extras = item.slice(2, imgIdx > 0 ? imgIdx : undefined)
+                .filter(function(x){ return x && String(x).trim(); });
             } else {
               label = String(item.step || item.text || item.label || item.en || JSON.stringify(item));
+              imgId = String(item.image || item.img || '').trim();
             }
-            return '<div style="display:flex;gap:8px;padding:7px 12px;border-bottom:1px solid #f8fafc">'+
-              '<span style="color:'+color+';font-weight:700;font-size:12px;flex-shrink:0;min-width:18px">'+(i+1)+'.</span>'+
-              '<span style="font-size:13px;color:#1e293b">'+esc(String(label))+'</span>'+
+            /* One return path for every row shape: an earlier version returned
+               early when a row had extras, which silently dropped the photo on
+               exactly the rows most likely to carry one. */
+            var thumb = imgId
+              ? '<div class="sop-thumbs"><img class="img-zoomable sop-thumb" loading="lazy" decoding="async" '+
+                  'src="'+esc(sopImgThumb(imgId))+'" alt="'+esc(label)+'" '+
+                  'onclick="sopOpenImage(&quot;'+esc(imgId)+'&quot;)" '+
+                  'onerror="this.closest(&quot;.sop-thumbs&quot;).style.display=&quot;none&quot;"></div>'
+              : '';
+            return '<div style="padding:7px 12px;border-bottom:1px solid #f8fafc">'+
+              '<div style="display:flex;gap:8px">'+
+                '<span style="color:'+color+';font-weight:700;font-size:12px;flex-shrink:0;min-width:18px">'+(i+1)+'.</span>'+
+                '<div style="min-width:0;flex:1">'+
+                  '<div style="font-size:13px;color:#1e293b">'+esc(label)+'</div>'+
+                  (extras.length
+                    ? '<div style="font-size:11px;color:#64748b;margin-top:2px">'+
+                        extras.map(function(x){return esc(String(x));}).join(' · ')+'</div>'
+                    : '')+
+                  thumb+
+                '</div>'+
+              '</div>'+
             '</div>';
           }).join('')+
         '</div>';
@@ -8269,11 +8328,11 @@ function loadSOPView(machineId) {
       '</div>';
       if (sop.purpose) html += '<div style="padding:10px 12px;background:#f0f9ff;border-radius:6px;font-size:13px;color:#1e293b;margin-bottom:8px"><b>Purpose:</b> '+esc(sop.purpose)+'</div>';
       if (sop.scope)   html += '<div style="padding:8px 12px;background:#fffbeb;border-radius:6px;font-size:13px;color:#1e293b;margin-bottom:8px"><b>Scope:</b> '+esc(sop.scope)+'</div>';
-      html += section('Safety Precautions', '#dc2626', sop.safety);
-      html += section('Pre-Start Checks', '#d97706', sop.preChecks);
-      html += section('Operating Steps', '#7c3aed', sop.steps);
-      html += section('Shutdown Procedure', '#0284c7', sop.shutdown);
-      html += section('Abnormal Situations', '#be185d', sop.abnormal);
+      html += section('Safety Precautions', '#dc2626', sop.safety, 'safety');
+      html += section('Pre-Start Checks', '#d97706', sop.preChecks, 'preChecks');
+      html += section('Operating Steps', '#7c3aed', sop.steps, 'steps');
+      html += section('Shutdown Procedure', '#0284c7', sop.shutdown, 'shutdown');
+      html += section('Abnormal Situations', '#be185d', sop.abnormal, 'abnormal');
       el.innerHTML = html;
     })
     .withFailureHandler(function(e) { el.innerHTML = '<div style="padding:16px;color:#dc2626;font-size:13px">Error: '+esc((e&&e.message)||'unknown')+'</div>'; })
@@ -8300,13 +8359,29 @@ var SOP_STATUS_UI = {
 /* [key, title, colour, column headings]. Headings after the first drive how
    many fields each row edits — taken from the shape the backend already
    stores, so an edited row round-trips into the same columns it came from. */
+/* The LAST head of every section is 'Image' — a Drive file id for a photo of
+   that specific row. It is a normal column so it round-trips through the editor,
+   _sopClean and the SOP_STORE JSON with no schema change; the viewer pulls it by
+   index (SOP_IMG_IDX) instead of letting it fall into the extras text. */
 var SOP_SECTIONS = [
-  ['safety',    'Safety Precautions',  '#dc2626', ['Precaution','PPE / Control','Responsibility']],
-  ['preChecks', 'Pre-Start Checks',    '#d97706', ['Check','Acceptance criteria','Method','Frequency','Ref']],
-  ['steps',     'Operating Steps',     '#7c3aed', ['Step','Expected result','Notes','Responsibility']],
-  ['shutdown',  'Shutdown Procedure',  '#0284c7', ['Action','Responsibility']],
-  ['abnormal',  'Abnormal Situations', '#be185d', ['Situation','Immediate action','Escalate to']]
+  ['safety',    'Safety Precautions',  '#dc2626', ['Precaution','PPE / Control','Responsibility','Image']],
+  ['preChecks', 'Pre-Start Checks',    '#d97706', ['Check','Acceptance criteria','Method','Frequency','Ref','Image']],
+  ['steps',     'Operating Steps',     '#7c3aed', ['Step','Expected result','Notes','Responsibility','Image']],
+  ['shutdown',  'Shutdown Procedure',  '#0284c7', ['Action','Responsibility','Image']],
+  ['abnormal',  'Abnormal Situations', '#be185d', ['Situation','Immediate action','Escalate to','Image']]
 ];
+
+/* Row index of the image cell per section: heads.length (the row carries a
+   leading row-number, so head i lives at index i+1 and the last is length). */
+var SOP_IMG_IDX = (function(){
+  var m = {};
+  SOP_SECTIONS.forEach(function(s){ m[s[0]] = s[3].length; });
+  return m;
+})();
+
+/* A stored image cell is a Drive file id. Google's lh3 host serves a sized
+   thumbnail without an API call, the same URL shape getMachineImagesData uses. */
+function sopImgThumb(id){ return 'https://lh3.googleusercontent.com/d/'+encodeURIComponent(id)+'=w400'; }
 
 var _sopCur = null;          // SOP currently displayed
 var _sopCurMachine = '';
@@ -8324,6 +8399,74 @@ function _sopWho() {
     try { localStorage.setItem(k, v); } catch(e) {}
   }
   return v;
+}
+
+/* Full-size view of one SOP step photo. =w1600 asks Drive for a large render
+   rather than the 400px thumbnail, so a part label stays readable. */
+/* Attach a photo to one SOP row. Reuses spaUploadMachineImage — the same
+   endpoint and the same per-machine Images folder the media grid already uses,
+   so SOP photos need no new storage, no new folder and no new quota story.
+   The row stores only the returned Drive file id. */
+function sopPickImage(key, ri) {
+  if (!_sopDraft) return;
+  var inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'image/jpeg,image/png';
+  inp.onchange = function() {
+    var f = inp.files && inp.files[0];
+    if (!f) return;
+    /* 8 MB is the server's cap for images; checking here turns a slow upload
+       that ends in a rejection into an instant, specific message. */
+    if (f.size > 8 * 1024 * 1024) {
+      alert('That photo is ' + (f.size / 1048576).toFixed(1) + ' MB. The limit is 8 MB.');
+      return;
+    }
+    var cell = document.getElementById('sopimg-' + key + '-' + ri);
+    if (cell) cell.innerHTML = '<span class="sop-imgwait">Uploading&hellip;</span>';
+    var rd = new FileReader();
+    rd.onload = function() {
+      google.script.run
+        .withSuccessHandler(function(r) {
+          if (!r || !r.success || !r.fileId) {
+            alert('Upload failed: ' + ((r && r.error) || 'unknown'));
+            sopRenderEditor();
+            return;
+          }
+          sopSetCell(key, ri, SOP_IMG_IDX[key], r.fileId);
+          sopRenderEditor();
+        })
+        .withFailureHandler(function(e) {
+          alert('Upload failed: ' + ((e && e.message) || 'unknown'));
+          sopRenderEditor();
+        })
+        .spaUploadMachineImage(_sopCurMachine, rd.result, 'Machine Image');
+    };
+    rd.readAsDataURL(f);
+  };
+  inp.click();
+}
+
+/* Detaches the photo from the row. The Drive file is deliberately left alone:
+   it may be referenced by the media grid or another step, and an SOP edit is
+   not the place to delete plant records. */
+function sopClearImage(key, ri) {
+  if (!_sopDraft) return;
+  sopSetCell(key, ri, SOP_IMG_IDX[key], '');
+  sopRenderEditor();
+}
+
+function sopOpenImage(id){
+  if(!id) return;
+  var v=document.getElementById('sopImgViewer'), im=document.getElementById('sopImgViewerImg');
+  if(!v||!im) return;
+  im.src='https://lh3.googleusercontent.com/d/'+encodeURIComponent(id)+'=w1600';
+  v.classList.add('show');
+}
+function sopCloseImage(){
+  var v=document.getElementById('sopImgViewer'), im=document.getElementById('sopImgViewerImg');
+  if(!v) return;
+  v.classList.remove('show');
+  if(im) im.src='';        // stop the download if it is still in flight
 }
 
 function sopOpenEditor() {
@@ -8368,6 +8511,19 @@ function sopRenderEditor() {
         // +1 skips the stored row number, which the editor renumbers itself.
         var val = row[ci + 1] == null ? '' : String(row[ci + 1]);
         var big = ci === 0;
+        /* The image cell holds a Drive file id, which nobody can type. It gets
+           a picker + preview instead of a text box, so the author never sees
+           the id at all. */
+        if (hd === 'Image') {
+          h += '<label class="sop-fl">' + esc(hd) + '</label>' +
+               '<div class="sop-imgcell" id="sopimg-' + key + '-' + ri + '">' +
+                 (val
+                   ? '<img class="sop-thumb" src="' + esc(sopImgThumb(val)) + '" alt="">' +
+                     '<button type="button" class="sop-imgbtn danger" onclick="sopClearImage(&quot;' + key + '&quot;,' + ri + ')">Remove</button>'
+                   : '<button type="button" class="sop-imgbtn" onclick="sopPickImage(&quot;' + key + '&quot;,' + ri + ')">&#128247; Add photo</button>') +
+               '</div>';
+          return;
+        }
         h += '<label class="sop-fl">' + esc(hd) + '</label>' +
              (big
                ? '<textarea class="sop-in" rows="2" oninput="sopSetCell(\'' + key + '\',' + ri + ',' + (ci+1) + ',this.value)">' + esc(val) + '</textarea>'
