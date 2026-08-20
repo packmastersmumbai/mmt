@@ -4455,6 +4455,16 @@ function mbPickPane(pane) {
   setD('mb-actionbar', machines);
   setD('rec-subtabs', machines);
   setD('rec-list', machines);
+  /* The scope bar reads 'All categories - All machines - N records', which is
+     a statement about the machine board and is false above a list of
+     instruments. */
+  setD('mb-scope', machines);
+  /* The search box filters machines only; leaving its machine placeholder on
+     the equipment pane promises a filter that does not exist there. */
+  var si = document.getElementById('mb-search-input');
+  if (si) si.placeholder = machines ? 'Search machine…' : 'Search is for machines';
+  var sw = document.querySelector('#view-board .mb-search');
+  if (sw) sw.style.display = machines ? '' : 'none';
   var t1 = document.getElementById('mb-tab-machines'),
       t2 = document.getElementById('mb-tab-equipment');
   if (t1) t1.classList.toggle('on', machines);
