@@ -4622,11 +4622,16 @@ function eqColsFor(type) {
   });
 }
 
-/* 'dd-MMM-yyyy' (what the API returns) -> 'yyyy-mm-dd' for <input type=date>.
-   Without this the date input silently shows blank on a row that has a date. */
+/* Display date -> 'yyyy-mm-dd' for <input type=date>.
+   Dates now come back as dd-mm-yyyy, but rows written before that change still
+   hold dd-MMM-yyyy, so BOTH are accepted: dropping the old form would blank the
+   date input on every historical row. */
 function eqToISO(s) {
   if (!s) return '';
-  var m = String(s).match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/);
+  var t = String(s).trim();
+  var n = t.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);        // dd-mm-yyyy
+  if (n) return n[3] + '-' + ('0'+n[2]).slice(-2) + '-' + ('0'+n[1]).slice(-2);
+  var m = t.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/);    // legacy dd-MMM-yyyy
   if (!m) return '';
   var M = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',
            Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'}[m[2]];
@@ -5363,7 +5368,7 @@ function renderDashboard() {
   var trend = _bdTrendWeeks(bd);
 
   var now = new Date();
-  var dateStr = now.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+  var dateStr = now.toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'2-digit'}).split('/').join('-');
 
   /* ---- small helpers ---- */
   function kpi(num, lbl, sub, color, onclick) {
@@ -8393,7 +8398,7 @@ function clSubmitSection(sec) {
         var mName = App.machineName || _mid || '';
         var waText = '\u2705 *' + secLabel + ' Completed*%0A'
           + '\uD83C\uDFED Machine: ' + encodeURIComponent(mName) + '%0A'
-          + '\uD83D\uDCC5 ' + new Date().toLocaleDateString('en-IN') + '%0A'
+          + '\uD83D\uDCC5 ' + new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'}).split('/').join('-') + '%0A'
           + '\u23F0 ' + new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}) + '%0A'
           + 'Shift: ' + encodeURIComponent(shift) + '%0A'
           + 'Operator: ' + encodeURIComponent(op) + '%0A'
@@ -9791,8 +9796,8 @@ function plCell(state, asset, line, idx){
      They used to be one tap that jumped straight to the PM form, so there was no
      way to move a due date at all, and recording a PM meant losing your place. */
   var plus = (state===3||state===4) ? ''
-    : '<button class="pl-add" title="Record the PM as done in '+when+'" '+
-      'aria-label="Record PM done in '+when+'" '+
+    : '<button class="pl-add" title="Do the PM for '+when+'" '+
+      'aria-label="Do the PM for '+when+'" '+
       'onclick="event.stopPropagation();plQuickDone('+q(asset.id)+','+q(line.freq)+','+idx+')">+</button>';
 
   /* A DIV, not a button: the + is itself a button, and HTML forbids nesting
@@ -9815,37 +9820,46 @@ function plQuickDone(assetId, freq, idx){
   if(PL.busy) return;
   var d=PL.data; if(!d) return;
   var a=(d.assets||[]).filter(function(x){return x.id===assetId;})[0];
-  var y=parseInt(String(d.fy).split('-')[0],10);
-  var mo=(3+idx)%12, yr=y+(idx>=9?1:0);
-  var today=new Date();
-  var def=(today.getMonth()===mo && today.getFullYear()===yr)
-    ? today : new Date(yr,mo,1);
-  var iso=def.getFullYear()+'-'+('0'+(def.getMonth()+1)).slice(-2)+'-'+('0'+def.getDate()).slice(-2);
+  if(!a) return;
 
-  var on=prompt('Date the PM was carried out on '+((a&&a.name)||assetId)+
-    ' ('+plMonthLabel(idx)+'):', iso);
-  if(!on) return;
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(on.trim())){ alert('Use the format yyyy-mm-dd.'); return; }
-  var by=prompt('Who carried it out? (recorded against this PM)');
-  /* A PM with no name attached is not evidence — ISO 45001 and every audit ask
-     who did the work, and a blank is not answerable later. */
-  if(!by || !by.trim()){ alert('A name is required. Nothing was recorded.'); return; }
+  /* The + DOES the PM, it does not just tick a box.
 
-  PL.busy=true;
-  showStatus('Recording PM\u2026','info',0);
-  google.script.run
-    .withSuccessHandler(function(r){
-      PL.busy=false;
-      if(!r||!r.success){ showStatus('Not recorded: '+((r&&r.error)||'unknown'),'error',4500); return; }
-      showStatus('PM recorded.','success',2200);
-      PL.data=null; loadPlanner();
-    })
-    .withFailureHandler(function(e){
-      PL.busy=false;
-      showStatus('Not recorded: '+((e&&e.message)||'unknown'),'error',4500);
-    })
-    .markPmPlanDone(plFy(), assetId, freq, idx,
-      { doneOn:on.trim(), doneBy:by.trim(), source:'planner-quick' });
+     It used to ask for a date and a name in two prompt() boxes and write the
+     mask directly. That produced a second, weaker grade of record: no task
+     ticks, no readings, no photo, no slip — while the real PM form produces all
+     of them. Two ways to record one event means the quicker one wins and the
+     maintenance record quietly degrades.
+
+     So the + now opens the SAME form the machine card opens, pre-scoped to this
+     asset. The planner still writes nothing itself; the form's submission lands
+     in BD_LOG and the grid picks it up. */
+  if(plIsTool(a)){
+    /* Tools and equipment have no PM template — what they get is a calibration
+       or a monthly check, which is what the equipment register records. */
+    plEqAction(a, idx);
+    return;
+  }
+
+  App.machineId = a.id;
+  App.machineName = a.name || a.id;
+  /* Force a reload when the form closes, so a PM submitted here shows up on the
+     grid without the user having to know to refresh. */
+  PL.data = null;
+  showPMForm(a.id);
+}
+
+/* An instrument's "+" leads to its check, not to a PM form it has no template
+   for. Extinguishers and scales take a monthly check; anything else is a
+   calibration, which is recorded against the register. */
+function plEqAction(a, idx){
+  var isCheckable = /extinguisher|scale/i.test(String(a.name||'')+' '+String(a.category||''));
+  if(isCheckable && typeof eqCheck === 'function'){
+    eqCheck(a.id);
+    return;
+  }
+  showStatus('Record this on the Equipment register \u2014 opening it now.','info',2600);
+  navigate('board');
+  setTimeout(function(){ if(typeof mbPickPane==='function') mbPickPane('equipment'); }, 600);
 }
 
 /* Set, change or clear the due date of one month. */
@@ -9920,8 +9934,8 @@ function plRender(){
     '<div class="pl-hint">'+
       '<span style="font-size:15px">&#9656;</span>'+
       '<span>Each asset has <b>one row</b>, at its own PM frequency. Tap a month '+
-        'to <b>change its due date</b>; use the <b>+</b> on the cell to record the PM '+
-        'as done.</span>'+
+        'to <b>change its due date</b>; use the <b>+</b> to <b>do the PM</b> for that '+
+        'month.</span>'+
     '</div>';
 
   if(!rows.length){
@@ -10320,7 +10334,7 @@ function _printRecord() {
   w.document.write('<style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:16px;color:#0f172a;}@media print{body{margin:8mm;}}</style>');
   w.document.write('</head><body>');
   w.document.write(rec.outerHTML);
-  w.document.write('<div style="text-align:center;margin-top:16px;font-size:10px;color:#64748b">Pack Masters MMS &bull; Printed '+new Date().toLocaleString('en-IN')+'</div>');
+  w.document.write('<div style="text-align:center;margin-top:16px;font-size:10px;color:#64748b">Pack Masters MMS &bull; Printed '+new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'}).split('/').join('-')+' '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'</div>');
   w.document.write('</body></html>');
   w.document.close();
   setTimeout(function(){ w.print(); }, 300);
@@ -13227,7 +13241,7 @@ function sfIncFillFilters(){
 function sfIncDate(iso){
   if(!iso) return '';
   var d=new Date(iso); if(isNaN(d)) return sfEsc(String(iso).substr(0,10));
-  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'}).split('/').join('-');
 }
 /* sfIncCharts() removed — the Incidents "Trends" panel it built (Incidents by
    Type / by Zone) now renders on the main dashboard instead, where it sits with
