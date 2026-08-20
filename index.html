@@ -1191,6 +1191,16 @@ body {
 .img-zoomable { cursor:zoom-in; transition:transform 0.25s ease, box-shadow 0.25s ease; }
 .img-zoomable:hover { transform:scale(1.5); box-shadow:0 8px 30px rgba(0,0,0,0.3); z-index:100; position:relative; border-radius:4px; }
 
+/* Group header. Sticky so the type stays named while scrolling 31 cards. */
+.eq-grp { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:8px;
+  background:#f1f5f9; border-radius:7px; padding:7px 10px; margin:14px 0 8px;
+  font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; color:#334155; }
+.eq-grp:first-child { margin-top:2px; }
+.eq-grp-n { font-family:'PMMono',ui-monospace,monospace; font-size:11px;
+  background:#e2e8f0; color:#475569; border-radius:20px; padding:1px 8px; letter-spacing:0; }
+.eq-grp-bad { margin-left:auto; font-size:10px; background:#fee2e2; color:#b91c1c;
+  border-radius:20px; padding:2px 8px; letter-spacing:.3px; }
+
 /* ── Tools & Equipment cards ───────────────────────────────────────────────
    A calibration record is read for one thing first — is this instrument legal
    to use right now — so the status pill and the next-due date outrank the
@@ -4464,7 +4474,7 @@ function mbPickPane(pane) {
   var mc = document.getElementById('mb-count');
   if (mc) mc.textContent = machines
     ? ((_boardData && _boardData.total) || 0) + ' machines'
-    : (_eqData && _eqData.items ? _eqData.items.length + ' instruments' : '');
+    : (_eqData && _eqData.items ? _eqData.items.length + ' items' : '');
   /* The search box filters machines only; leaving its machine placeholder on
      the equipment pane promises a filter that does not exist there. */
   var si = document.getElementById('mb-search-input');
@@ -4504,13 +4514,23 @@ function renderEquipment(r) {
   var n = document.getElementById('mb-tab-n-eq');
   if (n) n.textContent = items.length;
   var mc2 = document.getElementById('mb-count');
-  if (mc2 && _mbPane === 'equipment') mc2.textContent = items.length + ' instruments';
+  if (mc2 && _mbPane === 'equipment') mc2.textContent = items.length + ' items';
   if (!items.length) {
     el.innerHTML = '<div style="padding:18px;color:#64748b;font-size:13px">' +
       'No instruments in the CALIBRATION sheet yet.</div>';
     return;
   }
-  el.innerHTML = items.map(function(it) {
+  /* Grouped by type. A flat run of 31 mixes three things an auditor treats
+     separately: extinguishers have a refill due date, scales a stamping
+     validity, instruments a calibration certificate. Overdue first inside each
+     group, so what needs attention is at the top of its own section. */
+  var EQ_GROUPS = [
+    ['EXTINGUISHER', 'Fire Extinguishers'],
+    ['SCALE',        'Weighing Scales'],
+    ['INSTRUMENT',   'Instruments']
+  ];
+  var RANK = { OVERDUE:0, UNKNOWN:1, DUE_SOON:2, DUE:2, OK:3, INACTIVE:4 };
+  var card = function(it) {
     var cal = EQ_CAL_UI[it.calStatus] || EQ_CAL_UI.UNKNOWN;
     /* Next due is the number an auditor asks for first, so it gets its own
        line rather than being folded into the status pill. */
@@ -4538,7 +4558,30 @@ function renderEquipment(r) {
             'Record monthly check</button>'
         : '') +
     '</div>';
-  }).join('');
+  };
+
+  var html = '';
+  EQ_GROUPS.forEach(function(g) {
+    var inGroup = items.filter(function(x){ return (x.type||'INSTRUMENT') === g[0]; });
+    if (!inGroup.length) return;
+    inGroup.sort(function(a, b) {
+      var d = (RANK[a.calStatus] == null ? 9 : RANK[a.calStatus]) -
+              (RANK[b.calStatus] == null ? 9 : RANK[b.calStatus]);
+      return d || String(a.id).localeCompare(String(b.id));
+    });
+    var bad = inGroup.filter(function(x){ return x.calStatus === 'OVERDUE'; }).length;
+    html += '<div class="eq-grp">' + esc(g[1]) +
+      '<span class="eq-grp-n">' + inGroup.length + '</span>' +
+      (bad ? '<span class="eq-grp-bad">' + bad + ' overdue</span>' : '') +
+      '</div>' + inGroup.map(card).join('');
+  });
+  /* Anything with an unrecognised type must still appear — an item that is
+     invisible because of a typo in one cell is worse than an ungrouped one. */
+  var known = EQ_GROUPS.map(function(g){ return g[0]; });
+  var rest = items.filter(function(x){ return known.indexOf(x.type||'INSTRUMENT') === -1; });
+  if (rest.length) html += '<div class="eq-grp">Other<span class="eq-grp-n">' +
+    rest.length + '</span></div>' + rest.map(card).join('');
+  el.innerHTML = html;
 }
 
 /* Monthly check. The backend refuses a NOT_OK without remarks, so the prompt
