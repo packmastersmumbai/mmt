@@ -4442,6 +4442,16 @@ var _eqData = null;
 /* Calibration state -> colour + words. UNKNOWN is deliberately amber, not grey:
    an instrument that has never been calibrated is a finding in an ISO audit,
    not a neutral absence. */
+/* An extinguisher is REFILLED, a scale is STAMPED, an instrument is
+   CALIBRATED. Calling all three "in calibration" is wrong on a document an
+   auditor reads, so the words follow the type. */
+var EQ_WORD = {
+  EXTINGUISHER: { noun:'refill',    ok:'Refill current',  none:'Never refilled',  due:'Refill due' },
+  SCALE:        { noun:'stamping',  ok:'Stamping valid',  none:'No stamping date', due:'Stamping valid to' },
+  INSTRUMENT:   { noun:'calibration',ok:'In calibration',  none:'Never calibrated', due:'Next due' }
+};
+function eqWord(t){ return EQ_WORD[t] || EQ_WORD.INSTRUMENT; }
+
 var EQ_CAL_UI = {
   OK:      { bg:'#dcfce7', fg:'#15803d', label:'In calibration' },
   DUE:     { bg:'#fef3c7', fg:'#a16207', label:'Due soon' },
@@ -4532,11 +4542,17 @@ function renderEquipment(r) {
   var RANK = { OVERDUE:0, UNKNOWN:1, DUE_SOON:2, DUE:2, OK:3, INACTIVE:4 };
   var card = function(it) {
     var cal = EQ_CAL_UI[it.calStatus] || EQ_CAL_UI.UNKNOWN;
-    /* Next due is the number an auditor asks for first, so it gets its own
+    var W = eqWord(it.type);
+    /* The pill text comes from the type, not one generic word: OK and UNKNOWN
+       are the two states whose wording is actually wrong when shared. DUE and
+       OVERDUE read correctly for all three. */
+    var pill = it.calStatus === 'OK' ? W.ok
+             : (it.calStatus === 'UNKNOWN' ? W.none : cal.label);
+    /* The due date is the number an auditor asks for first, so it gets its own
        line rather than being folded into the status pill. */
     var due = it.nextDue
-      ? 'Next due ' + esc(it.nextDue) + (it.calDays != null ? ' \u00b7 ' + esc(String(it.calDays)) + ' days' : '')
-      : 'No calibration recorded';
+      ? W.due + ' ' + esc(it.nextDue) + (it.calDays != null ? ' \u00b7 ' + esc(String(it.calDays)) + ' days' : '')
+      : 'No ' + W.noun + ' date recorded';
     return '<div class="eq-card">' +
       '<div class="eq-hd">' +
         '<div style="min-width:0">' +
@@ -4545,7 +4561,7 @@ function renderEquipment(r) {
             (it.location ? ' \u00b7 ' + esc(it.location) : '') + '</div>' +
         '</div>' +
         '<span class="eq-pill" style="background:' + cal.bg + ';color:' + cal.fg + '">' +
-          esc(cal.label) + '</span>' +
+          esc(pill) + '</span>' +
       '</div>' +
       '<div class="eq-meta">' +
         (it.make ? '<span>' + esc(it.make) + '</span>' : '') +
