@@ -1018,6 +1018,14 @@ body {
 .pl-grid tr:last-child td { border-bottom:none; }
 .pl-asset { position:sticky; left:0; z-index:1; background:var(--flpanel);
   padding:7px 10px; min-width:190px; }
+/* Frequency is a COLUMN now, not a set of sub-rows. It is the one fact that
+   explains why a machine's cells fall where they do, so it sits beside the
+   name rather than being hidden behind an expand caret. */
+.pl-freq-h { text-align:left; white-space:nowrap; }
+.pl-freq-c { font-size:11px; font-weight:700; color:var(--fltext);
+  white-space:nowrap; padding:0 10px; background:var(--flpanel2); }
+.pl-freq-c .pl-last { display:block; font-weight:600; font-size:10px;
+  color:var(--fldim); font-family:'PMMono',ui-monospace,monospace; }
 .pl-row-freq .pl-asset { background:var(--flpanel2); padding-left:22px; }
 .pl-name { font-size:12.5px; font-weight:700; color:var(--flink);
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:210px; }
@@ -9467,7 +9475,6 @@ function plFiltered(){
 }
 
 function plPickCls(c){ PL.cls=c; plRender(); }
-function plToggle(id){ PL.open[id]=!PL.open[id]; plRender(); }
 
 function plKeyStyle(k){
   if(k===1) return 'border:2px solid var(--flY);background:transparent';
@@ -9499,7 +9506,7 @@ function plMonthLabel(idx){
                          done outside the schedule should still appear
    The rollup row stays read-only: a machine-level tap has no single frequency
    to attribute the work to. */
-function plCell(state, asset, line, idx, fallbackDate){
+function plCell(state, asset, line, idx){
   var st=PL_STATE[state]||PL_STATE[0];
   var editable = !!(asset && line);
   var when = plMonthLabel(idx);
@@ -9510,10 +9517,8 @@ function plCell(state, asset, line, idx, fallbackDate){
      planned/missed -> the day it is DUE, computed backend-side from the last
                        PM plus the interval (line.dueDates). Falls back to the
                        month name only if the backend supplied no date at all. */
-  /* fallbackDate is the collapsed rollup row's date: it has no single line,
-     so the backend picks the date of whichever frequency won the state. */
-  var actual = (line && line.dates && line.dates[idx]) || (line ? '' : (fallbackDate || ''));
-  var due = (line && line.dueDates && line.dueDates[idx]) || (line ? '' : (fallbackDate || ''));
+  var actual = (line && line.dates && line.dates[idx]) || '';
+  var due = (line && line.dueDates && line.dueDates[idx]) || '';
   var text = '';
   if(state===3 || state===4) text = actual || mon;
   else if(state===1 || state===2) text = due || mon;
@@ -9570,7 +9575,7 @@ function plRender(){
        point anyone scrolls, which is why the grid read as read-only. */
     '<div class="pl-hint">'+
       '<span style="font-size:15px">&#9656;</span>'+
-      '<span>Tap an asset to open its <b>frequency rows</b>, then tap a month '+
+      '<span>Each asset has <b>one row</b>, at its own PM frequency. Tap a month '+
         'to open the <b>PM form</b> for it.</span>'+
     '</div>';
 
@@ -9587,47 +9592,30 @@ function plRender(){
 
   html+='<div class="pl-scroll"><table class="pl-grid"><thead><tr>'+
     '<th class="pl-asset-h">Asset</th>'+
+    '<th class="pl-freq-h">Frequency</th>'+
     months.map(function(m,i){
       return '<th'+(i===cur?' class="pl-mo-now"':'')+'>'+m+'</th>';
     }).join('')+'</tr></thead><tbody>';
 
+  /* ONE row per asset. The expand caret, the frequency sub-rows and the rollup
+     are all gone: the plan now has a single row per asset at its own declared
+     PM frequency, so there is nothing to expand into and no rollup to compute.
+     Every cell is directly tappable, which is what the caret was in the way of. */
   rows.forEach(function(a){
-    var open=!!PL.open[a.id];
+    var line = (a.lines || [])[0];
+    if (!line) return;
     html+='<tr>'+
-      '<td class="pl-asset" role="button" tabindex="0" '+
-        'aria-expanded="'+(open?'true':'false')+'" '+
-        'aria-label="'+(open?'Collapse ':'Expand ')+esc(a.name)+'" '+
-        'onclick="plToggle(&quot;'+esc(a.id)+'&quot;)" '+
-        'onkeydown="if(event.key===&quot;Enter&quot;||event.key===&quot; &quot;)'+
-          '{event.preventDefault();this.click();}">'+
-        '<span class="pl-exp">'+(open?'&#9662;':'&#9656;')+'</span>'+
+      '<td class="pl-asset">'+
         '<span class="pl-name">'+esc(a.name)+'</span> '+
         '<span class="pl-id">'+esc(a.id)+'</span>'+
       '</td>'+
-      /* Collapsed cells are a SUMMARY of the frequency rows beneath, so they are
-         not editable — a machine-level tap has no single frequency to attribute
-         work to. Tapping one now expands the asset instead of doing nothing
-         silently, which is what made the grid read as read-only. */
-      a.rollup.map(function(st,i){
-        return '<td'+(i===cur?' class="pl-mo-now"':'')+
-          ' onclick="plToggle(&quot;'+esc(a.id)+'&quot;)" style="cursor:pointer">'+
-          plCell(st,null,null,i,(a.rollupDates||[])[i])+'</td>';
+      '<td class="pl-freq-c">'+esc(line.freq||'')+
+        (line.lastDone?'<span class="pl-last">last '+esc(line.lastDone)+'</span>':'')+
+      '</td>'+
+      line.cells.map(function(st,i){
+        return '<td'+(i===cur?' class="pl-mo-now"':'')+'>'+plCell(st,a,line,i)+'</td>';
       }).join('')+
     '</tr>';
-
-    if(open){
-      a.lines.forEach(function(l){
-        html+='<tr class="pl-row-freq">'+
-          '<td class="pl-asset">'+
-            '<span class="pl-freq">'+esc(l.activity)+' &middot; '+esc(l.freq)+'</span>'+
-            (l.lastDone?' <span class="pl-last">last '+esc(l.lastDone)+'</span>':'')+
-          '</td>'+
-          l.cells.map(function(st,i){
-            return '<td'+(i===cur?' class="pl-mo-now"':'')+'>'+plCell(st,a,l,i)+'</td>';
-          }).join('')+
-        '</tr>';
-      });
-    }
   });
 
   html+='</tbody></table></div>'+
