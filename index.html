@@ -4784,6 +4784,70 @@ function eqCheck(id) {
     .submitEquipmentCheck({ id:id, result: ok ? 'OK' : 'NOT_OK', remarks:remarks, doneBy:by });
 }
 
+/* ── Chunked photo upload ──────────────────────────────────────────────────
+   The transport is script-tag JSONP: the whole payload rides in the URL, and
+   Google rejects a request past ~12,000 characters (measured in-browser: 8,187
+   OK, 12,187 "script load failed"). No photo fits — a 300px thumbnail at q0.45
+   is already 34,111 base64 characters, and a 900px one is 365,663. Downscaling
+   cannot solve it at any quality, so the image is split instead.
+
+   Sends ~7KB pieces, then one commit that joins them server-side and writes the
+   file to Drive. Reports progress, because a 12-chunk upload on plant wifi is
+   long enough that a frozen button reads as a crash. */
+function uploadPhotoChunked(machineId, dataUrl, mediaType, onProgress) {
+  return new Promise(function(resolve, reject) {
+    var CHUNK = 7000;
+    var uid = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    var parts = [];
+    for (var i = 0; i < dataUrl.length; i += CHUNK) parts.push(dataUrl.slice(i, i + CHUNK));
+    var total = parts.length;
+    if (total > 400) { reject(new Error('Photo is too large even after resizing.')); return; }
+
+    var sent = 0;
+    function step(i) {
+      if (i >= total) {
+        if (onProgress) onProgress(total, total, 'saving');
+        google.script.run
+          .withSuccessHandler(function(r) {
+            if (!r || !r.success) { reject(new Error((r && r.error) || 'upload failed')); return; }
+            resolve(r);
+          })
+          .withFailureHandler(function(e) { reject(new Error((e && e.message) || 'upload failed')); })
+          .commitMediaUpload({ uid: uid, total: total, machineId: machineId, mediaType: mediaType });
+        return;
+      }
+      google.script.run
+        .withSuccessHandler(function(r) {
+          if (!r || !r.success) { reject(new Error((r && r.error) || 'chunk rejected')); return; }
+          sent++;
+          if (onProgress) onProgress(sent, total, 'sending');
+          step(i + 1);
+        })
+        .withFailureHandler(function(e) { reject(new Error((e && e.message) || 'chunk failed')); })
+        .uploadMediaChunk({ uid: uid, idx: i, total: total, data: parts[i] });
+    }
+    step(0);
+  });
+}
+
+/* Downscale to a size worth keeping as evidence. 1000px still shows a gauge
+   face or a cracked bearing; the chunker handles whatever size results. */
+function shrinkPhoto(dataUrl, maxPx, quality) {
+  return new Promise(function(resolve, reject) {
+    var img = new Image();
+    img.onload = function() {
+      var MAX = maxPx || 1000, w = img.width, h = img.height;
+      if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+      if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
+      var c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL('image/jpeg', quality || 0.6));
+    };
+    img.onerror = function() { reject(new Error('That file could not be read as an image.')); };
+    img.src = dataUrl;
+  });
+}
+
 function loadBoard(highlightMachineId) {
   if (highlightMachineId) { _highlightId = highlightMachineId; _mbMachine = highlightMachineId; }
   _wireRecSubtabs();
@@ -9475,8 +9539,10 @@ function imgHandlePhoto() {
       _stampImage(ctx, w, h);
       var b64 = c.toDataURL('image/jpeg', 0.55);
       showStatus('Uploading…', 'info', 0);
-      google.script.run
-        .withSuccessHandler(function(r) {
+      uploadPhotoChunked(_imgUploadMachineId, b64, _mediaType, function(d,t,ph){
+          showStatus(ph==='saving'?'Saving photo…':('Uploading '+d+'/'+t+'…'),'info',0);
+        })
+        .then(function(r) {
           if (!r || !r.success) { showStatus('Upload failed: ' + (r&&r.error||'unknown'), 'error', 4000); return; }
           // If replacing, delete old file then reload
           if (_replaceFileId) {
@@ -9499,8 +9565,7 @@ function imgHandlePhoto() {
           var countEl = document.querySelector('#ref-list [style*="photo"]');
           if (countEl) countEl.textContent = parseInt(countEl.textContent||'0') + 1 + ' photos found';
         })
-        .withFailureHandler(function(err) { showStatus('Error: ' + esc((err&&err.message)||String(err)), 'error', 4000); })
-        .spaUploadMachineImage(_imgUploadMachineId, b64, _mediaType);
+        .catch(function(err) { showStatus('Error: ' + esc((err&&err.message)||String(err)), 'error', 4000); });
     };
     img.src = e.target.result;
   };
@@ -10266,41 +10331,28 @@ function submitBDCloseForm(machineId, slipNo, rowNum) {
      spaUploadMachineImage is the path that already works, because it downscales
      to 600px first — the same treatment applied here. */
   if (imgFile) {
-    msg.className = 'form-msg'; msg.textContent = 'Uploading photo\u2026';
     var reader = new FileReader();
     reader.onload = function(e) {
-      var img = new Image();
-      img.onload = function() {
-        var MAX = 900, w = img.width, h = img.height;
-        if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
-        if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
-        var c = document.createElement('canvas'); c.width = w; c.height = h;
-        c.getContext('2d').drawImage(img, 0, 0, w, h);
-        google.script.run
-          .withSuccessHandler(function(r) {
-            /* A failed photo must not block the closure. The breakdown record is
-               the thing that matters; losing the photo is a smaller harm than
-               leaving a repaired machine showing as still down. */
-            if (!r || !r.success || !r.fileId) {
-              alert('Photo upload failed: ' + ((r && r.error) || 'unknown') +
-                    '\n\nThe breakdown will still be closed, without the photo.');
-              _doSubmit('');
-              return;
-            }
-            _doSubmit('https://drive.google.com/file/d/' + r.fileId + '/view');
-          })
-          .withFailureHandler(function(e) {
-            alert('Photo upload failed: ' + ((e && e.message) || 'unknown') +
-                  '\n\nThe breakdown will still be closed, without the photo.');
-            _doSubmit('');
-          })
-          .spaUploadMachineImage(machineId, c.toDataURL('image/jpeg', 0.6), 'BD Image');
-      };
-      img.onerror = function() {
-        alert('That file could not be read as an image. Closing without a photo.');
-        _doSubmit('');
-      };
-      img.src = e.target.result;
+      shrinkPhoto(e.target.result, 1000, 0.6)
+        .then(function(small) {
+          return uploadPhotoChunked(machineId, small, 'BD Image', function(done, total, phase) {
+            msg.className = 'form-msg';
+            msg.textContent = phase === 'saving'
+              ? 'Saving photo\u2026'
+              : 'Uploading photo ' + done + '/' + total + '\u2026';
+          });
+        })
+        .then(function(r) {
+          _doSubmit('https://drive.google.com/file/d/' + r.fileId + '/view');
+        })
+        .catch(function(err) {
+          /* A failed photo must not block the closure. The breakdown record is
+             what matters; losing the photo is a smaller harm than leaving a
+             repaired machine showing as still down. */
+          alert('Photo upload failed: ' + ((err && err.message) || 'unknown') +
+                '\n\nThe breakdown will still be closed, without the photo.');
+          _doSubmit('');
+        });
     };
     reader.readAsDataURL(imgFile);
   } else {
