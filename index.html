@@ -1018,6 +1018,29 @@ body {
 .pl-grid tr:last-child td { border-bottom:none; }
 .pl-asset { position:sticky; left:0; z-index:1; background:var(--flpanel);
   padding:7px 10px; min-width:190px; }
+/* ── Quick-record + ────────────────────────────────────────────────────────
+   Appears on hover so 696 cells are not 696 permanent buttons, but stays a
+   full 28px target once shown. On touch there is no hover, so it is always
+   visible there — a control that only exists under a mouse pointer does not
+   exist on the shop floor. */
+.pl-c { position:relative; }
+.pl-add {
+  position:absolute; top:1px; right:1px; width:20px; height:20px;
+  display:none; align-items:center; justify-content:center;
+  border:1px solid var(--fledge); border-radius:5px;
+  background:var(--flpanel); color:var(--fltext);
+  font-size:14px; font-weight:800; line-height:1; cursor:pointer; padding:0;
+}
+.pl-c:hover .pl-add, .pl-c:focus-within .pl-add { display:flex; }
+.pl-add:hover { background:var(--flgood); border-color:var(--flgood); color:#fff; }
+@media (hover:none) {
+  .pl-add { display:flex; width:22px; height:22px; opacity:.85; }
+}
+/* A hand-set due date is marked, because "someone decided this" and "the
+   interval produced this" are different claims and an auditor asks which. */
+.pl-c.pl-hand > span { text-decoration:underline; text-decoration-style:dotted;
+  text-underline-offset:2px; }
+
 /* Frequency is a COLUMN now, not a set of sub-rows. It is the one fact that
    explains why a machine's cells fall where they do, so it sits beside the
    name rather than being hidden behind an expand caret. */
@@ -9734,28 +9757,116 @@ function plCell(state, asset, line, idx){
 
   /* The visible text, by state.
      done/extra     -> the day it actually happened (line.dates)
-     planned/missed -> the day it is DUE, computed backend-side from the last
-                       PM plus the interval (line.dueDates). Falls back to the
-                       month name only if the backend supplied no date at all. */
+     planned/missed -> the day it is DUE, computed from the last PM plus the
+                       interval, or a date someone set by hand (line.dueSet). */
   var actual = (line && line.dates && line.dates[idx]) || '';
   var due = (line && line.dueDates && line.dueDates[idx]) || '';
+  var setByHand = !!(line && line.dueSet && line.dueSet[idx]);
   var text = '';
   if(state===3 || state===4) text = actual || mon;
   else if(state===1 || state===2) text = due || mon;
 
-  var verb = state===3 || state===4 ? 'tap to withdraw'
-           : 'tap to open the PM form';
   var detail = (state===3||state===4) && actual ? ' \u00b7 done ' + actual
              : ((state===1||state===2) && due ? ' \u00b7 due ' + due : '');
-  var title = when + ' \u2014 ' + st.label + detail + (editable ? ' \u00b7 ' + verb : '');
+  var verb = (state===3||state===4) ? 'tap to withdraw' : 'tap to change the due date';
+  var title = when + ' \u2014 ' + st.label + detail +
+    (setByHand ? ' \u00b7 date set by hand' : '') +
+    (editable ? ' \u00b7 ' + verb : '');
 
-  var act = editable
-    ? 'onclick="plMarkDone(&quot;'+esc(asset.id)+'&quot;,&quot;'+esc(line.freq)+'&quot;,'+idx+')" '
-    : '';
-  var tag = editable ? 'button' : 'span';
-  return '<'+tag+' class="pl-c '+st.cls+(editable?' tap':'')+'" '+act+
+  if(!editable){
+    return '<span class="pl-c '+st.cls+'" title="'+title+'" aria-label="'+title+'">'+
+      (text?'<span>'+esc(text)+'</span>':'')+'</span>';
+  }
+
+  var q = function(v){ return '&quot;'+esc(v)+'&quot;'; };
+  /* Two actions on one cell, deliberately separated:
+       the cell body  -> set or change the DUE DATE (or withdraw a done one)
+       the + corner   -> record the PM as actually done, without leaving the grid
+     They used to be one tap that jumped straight to the PM form, so there was no
+     way to move a due date at all, and recording a PM meant losing your place. */
+  var plus = (state===3||state===4) ? ''
+    : '<button class="pl-add" title="Record the PM as done in '+when+'" '+
+      'aria-label="Record PM done in '+when+'" '+
+      'onclick="event.stopPropagation();plQuickDone('+q(asset.id)+','+q(line.freq)+','+idx+')">+</button>';
+
+  return '<button class="pl-c '+st.cls+' tap'+(setByHand?' pl-hand':'')+'" '+
+    'onclick="plMarkDone('+q(asset.id)+','+q(line.freq)+','+idx+')" '+
     'title="'+title+'" aria-label="'+title+'">'+
-    (text?'<span>'+esc(text)+'</span>':'')+'</'+tag+'>';
+    (text?'<span>'+esc(text)+'</span>':'')+plus+'</button>';
+}
+
+/* Record a PM straight from the grid. The date defaults to today when the month
+   is the current one and to the month's 1st otherwise, because a PM logged for
+   a past month did not happen today. */
+function plQuickDone(assetId, freq, idx){
+  if(PL.busy) return;
+  var d=PL.data; if(!d) return;
+  var a=(d.assets||[]).filter(function(x){return x.id===assetId;})[0];
+  var y=parseInt(String(d.fy).split('-')[0],10);
+  var mo=(3+idx)%12, yr=y+(idx>=9?1:0);
+  var today=new Date();
+  var def=(today.getMonth()===mo && today.getFullYear()===yr)
+    ? today : new Date(yr,mo,1);
+  var iso=def.getFullYear()+'-'+('0'+(def.getMonth()+1)).slice(-2)+'-'+('0'+def.getDate()).slice(-2);
+
+  var on=prompt('Date the PM was carried out on '+((a&&a.name)||assetId)+
+    ' ('+plMonthLabel(idx)+'):', iso);
+  if(!on) return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(on.trim())){ alert('Use the format yyyy-mm-dd.'); return; }
+  var by=prompt('Who carried it out? (recorded against this PM)');
+  /* A PM with no name attached is not evidence — ISO 45001 and every audit ask
+     who did the work, and a blank is not answerable later. */
+  if(!by || !by.trim()){ alert('A name is required. Nothing was recorded.'); return; }
+
+  PL.busy=true;
+  showStatus('Recording PM\u2026','info',0);
+  google.script.run
+    .withSuccessHandler(function(r){
+      PL.busy=false;
+      if(!r||!r.success){ showStatus('Not recorded: '+((r&&r.error)||'unknown'),'error',4500); return; }
+      showStatus('PM recorded.','success',2200);
+      PL.data=null; loadPlanner();
+    })
+    .withFailureHandler(function(e){
+      PL.busy=false;
+      showStatus('Not recorded: '+((e&&e.message)||'unknown'),'error',4500);
+    })
+    .markPmPlanDone(plFy(), assetId, freq, idx,
+      { doneOn:on.trim(), doneBy:by.trim(), source:'planner-quick' });
+}
+
+/* Set, change or clear the due date of one month. */
+function plSetDue(assetId, freq, idx){
+  if(PL.busy) return;
+  var d=PL.data; if(!d) return;
+  var a=(d.assets||[]).filter(function(x){return x.id===assetId;})[0];
+  var line=a&&a.lines[0];
+  var cur=(line&&line.dueDates&&line.dueDates[idx])||'';
+  var y=parseInt(String(d.fy).split('-')[0],10);
+  var mo=(3+idx)%12, yr=y+(idx>=9?1:0);
+  var iso=yr+'-'+('0'+(mo+1)).slice(-2)+'-01';
+
+  var v=prompt('Due date for '+((a&&a.name)||assetId)+' in '+plMonthLabel(idx)+
+    '\n\nyyyy-mm-dd, or leave empty to go back to the computed date.'+
+    (cur?'\nCurrently: '+cur:''), iso);
+  if(v===null) return;                       // cancelled, as opposed to cleared
+  v=v.trim();
+  if(v && !/^\d{4}-\d{2}-\d{2}$/.test(v)){ alert('Use the format yyyy-mm-dd.'); return; }
+
+  PL.busy=true;
+  showStatus(v?'Setting due date\u2026':'Clearing\u2026','info',0);
+  google.script.run
+    .withSuccessHandler(function(r){
+      PL.busy=false;
+      if(!r||!r.success){ showStatus('Not saved: '+((r&&r.error)||'unknown'),'error',4500); return; }
+      showStatus(r.cleared?'Back to the computed date.':'Due date set.','success',2200);
+      PL.data=null; loadPlanner();
+    })
+    .withFailureHandler(function(e){
+      PL.busy=false;
+      showStatus('Not saved: '+((e&&e.message)||'unknown'),'error',4500);
+    })
+    .setPmPlanDue(plFy(), assetId, idx, v);
 }
 
 function plRender(){
@@ -9875,7 +9986,11 @@ function plMarkDone(assetId, freq, monthIdx){
     return;
   }
 
-  plOpenPmForm(assetId, (a&&a.name)||assetId, freq, plMonthLabel(monthIdx));
+  /* Tapping the cell body edits the DUE DATE. Recording a PM is the + corner,
+     and the full PM form is still one tap away from the machine card - jumping
+     the whole app to a form on a stray tap lost the users place in a 58-row
+     grid. */
+  plSetDue(assetId, freq, monthIdx);
 }
 
 var PLE = null;
