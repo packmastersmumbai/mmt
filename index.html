@@ -4741,17 +4741,22 @@ function eqSave(inp) {
   var val = inp.value;
   if (inp._last === undefined) inp._last = inp.defaultValue;
   if (val === inp._last) return;
-  inp._last = val;
+  /* _last is committed in the SUCCESS handler, not here. Advancing it up front
+     meant a failed save still marked the value as sent, so re-blurring the same
+     field did nothing and it could never be saved again. */
+  var prev = inp._last;
   inp.classList.remove('bad');
   inp.classList.add('saving');
   google.script.run
     .withSuccessHandler(function(res) {
       inp.classList.remove('saving');
       if (!res || !res.success) {
+        inp._last = prev;              // let the user retry the same value
         inp.classList.add('bad');
         alert('Not saved: ' + ((res && res.error) || 'unknown'));
         return;
       }
+      inp._last = val;                 // only now is it really sent
       inp.classList.add('saved');
       setTimeout(function(){ inp.classList.remove('saved'); }, 1200);
       /* A proposed next-due, or a status that has just changed, is only visible
@@ -4761,6 +4766,7 @@ function eqSave(inp) {
       }
     })
     .withFailureHandler(function(e) {
+      inp._last = prev;                // as above: a failure must stay retryable
       inp.classList.remove('saving');
       inp.classList.add('bad');
       alert('Not saved: ' + ((e && e.message) || 'unknown'));
