@@ -9097,7 +9097,7 @@ function plMonthLabel(idx){
                          done outside the schedule should still appear
    The rollup row stays read-only: a machine-level tap has no single frequency
    to attribute the work to. */
-function plCell(state, asset, line, idx){
+function plCell(state, asset, line, idx, fallbackDate){
   var st=PL_STATE[state]||PL_STATE[0];
   var editable = !!(asset && line);
   var when = plMonthLabel(idx);
@@ -9107,10 +9107,11 @@ function plCell(state, asset, line, idx){
      done/extra     -> the day it actually happened (line.dates)
      planned/missed -> the day it is DUE, computed backend-side from the last
                        PM plus the interval (line.dueDates). Falls back to the
-                       month name when there is no anchor to compute from: an
-                       asset never done before has no honest due day. */
-  var actual = (line && line.dates && line.dates[idx]) || '';
-  var due = (line && line.dueDates && line.dueDates[idx]) || '';
+                       month name only if the backend supplied no date at all. */
+  /* fallbackDate is the collapsed rollup row's date: it has no single line,
+     so the backend picks the date of whichever frequency won the state. */
+  var actual = (line && line.dates && line.dates[idx]) || (line ? '' : (fallbackDate || ''));
+  var due = (line && line.dueDates && line.dueDates[idx]) || (line ? '' : (fallbackDate || ''));
   var text = '';
   if(state===3 || state===4) text = actual || mon;
   else if(state===1 || state===2) text = due || mon;
@@ -9208,7 +9209,7 @@ function plRender(){
       a.rollup.map(function(st,i){
         return '<td'+(i===cur?' class="pl-mo-now"':'')+
           ' onclick="plToggle(&quot;'+esc(a.id)+'&quot;)" style="cursor:pointer">'+
-          plCell(st,null,null,i)+'</td>';
+          plCell(st,null,null,i,(a.rollupDates||[])[i])+'</td>';
       }).join('')+
     '</tr>';
 
