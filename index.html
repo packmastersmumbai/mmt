@@ -1197,11 +1197,18 @@ body {
    hover by the existing .img-zoomable module, full-size on tap.
    transform-origin:left keeps the enlarged image inside the column instead of
    growing off the left edge of a phone. */
-.sop-thumbs { margin-top:6px; }
+/* 6px above; the extra room below is what the 1.5x hover copy grows into,
+   so it never reaches the next step. */
+.sop-thumbs { margin-top:6px; margin-bottom:38px; }
+/* Lift the hovered thumb over its neighbours instead of under them. */
+.sop-thumb:hover { z-index:200; }
 .sop-thumb {
   width:88px; height:66px; object-fit:cover; display:block;
   border:1px solid #e2e8f0; border-radius:6px; background:#f8fafc;
-  transform-origin:left center;
+  /* Grow from the TOP-left, not the centre. A centred scale expands upward as
+     well as down, which covered the row's own detail line and the step below
+     it. Anchored at the top, the extra height falls into the reserved margin. */
+  transform-origin:top left;
 }
 /* Hover-enlarge is a pointer affordance; on touch it would fire on tap and
    fight the tap-to-open handler, so it is scoped to devices that really hover. */
