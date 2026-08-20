@@ -10024,7 +10024,9 @@ function plShowExport(r){
     '<div class="ple-sheet" role="dialog" aria-modal="true">'+
       '<div class="ple-hd">PM plan PDF is ready</div>'+
       '<div class="ple-sub">'+esc(r.name||'PM plan')+'</div>'+
-      '<div class="ple-note">'+esc(String(r.assets||0))+' assets'+
+      '<div class="ple-note">'+
+        esc(PL.cls==='TOOL'?'Tools & Equipment':'Machines')+' only · '+
+        esc(String(r.assets||0))+' assets'+
         (r.adherence!==null&&r.adherence!==undefined?' &middot; '+esc(String(r.adherence))+'% adherence':'')+
         (r.evidence?' &middot; '+esc(String(r.evidence))+' evidence rows':'')+
       '</div>'+
