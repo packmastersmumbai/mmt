@@ -4464,7 +4464,7 @@ function mbPickPane(pane) {
   var mc = document.getElementById('mb-count');
   if (mc) mc.textContent = machines
     ? ((_boardData && _boardData.total) || 0) + ' machines'
-    : (((_eqData && _eqData.items) || []).length || 0) + ' instruments';
+    : (_eqData && _eqData.items ? _eqData.items.length + ' instruments' : '');
   /* The search box filters machines only; leaving its machine placeholder on
      the equipment pane promises a filter that does not exist there. */
   var si = document.getElementById('mb-search-input');
