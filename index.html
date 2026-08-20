@@ -1209,6 +1209,36 @@ body {
 .eq-grp-bad { margin-left:auto; font-size:10px; background:#fee2e2; color:#b91c1c;
   border-radius:20px; padding:2px 8px; letter-spacing:.3px; }
 
+/* ── Equipment register grid ───────────────────────────────────────────────
+   A register is read by scanning DOWN a column, so it is a table. The table
+   scrolls inside its own box: the page body must never scroll sideways. */
+.eq-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch;
+  border:1px solid #e2e8f0; border-radius:9px; background:#fff; }
+.eq-tbl { border-collapse:collapse; width:100%; font-size:12px; }
+.eq-tbl th { position:sticky; top:0; z-index:2; background:#f8fafc; text-align:left;
+  font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.5px;
+  color:#64748b; padding:8px 9px; border-bottom:1px solid #e2e8f0; white-space:nowrap; }
+.eq-tbl td { border-bottom:1px solid #f1f5f9; padding:0; vertical-align:middle; }
+.eq-tbl tbody tr:hover { background:#f8fafc; }
+.eq-td { padding:4px 5px; color:#0f172a; }
+.eq-td.mono, .eq-td.mono .eq-in { font-family:'PMMono',ui-monospace,monospace; }
+.eq-blank { color:#cbd5e1; }
+/* Inputs read as text until touched — a grid of 12 visible boxes per row is
+   noise, and the register is read far more often than it is edited. */
+.eq-in { width:100%; min-height:34px; border:1px solid transparent; border-radius:6px;
+  background:transparent; padding:5px 7px; font-size:12px; color:#0f172a;
+  font-family:inherit; }
+.eq-in:hover { border-color:#e2e8f0; background:#fff; }
+.eq-in:focus { outline:2px solid #0284c7; outline-offset:-2px; background:#fff;
+  border-color:#0284c7; }
+.eq-in.saving { background:#fffbeb; border-color:#fcd34d; }
+.eq-in.saved  { background:#dcfce7; border-color:#86efac; }
+.eq-in.bad    { background:#fef2f2; border-color:#fca5a5; }
+select.eq-in { cursor:pointer; }
+.eq-add-wrap { padding:14px 0 4px; }
+.eq-add { min-height:44px; width:100%; border:1px dashed #94a3b8; border-radius:9px;
+  background:#f8fafc; color:#334155; font-size:13px; font-weight:700; cursor:pointer; }
+
 /* ── Tools & Equipment cards ───────────────────────────────────────────────
    A calibration record is read for one thing first — is this instrument legal
    to use right now — so the status pill and the next-due date outrank the
@@ -4520,6 +4550,50 @@ function loadEquipment() {
     .getEquipmentList();
 }
 
+/* Equipment register as an editable GRID.
+   Cards forced one item per screenful and could not be compared: a register is
+   read by scanning DOWN a column ("which stamping dates are expired"), which is
+   exactly what a table does and a card list cannot.
+
+   Columns are shown per type, because the three kinds do not share fields: an
+   extinguisher has no make or serial, an instrument has no monthly check. */
+var EQ_COLS = [
+  { k:'id',       h:'ID',        w:92,  edit:false, mono:true },
+  { k:'name',     h:'Name',      w:200, edit:true },
+  { k:'make',     h:'Make',      w:96,  edit:true,  hide:['EXTINGUISHER'] },
+  { k:'range',    h:'Capacity',  w:88,  edit:true },
+  { k:'serial',   h:'Serial',    w:110, edit:true,  mono:true, hide:['EXTINGUISHER'] },
+  { k:'location', h:'Location',  w:150, edit:true },
+  { k:'freq',     h:'Frequency', w:104, edit:true,  select:'freq' },
+  { k:'lastCal',  h:'Last done', w:104, edit:true,  date:true },
+  { k:'nextDue',  h:'Next due',  w:104, edit:true,  date:true },
+  { k:'status',   h:'State',     w:118, edit:false, pill:true },
+  { k:'lastCheck',h:'Last check',w:104, edit:false, date:true, only:['EXTINGUISHER','SCALE'] },
+  { k:'remarks',  h:'Remarks',   w:230, edit:true }
+];
+
+var EQ_FREQS = ['Weekly','Fortnightly','Monthly','Quarterly','Every 4 Months',
+                'Half-Yearly','Yearly','2-Yearly','3-Yearly'];
+
+function eqColsFor(type) {
+  return EQ_COLS.filter(function(c) {
+    if (c.only && c.only.indexOf(type) === -1) return false;
+    if (c.hide && c.hide.indexOf(type) !== -1) return false;
+    return true;
+  });
+}
+
+/* 'dd-MMM-yyyy' (what the API returns) -> 'yyyy-mm-dd' for <input type=date>.
+   Without this the date input silently shows blank on a row that has a date. */
+function eqToISO(s) {
+  if (!s) return '';
+  var m = String(s).match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/);
+  if (!m) return '';
+  var M = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',
+           Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'}[m[2]];
+  return M ? m[3] + '-' + M + '-' + ('0' + m[1]).slice(-2) : '';
+}
+
 function renderEquipment(r) {
   var el = document.getElementById('mb-eq-list');
   if (!el) return;
@@ -4531,81 +4605,146 @@ function renderEquipment(r) {
   var items = r.items || [];
   var n = document.getElementById('mb-tab-n-eq');
   if (n) n.textContent = items.length;
-  var mc2 = document.getElementById('mb-count');
-  if (mc2 && _mbPane === 'equipment') mc2.textContent = items.length + ' items';
+  var mc = document.getElementById('mb-count');
+  if (mc && _mbPane === 'equipment') mc.textContent = items.length + ' items';
+
   if (!items.length) {
     el.innerHTML = '<div style="padding:18px;color:#64748b;font-size:13px">' +
-      'No instruments in the CALIBRATION sheet yet.</div>';
+      'No equipment in the CALIBRATION sheet yet.</div>';
     return;
   }
-  /* Grouped by type. A flat run of 31 mixes three things an auditor treats
-     separately: extinguishers have a refill due date, scales a stamping
-     validity, instruments a calibration certificate. Overdue first inside each
-     group, so what needs attention is at the top of its own section. */
-  var EQ_GROUPS = [
+
+  var GROUPS = [
     ['EXTINGUISHER', 'Fire Extinguishers'],
     ['SCALE',        'Weighing Scales'],
     ['INSTRUMENT',   'Instruments']
   ];
   var RANK = { OVERDUE:0, UNKNOWN:1, DUE_SOON:2, DUE:2, OK:3, INACTIVE:4 };
-  var card = function(it) {
-    var cal = EQ_CAL_UI[it.calStatus] || EQ_CAL_UI.UNKNOWN;
-    var W = eqWord(it.type);
-    /* The pill text comes from the type, not one generic word: OK and UNKNOWN
-       are the two states whose wording is actually wrong when shared. DUE and
-       OVERDUE read correctly for all three. */
-    var pill = it.calStatus === 'OK' ? W.ok
-             : (it.calStatus === 'UNKNOWN' ? W.none : cal.label);
-    /* The due date is the number an auditor asks for first, so it gets its own
-       line rather than being folded into the status pill. */
-    var due = it.nextDue
-      ? W.due + ' ' + esc(it.nextDue) + (it.calDays != null ? ' \u00b7 ' + esc(String(it.calDays)) + ' days' : '')
-      : 'No ' + W.noun + ' date recorded';
-    return '<div class="eq-card">' +
-      '<div class="eq-hd">' +
-        '<div style="min-width:0">' +
-          '<div class="eq-name">' + esc(it.name || it.id) + '</div>' +
-          '<div class="eq-id">' + esc(it.id) +
-            (it.location ? ' \u00b7 ' + esc(it.location) : '') + '</div>' +
-        '</div>' +
-        '<span class="eq-pill" style="background:' + cal.bg + ';color:' + cal.fg + '">' +
-          esc(pill) + '</span>' +
-      '</div>' +
-      '<div class="eq-meta">' +
-        (it.make ? '<span>' + esc(it.make) + '</span>' : '') +
-        (it.range ? '<span>' + esc(it.range) + '</span>' : '') +
-        (it.freq ? '<span>' + esc(it.freq) + '</span>' : '') +
-      '</div>' +
-      '<div class="eq-due">' + due + '</div>' +
-      (it.needsCheck
-        ? '<button class="eq-btn" onclick="eqCheck(' + JSON.stringify(it.id).replace(/"/g,'&quot;') + ')">' +
-            'Record monthly check</button>'
-        : '') +
-    '</div>';
-  };
-
   var html = '';
-  EQ_GROUPS.forEach(function(g) {
-    var inGroup = items.filter(function(x){ return (x.type||'INSTRUMENT') === g[0]; });
-    if (!inGroup.length) return;
-    inGroup.sort(function(a, b) {
-      var d = (RANK[a.calStatus] == null ? 9 : RANK[a.calStatus]) -
-              (RANK[b.calStatus] == null ? 9 : RANK[b.calStatus]);
-      return d || String(a.id).localeCompare(String(b.id));
-    });
-    var bad = inGroup.filter(function(x){ return x.calStatus === 'OVERDUE'; }).length;
-    html += '<div class="eq-grp">' + esc(g[1]) +
-      '<span class="eq-grp-n">' + inGroup.length + '</span>' +
-      (bad ? '<span class="eq-grp-bad">' + bad + ' overdue</span>' : '') +
-      '</div>' + inGroup.map(card).join('');
+  var seen = {};
+
+  GROUPS.forEach(function(g) {
+    var rows = items.filter(function(x){ return (x.type||'INSTRUMENT') === g[0]; });
+    if (!rows.length) return;
+    rows.forEach(function(x){ seen[x.id] = 1; });
+    html += eqSection(g[0], g[1], rows, RANK);
   });
-  /* Anything with an unrecognised type must still appear — an item that is
-     invisible because of a typo in one cell is worse than an ungrouped one. */
-  var known = EQ_GROUPS.map(function(g){ return g[0]; });
-  var rest = items.filter(function(x){ return known.indexOf(x.type||'INSTRUMENT') === -1; });
-  if (rest.length) html += '<div class="eq-grp">Other<span class="eq-grp-n">' +
-    rest.length + '</span></div>' + rest.map(card).join('');
+  /* Anything with an unrecognised type must still appear: a row made invisible
+     by a typo in one cell is worse than an ungrouped one. */
+  var rest = items.filter(function(x){ return !seen[x.id]; });
+  if (rest.length) html += eqSection('INSTRUMENT', 'Other', rest, RANK);
+
+  html += '<div class="eq-add-wrap">' +
+    '<button class="eq-add" onclick="eqAdd()">+ Add equipment</button></div>';
   el.innerHTML = html;
+}
+
+function eqSection(type, title, rows, RANK) {
+  rows.sort(function(a, b) {
+    var d = (RANK[a.calStatus] == null ? 9 : RANK[a.calStatus]) -
+            (RANK[b.calStatus] == null ? 9 : RANK[b.calStatus]);
+    return d || String(a.id).localeCompare(String(b.id));
+  });
+  var cols = eqColsFor(type);
+  var bad = rows.filter(function(x){ return x.calStatus === 'OVERDUE'; }).length;
+
+  var h = '<div class="eq-grp">' + esc(title) +
+    '<span class="eq-grp-n">' + rows.length + '</span>' +
+    (bad ? '<span class="eq-grp-bad">' + bad + ' overdue</span>' : '') + '</div>' +
+    '<div class="eq-scroll"><table class="eq-tbl"><thead><tr>' +
+    cols.map(function(c){
+      return '<th style="min-width:' + c.w + 'px">' + esc(c.h) + '</th>';
+    }).join('') + '</tr></thead><tbody>';
+
+  rows.forEach(function(it) {
+    h += '<tr>' + cols.map(function(c){ return eqCellHtml(it, c); }).join('') + '</tr>';
+  });
+  return h + '</tbody></table></div>';
+}
+
+function eqCellHtml(it, c) {
+  var v = it[c.k] == null ? '' : String(it[c.k]);
+  var cls = 'eq-td' + (c.mono ? ' mono' : '');
+
+  if (c.pill) {
+    var ui = EQ_CAL_UI[it.calStatus] || EQ_CAL_UI.UNKNOWN;
+    var W = eqWord(it.type);
+    var label = it.calStatus === 'OK' ? W.ok
+              : (it.calStatus === 'UNKNOWN' ? W.none : ui.label);
+    return '<td class="' + cls + '"><span class="eq-pill" style="background:' +
+      ui.bg + ';color:' + ui.fg + '">' + esc(label) + '</span></td>';
+  }
+  if (!c.edit) {
+    return '<td class="' + cls + '">' + (v ? esc(v) : '<span class="eq-blank">&mdash;</span>') + '</td>';
+  }
+
+  var attr = 'data-id="' + esc(it.id) + '" data-f="' + esc(c.k) + '" ' +
+             'onchange="eqSave(this)" onblur="eqSave(this)"';
+  if (c.select === 'freq') {
+    return '<td class="' + cls + '"><select class="eq-in" ' + attr + '>' +
+      '<option value=""></option>' +
+      EQ_FREQS.map(function(f){
+        return '<option value="' + esc(f) + '"' + (f === v ? ' selected' : '') + '>' + esc(f) + '</option>';
+      }).join('') + '</select></td>';
+  }
+  if (c.date) {
+    return '<td class="' + cls + '"><input type="date" class="eq-in" value="' +
+      esc(eqToISO(v)) + '" ' + attr + '></td>';
+  }
+  return '<td class="' + cls + '"><input type="text" class="eq-in" value="' +
+    esc(v) + '" ' + attr + '></td>';
+}
+
+/* Save one field. Fires on blur, so it must not write when nothing changed —
+   otherwise tabbing across a row would issue a write per column. */
+function eqSave(inp) {
+  var id = inp.getAttribute('data-id'), field = inp.getAttribute('data-f');
+  var val = inp.value;
+  if (inp._last === undefined) inp._last = inp.defaultValue;
+  if (val === inp._last) return;
+  inp._last = val;
+  inp.classList.remove('bad');
+  inp.classList.add('saving');
+  google.script.run
+    .withSuccessHandler(function(res) {
+      inp.classList.remove('saving');
+      if (!res || !res.success) {
+        inp.classList.add('bad');
+        alert('Not saved: ' + ((res && res.error) || 'unknown'));
+        return;
+      }
+      inp.classList.add('saved');
+      setTimeout(function(){ inp.classList.remove('saved'); }, 1200);
+      /* A proposed next-due, or a status that has just changed, is only visible
+         after a re-read — so refresh rather than guessing the new state here. */
+      if (res.nextDue || field === 'lastCal' || field === 'nextDue' || field === 'freq') {
+        _eqData = null; loadEquipment();
+      }
+    })
+    .withFailureHandler(function(e) {
+      inp.classList.remove('saving');
+      inp.classList.add('bad');
+      alert('Not saved: ' + ((e && e.message) || 'unknown'));
+    })
+    .updateEquipmentField({ id:id, field:field, value:val });
+}
+
+function eqAdd() {
+  var id = (prompt('New equipment ID (e.g. FE-12, PM/WS/19, INS-006):') || '').trim();
+  if (!id) return;
+  var type = (prompt('Type — EXTINGUISHER, SCALE or INSTRUMENT:', 'INSTRUMENT') || '').trim().toUpperCase();
+  if (['EXTINGUISHER','SCALE','INSTRUMENT'].indexOf(type) === -1) {
+    alert('Type must be EXTINGUISHER, SCALE or INSTRUMENT.');
+    return;
+  }
+  var name = (prompt('Name:') || '').trim();
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res || !res.success) { alert('Not added: ' + ((res && res.error) || 'unknown')); return; }
+      _eqData = null; loadEquipment();
+    })
+    .withFailureHandler(function(e){ alert('Not added: ' + ((e && e.message) || 'unknown')); })
+    .addEquipment({ id:id, type:type, name:name });
 }
 
 /* Monthly check. The backend refuses a NOT_OK without remarks, so the prompt
