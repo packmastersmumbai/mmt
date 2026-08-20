@@ -1024,8 +1024,8 @@ body {
 .pl-freq-h { text-align:left; white-space:nowrap; }
 .pl-freq-c { font-size:11px; font-weight:700; color:var(--fltext);
   white-space:nowrap; padding:0 10px; background:var(--flpanel2); }
-.pl-freq-c .pl-last { display:block; font-weight:600; font-size:10px;
-  color:var(--fldim); font-family:'PMMono',ui-monospace,monospace; }
+.pl-freq-c .pl-last { display:inline; font-weight:600; font-size:10px;
+  color:var(--fldim); font-family:'PMMono',ui-monospace,monospace; margin-left:6px; }
 .pl-row-freq .pl-asset { background:var(--flpanel2); padding-left:22px; }
 .pl-name { font-size:12.5px; font-weight:700; color:var(--flink);
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:210px; }
@@ -4096,6 +4096,14 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
   // Monotonic so two calls in the same millisecond cannot share a callback name.
   var _cbSeq = 0;
 
+  /* Hard payload ceiling. The transport is a script tag, so the WHOLE payload
+     rides in the URL, and Google answers HTTP 400 past ~12,000 characters -
+     which reaches the page as a bare 'script load failed'. Measured in-browser:
+     8,187 chars OK, 12,187 failed. Without this check an oversized call burns
+     three retries and then reports a network fault, which is what a breakdown
+     closed with a photo did. Fail immediately, and say why. */
+  var MAX_URL = 11000;
+
   function _attempt(prop, args, argsJson, n) {
     var p;
     /* JSONP via a SCRIPT TAG — not fetch(). This is not a style preference.
@@ -4116,6 +4124,11 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
         '&args=' + encodeURIComponent(argsJson) +
         '&callback=' + cb +
         (n > 1 ? '&_r=' + n : '');
+      if (url.length > MAX_URL) {
+        return reject(new Error('Payload too large for this connection (' +
+          Math.round(url.length/1024) + 'KB). A photo must be uploaded separately, ' +
+          'not attached to the form.'));
+      }
       var el = document.createElement('script');
       var done = false;
       function cleanup() {
@@ -4146,6 +4159,9 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
     ]);
 
     return p.catch(function(err) {
+      /* An over-long URL is deterministic: retrying sends the same too-long URL
+         again and wastes the user's time before failing anyway. */
+      if (/Payload too large/.test(err && err.message)) throw err;
       if (n >= MAX_ATTEMPTS) throw err;
       console.warn('API ' + prop + ' attempt ' + n + ' failed (' + err.message + ') — retrying');
       return _delay(n === 1 ? 400 : 1200).then(function() {
@@ -10194,7 +10210,7 @@ function submitBDCloseForm(machineId, slipNo, rowNum) {
 
   var imgFile = document.getElementById('f-img') && document.getElementById('f-img').files[0];
 
-  function _doSubmit(imageBase64) {
+  function _doSubmit(imageUrl) {
     google.script.run
       .withSuccessHandler(function(r) {
         btn.disabled = false; btn.textContent = '&#x2713; Close Breakdown';
@@ -10233,13 +10249,59 @@ function submitBDCloseForm(machineId, slipNo, rowNum) {
         spareCost:   (document.getElementById('f-cost').value||'0'),
         rectifiedBy: rby,
         remarks:     (document.getElementById('f-rmk').value||'').trim(),
-        imageBase64: imageBase64 || ''
+        imageUrl:    imageUrl || ''
       });
   }
 
+  /* The photo is uploaded FIRST, on its own call, and only its Drive URL goes
+     into the close request.
+
+     It used to be passed inline as base64. The transport is script-tag JSONP,
+     so the entire payload travels in the URL, and Google rejects a request
+     beyond ~12,000 characters — measured in-browser: 8,187 chars OK, 12,187
+     'script load failed'. A 200KB photo needs ~382,000. Every breakdown closed
+     with a photo therefore failed with a network error, and the retry logic
+     simply repeated an over-long URL three times.
+
+     spaUploadMachineImage is the path that already works, because it downscales
+     to 600px first — the same treatment applied here. */
   if (imgFile) {
+    msg.className = 'form-msg'; msg.textContent = 'Uploading photo\u2026';
     var reader = new FileReader();
-    reader.onload = function(e) { _doSubmit(e.target.result); };
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var MAX = 900, w = img.width, h = img.height;
+        if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+        if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
+        var c = document.createElement('canvas'); c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        google.script.run
+          .withSuccessHandler(function(r) {
+            /* A failed photo must not block the closure. The breakdown record is
+               the thing that matters; losing the photo is a smaller harm than
+               leaving a repaired machine showing as still down. */
+            if (!r || !r.success || !r.fileId) {
+              alert('Photo upload failed: ' + ((r && r.error) || 'unknown') +
+                    '\n\nThe breakdown will still be closed, without the photo.');
+              _doSubmit('');
+              return;
+            }
+            _doSubmit('https://drive.google.com/file/d/' + r.fileId + '/view');
+          })
+          .withFailureHandler(function(e) {
+            alert('Photo upload failed: ' + ((e && e.message) || 'unknown') +
+                  '\n\nThe breakdown will still be closed, without the photo.');
+            _doSubmit('');
+          })
+          .spaUploadMachineImage(machineId, c.toDataURL('image/jpeg', 0.6), 'BD Image');
+      };
+      img.onerror = function() {
+        alert('That file could not be read as an image. Closing without a photo.');
+        _doSubmit('');
+      };
+      img.src = e.target.result;
+    };
     reader.readAsDataURL(imgFile);
   } else {
     _doSubmit('');
