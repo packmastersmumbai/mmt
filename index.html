@@ -12693,23 +12693,94 @@ function hzDelPhoto(i){
 function hzUploadPhotos(sr, section, done){
   var list=_clPhotos['hira']||[];
   if(!list.length){ if(done) done(null); return; }
-  showStatus('Uploading '+list.length+' photo'+(list.length>1?'s':'')+'…','info',0);
-  google.script.run.withSuccessHandler(function(res){
-    if(res&&res.success){
-      var msg=res.uploaded.length+' photo'+(res.uploaded.length>1?'s':'')+' saved';
-      if(res.errors&&res.errors.length) msg+=' ('+res.errors.length+' failed)';
-      showStatus(msg,'success',2600);
-      _clPhotos['hira']=[];
-    } else {
-      showStatus('Photos not saved: '+((res&&res.message)||'unknown'),'error',5000);
+
+  /* Photos go up CHUNKED, one at a time.
+
+     They used to be posted inline as base64 in a single call. The transport is
+     script-tag JSONP, so the whole payload travels in the URL and Google
+     rejects it past ~12,000 characters — a HIRA photo is several times that,
+     which is what produced "Payload too large for this connection (42KB)". The
+     hazard row itself saves first and the photos follow, so the row was written
+     with no evidence attached and the record read as blank.
+
+     uploadPhotoChunked splits each image into ~7KB pieces; commitHazardPhoto
+     joins them server-side and hands the result to the SAME uploadHazardPhotos
+     that already does the Drive foldering, size cap and audit trail. */
+  var uploaded=[], errors=[];
+
+  function step(i){
+    if(i>=list.length){
+      if(uploaded.length){
+        var msg=uploaded.length+' photo'+(uploaded.length>1?'s':'')+' saved';
+        if(errors.length) msg+=' ('+errors.length+' failed)';
+        showStatus(msg,'success',2600);
+        /* Only the ones that actually landed are cleared. Dropping the whole
+           list on a partial failure would lose the photos the user still
+           needs to retry. */
+        _clPhotos['hira']=list.slice(uploaded.length);
+      } else {
+        showStatus('Photos not saved: '+(errors[0]||'unknown'),'error',5000);
+      }
+      if(done) done({ success:uploaded.length>0, uploaded:uploaded, errors:errors });
+      return;
     }
-    if(done) done(res);
-  }).withFailureHandler(function(err){
-    showStatus('Photos not saved: '+((err&&err.message)||err),'error',5000);
-    if(done) done(null);
-  }).uploadHazardPhotos({ sr:sr, section:section,
-    images:list.map(function(p){ return { data:p.url, pins:p.pins||[] }; }),
-    by:(typeof _operator!=='undefined'?_operator:'') });
+
+    var ph=list[i];
+    showStatus('Uploading photo '+(i+1)+' of '+list.length+'…','info',0);
+
+    shrinkPhoto(ph.url, 1000, 0.6)
+      .then(function(small){
+        return uploadPhotoChunkedRaw(small, function(d,t,phase){
+          showStatus('Photo '+(i+1)+'/'+list.length+' — '+
+            (phase==='saving'?'saving…':('sending '+d+'/'+t)),'info',0);
+        });
+      })
+      .then(function(handle){
+        return new Promise(function(resolve,reject){
+          google.script.run
+            .withSuccessHandler(function(res){
+              if(res&&res.success){ uploaded.push.apply(uploaded,(res.uploaded||[])); }
+              else { errors.push((res&&res.message)||'unknown'); }
+              resolve();
+            })
+            .withFailureHandler(function(e){ errors.push((e&&e.message)||'unknown'); resolve(); })
+            .commitHazardPhoto({ uid:handle.uid, total:handle.total, sr:sr,
+              section:section, pins:ph.pins||[],
+              by:(typeof _operator!=='undefined'?_operator:'') });
+        });
+      })
+      .catch(function(err){ errors.push((err&&err.message)||String(err)); })
+      .then(function(){ step(i+1); });
+  }
+  step(0);
+}
+
+/* Send the chunks and return the handle, WITHOUT committing.
+   uploadPhotoChunked commits straight into spaUploadMachineImage, which files
+   into a machine folder; a hazard photo belongs in the HIRA evidence folder
+   instead, so the commit step differs while the chunking is identical. */
+function uploadPhotoChunkedRaw(dataUrl, onProgress){
+  return new Promise(function(resolve, reject){
+    var CHUNK=7000;
+    var uid='h'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+    var parts=[];
+    for(var i=0;i<dataUrl.length;i+=CHUNK) parts.push(dataUrl.slice(i,i+CHUNK));
+    var total=parts.length;
+    if(total>400){ reject(new Error('Photo is too large even after resizing.')); return; }
+    var sent=0;
+    function step(i){
+      if(i>=total){ if(onProgress) onProgress(total,total,'saving'); resolve({uid:uid,total:total}); return; }
+      google.script.run
+        .withSuccessHandler(function(r){
+          if(!r||!r.success){ reject(new Error((r&&r.error)||'chunk rejected')); return; }
+          sent++; if(onProgress) onProgress(sent,total,'sending');
+          step(i+1);
+        })
+        .withFailureHandler(function(e){ reject(new Error((e&&e.message)||'chunk failed')); })
+        .uploadMediaChunk({ uid:uid, idx:i, total:total, data:parts[i] });
+    }
+    step(0);
+  });
 }
 
 /* ── Hierarchy of Controls (ISO 45001 8.1.2) ── */
@@ -13086,6 +13157,13 @@ function sfSaveHazard(sr){
       showStatus('Hazard '+(res.action||'saved')+' — risk '+res.risk+' ('+res.classification+')','success',2800);
       /* Photos upload AFTER the row exists, keyed to the Sr the server returned —
          on a new hazard that Sr is only known now. */
+      /* The refresh must NOT depend on the photo upload succeeding.
+         It used to run only inside this callback, so when the photo call failed
+         - which it always did, the payload being far past the JSONP URL limit -
+         the callback never fired and the register was left showing nothing at
+         all. The hazard row was saved the whole time; only the screen was
+         blank. Refresh first, upload after. */
+      sfReloadAfterWrite();
       hzUploadPhotos(res.sr, d.section, function(){ sfReloadAfterWrite(); });
     } else showStatus('Save failed: '+(res&&res.message||''),'error',4000);
   }).withFailureHandler(function(err){
