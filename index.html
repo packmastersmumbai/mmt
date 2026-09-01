@@ -12084,11 +12084,31 @@ function sfRenderReviewInto(box){
    record is not clobbered by a stale copy. */
 function sfReviewPick(qi, level, el){
   var q=window._SF_RVQ||[]; var m=q[qi]; if(!m) return;
+  /* SF.hira is nulled by sfReloadAfterWrite after ANY save, so a pick made
+     between that null and the next render found no hazard and was dropped with
+     "not loaded" — the queue still on screen, the tap doing nothing. Re-render
+     the queue from fresh data and ask the user to tap again, rather than
+     writing from a copy we no longer have. */
   var h=(SF.hira||[]).filter(function(x){return String(x.sr)===String(m.sr);})[0];
-  if(!h){ showStatus('Hazard SR'+m.sr+' not loaded','error',3000); return; }
+  if(!h){
+    showStatus('Refreshing the register — tap the level again','info',3000);
+    SF.hira=null; if(SF.tab==='hira') sfRenderHira();
+    return;
+  }
   var parts=sfSplitControlItems(h.controls||'');
-  if(!parts[m.idx]){ showStatus('Measure moved — reload the queue','error',3500); return; }
-  parts[m.idx]='['+level+'] '+sfStripMarker(parts[m.idx]);
+  /* Anchor on the measure's TEXT, not its position. idx was captured when the
+     queue was built; any other save nulls SF.hira and re-splits controls, so a
+     positional write lands on whichever line now sits at that index — the pick
+     appeared to save and classified a different measure, or hit an empty slot
+     and reported "moved". Position is only the tie-breaker for duplicates. */
+  var at=-1;
+  if(parts[m.idx]!==undefined&&sfStripMarker(parts[m.idx])===m.text) at=m.idx;
+  else for(var pi=0;pi<parts.length;pi++){
+    if(sfStripMarker(parts[pi])===m.text&&!/^\[[^\]]+\]/.test(parts[pi])){ at=pi; break; }
+  }
+  if(at<0){ showStatus('Measure moved — reload the queue','error',3500); return; }
+  m.idx=at;
+  parts[at]='['+level+'] '+sfStripMarker(parts[at]);
   var payload={ sr:h.sr, section:h.section, activity:h.activity, di:h.di, rnr:h.rnr,
     hazard:h.hazard, L:h.L, C:h.C, controls:parts.join('\n'),
     responsible:h.responsible, target:h.target, status:h.status, remarks:h.remarks };
