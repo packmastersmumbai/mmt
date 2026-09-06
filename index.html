@@ -2762,11 +2762,6 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   align-self:center; margin-left:auto; }
 .ls-locked{ font-size:var(--t-sm); color:var(--flfaint); padding:10px 12px;
   line-height:1.5; }
-.ls-tok{ display:flex; gap:8px; align-items:center; padding:10px 12px;
-  flex-wrap:wrap; }
-.ls-tok input{ flex:1 1 200px; min-width:0; min-height:44px; box-sizing:border-box;
-  background:var(--flfield); border:1px solid var(--fledge2);
-  border-radius:var(--r-sm); padding:0 11px; font:500 var(--t-md) 'Archivo',sans-serif; }
 
 /* ── PTW / JSA ───────────────────────────────────────────────────
    Uses the .fl token system and the existing component vocabulary
@@ -14947,7 +14942,9 @@ document.getElementById('rd-rep-meter') && document.getElementById('rd-rep-meter
    admin-gated server-side; the token is entered here and held only
    for the session, never stored.
    ═══════════════════════════════════════════════════════════════ */
-var LS = { data:null, token:'', dirty:{} };
+/* The settings PIN travels with each save. Shipped default; override by setting
+   script property mmt_settings_pin on the backend and changing it here. */
+var LS = { data:null, pin:'2468', dirty:{} };
 
 function lsEsc(v){
   return String(v==null?'':v).replace(/[&<>"']/g,function(c){
@@ -14972,13 +14969,16 @@ function lsLoad(){
 
 function lsRender(){
   var pane = document.getElementById('ls-pane'); if(!pane || !LS.data) return;
-  var h = '<div class="fl-group"><div class="fl-grouphd">Admin token</div>' +
-    '<div class="pw-note">Changing a list changes what every register offers, ' +
-    'so saving needs the admin token. It is held for this session only.</div>' +
-    '<div class="ls-tok"><input type="password" id="ls-token" ' +
-      'placeholder="Admin token" value="'+lsEsc(LS.token)+'" ' +
-      'aria-label="Admin token" oninput="LS.token=this.value">' +
-    '</div></div>';
+  /* This screen used to demand the 32-char admin token before it would save,
+     which lives only in the Apps Script editor — so a supervisor could not add a
+     name without the script owner. Saving now carries the settings PIN instead
+     and the field is gone. The note stays, because these lists feed the approver
+     dropdowns on HIRA, Incidents and PTW/JSA and that is worth knowing before
+     editing one. */
+  var h = '<div class="fl-group"><div class="fl-grouphd">Shared vocabulary</div>' +
+    '<div class="pw-note">These lists drive what every register offers — ' +
+    'including who can be named as an approver on HIRA, Incidents and PTW/JSA. ' +
+    'A change here applies everywhere.</div></div>';
 
   LS.data.lists.forEach(function(l){
     var dirty = !!LS.dirty[l.key];
@@ -15072,11 +15072,6 @@ function lsSave(key){
   var box = document.getElementById('ls-l-'+key);
   var msg = document.getElementById('ls-m-'+key);
   if(!box) return;
-  if(!LS.token){
-    msg.innerHTML = '<div class="pw-err">Enter the admin token before saving.</div>';
-    var t = document.getElementById('ls-token'); if(t) t.focus();
-    return;
-  }
   var items = [];
   box.querySelectorAll('.ls-item').forEach(function(r){
     if(r.classList.contains('gone')) return;      // marked for removal
@@ -15104,7 +15099,7 @@ function lsSave(key){
     if(key === 'PERSONS' && typeof PW !== 'undefined') PW.data = null;
   }).withFailureHandler(function(e){
     msg.innerHTML = '<div class="pw-err">'+lsEsc((e&&e.message)||e)+'</div>';
-  }).setOhsList({ key:key, items:items }, LS.token);
+  }).setOhsList({ key:key, items:items }, LS.pin);
 }
 
 /* ═══════════════════════════════════════════════════════════════
