@@ -2919,8 +2919,12 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   position:sticky; top:0; z-index:3; }
 .pw-walk .bar{ flex:1; height:6px; border-radius:999px;
   background:var(--fledge); overflow:hidden; }
-.pw-walk .bar i{ display:block; height:100%; width:0;
-  background:var(--flgood); transition:width .25s var(--ease); }
+/* Scale on the X axis rather than animating width: width is a layout property
+   and this bar updates on every confirm tap, on a phone, mid-walk. */
+.pw-walk .bar i{ display:block; height:100%; width:100%;
+  transform:scaleX(0); transform-origin:left center; will-change:transform;
+  background:var(--flgood); transition:transform .25s var(--ease); }
+@media(prefers-reduced-motion:reduce){ .pw-walk .bar i{ transition:none; } }
 .pw-walk .txt{ font:700 var(--t-xs) 'Archivo',sans-serif; color:var(--fldim);
   font-variant-numeric:tabular-nums; white-space:nowrap; }
 .pw-walk .txt.done{ color:var(--flgood); }
@@ -15195,7 +15199,7 @@ function pwWalkProgress(){
     if(st && st.value !== 'Pending') done++;
   });
   var bar = pwEl('pw-walk-bar'), txt = pwEl('pw-walk-txt');
-  if(bar) bar.style.width = total ? Math.round(done/total*100)+'%' : '0';
+  if(bar) bar.style.transform = 'scaleX(' + (total ? done/total : 0) + ')';
   if(txt){
     txt.textContent = done+' / '+total+' confirmed';
     txt.classList.toggle('done', total > 0 && done === total);
