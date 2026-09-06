@@ -2839,8 +2839,12 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   gap:10px; padding:12px 13px; }
 .pw-f label{ display:block; font:700 var(--t-xs) 'Archivo',sans-serif;
   color:var(--fldim); text-transform:uppercase; letter-spacing:.05em;
-  margin-bottom:5px; }
-.pw-f label .hi{ text-transform:none; letter-spacing:0; color:var(--flfaint);
+  margin-bottom:5px; min-height:28px; }
+/* The Hindi half sits on its own line: an EN/HI pair inlined at this width
+   wraps mid-phrase and knocks the two columns out of alignment. Equal weight
+   is preserved — same size, same family — it is stacked, not subordinated. */
+.pw-f label .hi{ display:block; }
+.pw-f label .hi{ text-transform:none; letter-spacing:0; color:var(--fldim);
   font-weight:400; }
 .pw-f .fl-ctrl{ max-width:none; }
 .pw-f textarea.fl-ctrl{ min-height:66px; padding:10px 12px; resize:vertical;
@@ -14910,7 +14914,7 @@ function pwField(id, label, hi, opts){
   opts = opts || {};
   return '<div class="pw-f'+(opts.wide?' wide':'')+'">' +
     '<label for="'+id+'">'+pwEsc(label)+
-      (hi?' <span class="hi">/ '+pwEsc(hi)+'</span>':'') +
+      (hi?' <span class="hi">'+pwEsc(hi)+'</span>':'') +
       (opts.req?' <span class="pw-req">*</span>':'') + '</label>' +
     (opts.area
       ? '<textarea class="fl-ctrl" id="'+id+'"'+(opts.ph?' placeholder="'+pwEsc(opts.ph)+'"':'')+'></textarea>'
