@@ -256,7 +256,9 @@ body {
   align-items: center;
   justify-content: center;
   padding: 60px 20px;
-  color: #64748b;
+  /* #475569, not #64748b: this sits on the #f1f5f9 page tint where #64748b is
+     4.34:1, just under AA. #475569 reaches 6.9:1. */
+  color: #475569;
   gap: 14px;
   font-size: 13px;
 }
@@ -961,7 +963,9 @@ body {
    controls that cannot be pressed, above the records the operator came to read.
    It now collapses to nothing and returns the moment a machine is selected. */
 .mb-actionbar.locked { display:none; }
-.mb-scope { font-size:10.5px; color:#64748b; font-weight:600; padding:7px 12px 3px;
+/* #475569 for the same reason as .loading-spinner: on the page tint #64748b is
+   4.34:1 and this is 10.5px functional text. */
+.mb-scope { font-size:10.5px; color:#475569; font-weight:600; padding:7px 12px 3px;
   display:flex; justify-content:space-between; }
 .mb-scope b { color:#0f172a; }
 /* image hover preview (daily checklist) */
@@ -4292,7 +4296,11 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
        editor too, and closes on backdrop tap the way the other viewers do. -->
   <div class="sop-imgv" id="sopImgViewer" onclick="sopCloseImage()">
     <button class="sop-imgv-x" onclick="sopCloseImage()" aria-label="Close image">&#10005;</button>
-    <img id="sopImgViewerImg" src="" alt="SOP step photo">
+    <!-- src="" makes the browser re-request the PAGE as an image. Transparent
+         1px placeholder until JS sets the real photo, matching the three other
+         JS-filled <img> nodes in this file. -->
+    <img id="sopImgViewerImg" alt="SOP step photo"
+      src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
   </div>
 
   <div class="sop-modal" id="sopEditorModal">
