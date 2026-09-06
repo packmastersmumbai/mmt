@@ -6750,7 +6750,12 @@ function navigate(hash, machineId, skipPush) {
   if (_ac) _ac.style.display = '';
   if (hash === 'hk')        hkInit();
   if (hash === 'readings')  rdInit();
-  if (hash === 'ptw')       { pwSyncSeg(); loadPtw(); }
+  /* PTW's state object and render functions are declared further down this same
+     script block than init()/navigate(), so on a direct deep-link they do not
+     exist yet and calling them throws, aborting boot. Defer to the next tick,
+     by which point the block has finished executing. Every other view's loader
+     is declared above this point, which is why only PTW needs this. */
+  if (hash === 'ptw')       { setTimeout(function(){ pwSyncSeg(); loadPtw(); }, 0); }
   if (hash === 'lists')     lsLoad();
   if (hash === 'checklist') {
     if (App.machineId) initChecklist(App.machineId);
@@ -16177,9 +16182,15 @@ function pwFlushPhotos(kind, no, done){
 }
 
 /* ── tabs ─────────────────────────────────────────────────────── */
+/* init() calls navigate() from a point in this script block ABOVE `var PW`, so on
+   a direct deep-link (#ptw, or a QR that lands here) PW is still undefined and the
+   old code threw here — killing the rest of boot, which is why the screen sat on
+   "Loading…". Arriving via the nav worked only because PW existed by then. Read the
+   tab defensively; pwRender() sets the real state a moment later either way. */
 function pwSyncSeg(){
+  var tab = (typeof PW !== 'undefined' && PW) ? PW.tab : 'permits';
   document.querySelectorAll('#ptw-seg .fl-segbtn').forEach(function(b){
-    b.classList.toggle('active', b.getAttribute('data-ptwview')===PW.tab);
+    b.classList.toggle('active', b.getAttribute('data-ptwview')===tab);
   });
 }
 document.addEventListener('DOMContentLoaded', function(){
