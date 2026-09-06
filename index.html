@@ -2845,6 +2845,45 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .pw-hzedit{ margin-top:7px; font:600 var(--t-xs) 'Archivo',sans-serif;
   background:none; border:0; color:var(--flacc); cursor:pointer; padding:6px 0;
   min-height:32px; text-decoration:underline; text-underline-offset:2px; }
+
+/* Confirm strip — the walk, made into an action. A row is Pending until
+   somebody stands in front of the control and says otherwise. */
+.pw-conf{ display:flex; gap:7px; align-items:center; flex-wrap:wrap;
+  margin-top:9px; padding-top:9px; border-top:1px dashed var(--fledge2); }
+.pw-conf .lbl{ font:700 var(--t-xs) 'Archivo',sans-serif; color:var(--flfaint);
+  text-transform:uppercase; letter-spacing:.06em; flex:1 0 100%; }
+.pw-conf button{ min-height:44px; padding:0 13px; border-radius:var(--r-sm);
+  border:1.5px solid var(--fledge2); background:var(--flpanel);
+  color:var(--fldim); cursor:pointer; font:700 var(--t-xs) 'Archivo',sans-serif;
+  display:inline-flex; align-items:center; gap:7px;
+  transition:background .16s var(--ease),border-color .16s var(--ease); }
+.pw-conf button .mk{ width:16px; height:16px; border-radius:var(--r-sm);
+  border:2px solid var(--fledge2); flex:none; display:grid; place-items:center;
+  font-size:var(--t-xs); color:transparent; }
+.pw-conf button.on[data-st="In place"]{ background:var(--flgoodw);
+  border-color:var(--flgood); color:var(--flgood); }
+.pw-conf button.on[data-st="In place"] .mk{ background:var(--flgood);
+  border-color:var(--flgood); color:var(--flon); }
+.pw-conf button.on[data-st="N/A"]{ background:var(--flpanel2);
+  border-color:var(--fledge3); color:var(--flfaint); }
+.pw-conf button.on[data-st="N/A"] .mk{ background:var(--flfaint);
+  border-color:var(--flfaint); color:var(--flon); }
+.pw-hz.ok{ background:var(--flgoodw); }
+.pw-hz.ok .idx{ color:var(--flgood); }
+.pw-hz.skip{ background:var(--flpanel2); }
+.pw-hz.pending .idx{ color:var(--flwarn); }
+.pw-hz.flag{ box-shadow:inset 3px 0 0 var(--flwarn); }
+
+/* Walk progress — states how much of the analysis is actually done. */
+.pw-walk{ display:flex; align-items:center; gap:10px; padding:10px 13px;
+  border-bottom:1px solid var(--fledge); background:var(--flpanel2); }
+.pw-walk .bar{ flex:1; height:6px; border-radius:999px;
+  background:var(--fledge); overflow:hidden; }
+.pw-walk .bar i{ display:block; height:100%; width:0;
+  background:var(--flgood); transition:width .25s var(--ease); }
+.pw-walk .txt{ font:700 var(--t-xs) 'Archivo',sans-serif; color:var(--fldim);
+  font-variant-numeric:tabular-nums; white-space:nowrap; }
+.pw-walk .txt.done{ color:var(--flgood); }
 .pw-hz.edited{ background:var(--flaccw); }
 .pw-hz.edited .idx{ color:var(--flacc); }
 
@@ -14968,11 +15007,14 @@ function pwBuildJsaForm(code){
      read. Collapsed, the count is the information; opened, each row is editable. */
   h += '<div class="fl-group"><div class="fl-grouphd" style="cursor:pointer" ' +
     'onclick="pwToggleHz()">Hazard &amp; control analysis' +
-    '<span class="n" id="pw-hz-n">'+t.hazards.length+' standard</span></div>' +
-    '<div class="pw-note">These are the standard hazards for this trade, ' +
-    'pre-written from the JSA document. Walk the job with the crew, read each ' +
-    'one, and <b>edit only what differs</b>. Add rows for anything specific to ' +
-    'this location.</div>' +
+    '<span class="n" id="pw-hz-n">0/'+t.hazards.length+' confirmed</span></div>' +
+    '<div class="pw-note">These are the standard hazards for this trade. ' +
+    '<b>Walk the job with the crew and confirm each control is actually in ' +
+    'place</b> — that confirmation is what the JSA is for. Mark anything that ' +
+    'does not apply as Not applicable, edit wording that differs, and add rows ' +
+    'for hazards specific to this location.</div>' +
+    '<div class="pw-walk"><span class="bar"><i id="pw-walk-bar"></i></span>' +
+    '<span class="txt" id="pw-walk-txt">0 / '+t.hazards.length+' confirmed</span></div>' +
     '<div id="pw-j-hz" style="display:none">';
   t.hazards.forEach(function(z,i){ h += pwHzRow(i, z.step, z.hazard, z.control, true); });
   h += '</div>' +
@@ -15041,9 +15083,9 @@ function pwHzRow(i, step, hz, ctl, std){
       '<input type="hidden" class="pw-hz-step" value="'+pwEsc(step||'')+'">' +
       '<input type="hidden" class="pw-hz-hz" value="'+pwEsc(hz||'')+'">' +
       '<input type="hidden" class="pw-hz-ctl" value="'+pwEsc(ctl||'')+'">' +
-      '<input class="pw-hz-resp" placeholder="Responsibility (optional)">' +
+      pwConfirmStrip() +
       '<button type="button" class="pw-hzedit" onclick="pwEditHz(this)">' +
-        'Edit for this job</button>' +
+        'Edit wording for this job</button>' +
       '</div></div>';
   }
   return '<div class="pw-hz add">' +
@@ -15054,8 +15096,70 @@ function pwHzRow(i, step, hz, ctl, std){
       '<input class="pw-hz-hz" placeholder="What could hurt someone"></div>' +
     '<div><span class="hzl">Control measure</span>' +
       '<textarea class="pw-hz-ctl" placeholder="What is put in place to prevent it"></textarea></div>' +
-    '<input class="pw-hz-resp" placeholder="Responsibility">' +
+    pwConfirmStrip() +
     '</div></div>';
+}
+
+/* The 5th column of the printed form. "Mark status only when in place" — so
+   Pending is the default and confirming is a deliberate act, never a default. */
+function pwConfirmStrip(){
+  return '<div class="pw-conf">' +
+    '<span class="lbl">Control in place?</span>' +
+    '<button type="button" data-st="In place" onclick="pwSetHz(this)">' +
+      '<span class="mk">✓</span>In place</button>' +
+    '<button type="button" data-st="N/A" onclick="pwSetHz(this)">' +
+      '<span class="mk">–</span>Not applicable</button>' +
+    '<input class="pw-hz-resp" placeholder="Responsible person" ' +
+      'style="flex:1 1 150px;min-width:0">' +
+    '<input type="hidden" class="pw-hz-status" value="Pending">' +
+    '</div>';
+}
+
+/* Set one row's status. The owner defaults to whoever is preparing the JSA so
+   no confirmed control ends up ownerless, and stays editable per row. */
+function pwSetHz(btn){
+  var row = btn.closest('.pw-hz'); if(!row) return;
+  var st = btn.getAttribute('data-st');
+  var cur = row.querySelector('.pw-hz-status');
+  var already = cur && cur.value === st;
+  row.querySelectorAll('.pw-conf button').forEach(function(b){ b.classList.remove('on'); });
+  if(already){
+    if(cur) cur.value = 'Pending';
+  } else {
+    btn.classList.add('on');
+    if(cur) cur.value = st;
+    if(st === 'In place'){
+      var resp = row.querySelector('.pw-hz-resp');
+      var prep = pwEl('pw-j-prep');
+      if(resp && !resp.value.trim() && prep && prep.value.trim()){
+        resp.value = prep.value.trim();
+      }
+    }
+  }
+  row.classList.toggle('ok',   (cur && cur.value) === 'In place');
+  row.classList.toggle('skip', (cur && cur.value) === 'N/A');
+  row.classList.toggle('pending', (cur && cur.value) === 'Pending');
+  row.classList.remove('flag');
+  pwWalkProgress();
+}
+
+/* Report how much of the walk is done, on the group header and a bar. */
+function pwWalkProgress(){
+  var rows = document.querySelectorAll('#pw-j-hz .pw-hz, #pw-j-hz-extra .pw-hz');
+  var total = rows.length, done = 0;
+  rows.forEach(function(r){
+    var st = r.querySelector('.pw-hz-status');
+    if(st && st.value !== 'Pending') done++;
+  });
+  var bar = pwEl('pw-walk-bar'), txt = pwEl('pw-walk-txt');
+  if(bar) bar.style.width = total ? Math.round(done/total*100)+'%' : '0';
+  if(txt){
+    txt.textContent = done+' / '+total+' confirmed';
+    txt.classList.toggle('done', total > 0 && done === total);
+  }
+  var n = pwEl('pw-hz-n');
+  if(n) n.textContent = done+'/'+total+' confirmed';
+  return { total: total, done: done };
 }
 
 /* Swap one standard row from reference text to editable fields, preserving what
@@ -15065,7 +15169,7 @@ function pwEditHz(btn){
   if(!row) return;
   var get = function(c){ var e=row.querySelector(c); return e?e.value:''; };
   var step = get('.pw-hz-step'), hz = get('.pw-hz-hz'), ctl = get('.pw-hz-ctl');
-  var resp = get('.pw-hz-resp');
+  var resp = get('.pw-hz-resp'), st = get('.pw-hz-status') || 'Pending';
   var f = row.querySelector('.fields');
   f.innerHTML =
     '<div><span class="hzl">Job step</span>' +
@@ -15074,7 +15178,12 @@ function pwEditHz(btn){
       '<input class="pw-hz-hz" value="'+pwEsc(hz)+'"></div>' +
     '<div><span class="hzl">Control measure</span>' +
       '<textarea class="pw-hz-ctl">'+pwEsc(ctl)+'</textarea></div>' +
-    '<input class="pw-hz-resp" placeholder="Responsibility" value="'+pwEsc(resp)+'">';
+    pwConfirmStrip();
+  // Carry the confirmation across the swap; editing wording is not un-confirming.
+  var sf = f.querySelector('.pw-hz-status'); if(sf) sf.value = st;
+  var rf = f.querySelector('.pw-hz-resp');   if(rf) rf.value = resp;
+  var btn2 = f.querySelector('.pw-conf button[data-st="'+st+'"]');
+  if(btn2) btn2.classList.add('on');
   row.classList.add('edited');
   var first = f.querySelector('input'); if(first) first.focus();
 }
@@ -15086,6 +15195,7 @@ function pwAddHz(){
   var rows = box.querySelectorAll('.pw-hz');
   var last = rows[rows.length-1];
   if(last){ var f = last.querySelector('input'); if(f) f.focus(); }
+  pwWalkProgress();
 }
 
 function pwCollectHz(){
@@ -15094,7 +15204,8 @@ function pwCollectHz(){
     var g = function(c){ var e=r.querySelector(c); return e?e.value.trim():''; };
     var hz = g('.pw-hz-hz'), ctl = g('.pw-hz-ctl');
     if(!hz || !ctl) return;
-    out.push({ step:g('.pw-hz-step'), hazard:hz, control:ctl, resp:g('.pw-hz-resp'), status:'' });
+    out.push({ step:g('.pw-hz-step'), hazard:hz, control:ctl,
+               resp:g('.pw-hz-resp'), status:g('.pw-hz-status') || 'Pending' });
   });
   return out;
 }
@@ -15271,6 +15382,26 @@ function pwSaveJsa(){
     msg.innerHTML = '<div class="pw-err">Prepared By is required — a JSA needs a named preparer.</div>';
     var pr = pwEl('pw-j-prep'); if(pr){ pr.focus(); pr.scrollIntoView({behavior:'smooth',block:'center'}); }
     return;
+  }
+  /* Approving means asserting every control is in place. Say which rows are not,
+     rather than letting the server refuse a form the crew thought was finished. */
+  if(v('pw-j-appr')){
+    var pend = [];
+    document.querySelectorAll('#pw-j-hz .pw-hz, #pw-j-hz-extra .pw-hz').forEach(function(r,i){
+      var st = r.querySelector('.pw-hz-status');
+      if(!st || st.value === 'Pending'){ pend.push(r); r.classList.add('flag'); }
+    });
+    if(pend.length){
+      var box = pwEl('pw-j-hz');
+      if(box && box.style.display === 'none') box.style.display = 'block';
+      msg.innerHTML = '<div class="pw-err"><b>' + pend.length + ' control' +
+        (pend.length>1?'s are':' is') + ' still Pending.</b><br>' +
+        'Approving a JSA means confirming every control is in place. Walk the job ' +
+        'and mark each row <b>In place</b> or <b>Not applicable</b> — or clear the ' +
+        'approver and save as Draft.</div>';
+      pend[0].scrollIntoView({behavior:'smooth', block:'center'});
+      return;
+    }
   }
   var payload = {
     trade: v('pw-trade'), date: v('pw-j-date'), location: v('pw-j-loc'),
