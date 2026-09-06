@@ -3193,8 +3193,11 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .rd-kind.active .rd-kt .hi{ color:var(--fldim); }
 /* 44px wide AND tall — this is the primary write action on the screen and has to
    survive a gloved thumb. Separated by a rule so it never reads as part of the label. */
-.rd-kadd{ flex:none; width:44px; min-height:52px; border:0; border-left:1px solid var(--fledge2);
-  background:transparent; color:var(--flacc); font:700 19px/1 'Archivo',sans-serif;
+/* Tinted so the + reads as part of its own tab rather than as a gap between two
+   tabs — at a glance the eye was grouping each + with the NEXT label. */
+.rd-kadd{ flex:none; width:44px; min-height:52px; border:0;
+  border-left:1px solid var(--fledge2); background:var(--flpanel2);
+  color:var(--flacc); font:700 19px/1 'Archivo',sans-serif;
   cursor:pointer; transition:background .18s var(--ease); }
 .rd-kind.active .rd-kadd{ border-left-color:var(--flaccd); }
 .rd-kadd:hover{ background:var(--flaccw); }
@@ -3639,6 +3642,9 @@ select.fl-ctrl{ font-weight:600; cursor:pointer;
   .fl-tbl.rd-stack tfoot td{ font-weight:800; color:var(--flink); }
   .fl-tbl.rd-stack tfoot td[colspan]{ justify-content:flex-start; }
   .fl-tbl.rd-stack tfoot td[colspan]::before{ content:''; }
+  /* An unrecorded optional value is not information. Hidden in the stacked view
+     only — the wide table still needs the cell to hold its column. */
+  .fl-tbl.rd-stack td.rd-empty{ display:none; }
 }
 .fl-tbl{ border-collapse:collapse; width:100%; font-size:14px; font-variant-numeric:tabular-nums; }
 .fl-tbl th,.fl-tbl td{ padding:12px 14px; border-bottom:1px solid var(--fledge); white-space:nowrap; text-align:right; }
@@ -15068,6 +15074,17 @@ function rdRenderSummary(r){
       '<div class="fl-kpi"><span class="k">Readings</span><span class="v">'+esc(r.rows.length)+'</span></div></div>';
   }
 }
+/* A reading often records only kWh; kVAr, PF, voltage and current are optional.
+   Printed blank they became rows reading "KVAR —" and "PF P/M /", so a 5-value
+   record rendered as 9 lines and buried the numbers that exist. On the wide table
+   an empty cell still has to hold its column, so the cell is always emitted —
+   `hide` only collapses it in the stacked phone view. */
+function _rdCell(label, val, extra){
+  var v = (val===null||val===undefined) ? '' : String(val).trim();
+  var empty = (v==='' || /^[\/\s—-]*$/.test(v));
+  return '<td data-l="'+esc(label)+'"'+(extra||'')+(empty?' class="rd-empty"':'')+'>'+
+         (empty?'—':esc(v))+'</td>';
+}
 function rdLoadReport(){
   document.getElementById('rd-monthlbl').textContent=_flMYLabel(FL.rdMonth);
   var meter=_v('rd-rep-meter');
@@ -15080,12 +15097,14 @@ function rdLoadReport(){
     var h='<table class="fl-tbl rd-stack"><thead><tr>';
     if(FL.rdRepKind==='elec'){ h+='<th>Date</th><th>Time</th><th>kWh</th><th>kVAr</th><th>PF P/M</th><th>V R/Y/B</th><th>A R/Y/B</th><th>Used</th></tr></thead><tbody>';
       r.rows.forEach(function(o){ var amber=o.warnings&&o.warnings.length?' class="amber"':'';
-        h+='<tr><td data-l="Date">'+esc(o.date)+'</td><td data-l="Time">'+esc(o.time)+'</td>'+
-          '<td data-l="kWh">'+esc(o.kWh)+'</td><td data-l="kVAr">'+esc(o.kVAr)+'</td>'+
-          '<td data-l="PF P/M">'+esc(o.pfPanel)+'/'+esc(o.pfMeter)+'</td>'+
-          '<td data-l="V R/Y/B"'+amber+'>'+esc(o.vR)+'/'+esc(o.vY)+'/'+esc(o.vB)+'</td>'+
-          '<td data-l="A R/Y/B">'+esc(o.aR)+'/'+esc(o.aY)+'/'+esc(o.aB)+'</td>'+
-          '<td data-l="Used">'+esc(o.used)+'</td></tr>'; });
+        var trio=function(a,b,c){ var t=[a,b,c].map(function(x){return (x==null?'':String(x).trim());});
+          return t.join('').replace(/[\/\s]/g,'')==='' ? '' : t.join('/'); };
+        h+='<tr>'+_rdCell('Date',o.date)+_rdCell('Time',o.time)+
+          _rdCell('kWh',o.kWh)+_rdCell('kVAr',o.kVAr)+
+          _rdCell('PF P/M', trio(o.pfPanel,o.pfMeter,null).replace(/\/$/,''))+
+          _rdCell('V R/Y/B', trio(o.vR,o.vY,o.vB), amber)+
+          _rdCell('A R/Y/B', trio(o.aR,o.aY,o.aB))+
+          _rdCell('Used',o.used)+'</tr>'; });
       h+='</tbody><tfoot><tr><td colspan="7">Total kWh used</td><td data-l="Total">'+esc(r.totals.used)+'</td></tr></tfoot>';
     } else if(FL.rdRepKind==='solar'){
       h+='<th>Date</th><th>Time</th><th>Meter</th><th>Generated</th><th>Expected</th><th>%</th><th>kWh/kWp</th></tr></thead><tbody>';
