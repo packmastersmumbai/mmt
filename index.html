@@ -2738,6 +2738,36 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 /* Responsive shell. Was a hard 760px centred column, which left ~71% of a
    desktop viewport empty. Now the content width answers the viewport. */
 .fl-wrap{ max-width:760px; margin:0 auto; padding:16px 14px 90px; }
+/* ── Settings: OHS_LISTS vocabulary ─────────────────────────── */
+.ls-item{ display:flex; gap:8px; align-items:center; padding:7px 12px;
+  border-bottom:1px solid var(--fledge); }
+.ls-item:last-of-type{ border-bottom:0; }
+.ls-item input{ flex:1; min-width:0; min-height:44px; box-sizing:border-box;
+  background:var(--flfield); border:1px solid var(--fledge2);
+  border-radius:var(--r-sm); padding:0 11px; color:var(--flink);
+  font:500 var(--t-md) 'Archivo','PMDev',sans-serif; outline:none; }
+.ls-item input:focus{ border-color:var(--flacc); box-shadow:0 0 0 3px var(--flaccw); }
+.ls-item .rm{ flex:none; min-width:44px; min-height:44px; border-radius:var(--r-sm);
+  border:1px solid var(--fledge2); background:var(--flpanel); color:var(--flfaint);
+  cursor:pointer; font:700 var(--t-md) 'Archivo',sans-serif; }
+.ls-item .rm:hover{ background:var(--flRw); border-color:var(--flRb); color:var(--flR); }
+.ls-item.gone input{ text-decoration:line-through; color:var(--flfaint);
+  background:var(--flpanel2); }
+.ls-use{ font:700 var(--t-xs) 'Archivo',sans-serif; color:var(--flfaint);
+  flex:none; font-variant-numeric:tabular-nums; }
+.ls-use.hot{ color:var(--flwarn); }
+.ls-foot{ display:flex; gap:8px; padding:10px 12px; flex-wrap:wrap;
+  border-top:1px solid var(--fledge); background:var(--flpanel2); }
+.ls-dirty{ font:700 var(--t-xs) 'Archivo',sans-serif; color:var(--flwarn);
+  align-self:center; margin-left:auto; }
+.ls-locked{ font-size:var(--t-sm); color:var(--flfaint); padding:10px 12px;
+  line-height:1.5; }
+.ls-tok{ display:flex; gap:8px; align-items:center; padding:10px 12px;
+  flex-wrap:wrap; }
+.ls-tok input{ flex:1 1 200px; min-width:0; min-height:44px; box-sizing:border-box;
+  background:var(--flfield); border:1px solid var(--fledge2);
+  border-radius:var(--r-sm); padding:0 11px; font:500 var(--t-md) 'Archivo',sans-serif; }
+
 /* ── PTW / JSA ───────────────────────────────────────────────────
    Uses the .fl token system and the existing component vocabulary
    (.fl-group, .fl-grouphd, .fl-ctrl, .fl-pchip, .fl-submit) rather
@@ -4204,6 +4234,18 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 </div>
 
 <!-- ══════ READINGS VIEW ══════ -->
+<div class="view fl" id="view-lists" style="padding:0">
+  <div class="fl-wrap">
+    <div class="fl-head">
+      <div class="fl-title"><span class="fl-glyph" aria-hidden="true"><svg viewBox="0 0 16 16"
+        fill="currentColor"><path d="M6.5 1h3l.3 1.9 1.3.6 1.6-1.1 2.1 2.1-1.1 1.6.6 1.3 1.9.3v3l-1.9.3-.6 1.3 1.1 1.6-2.1 2.1-1.6-1.1-1.3.6-.3 1.9h-3l-.3-1.9-1.3-.6-1.6 1.1-2.1-2.1 1.1-1.6-.6-1.3L1 9.5v-3l1.9-.3.6-1.3-1.1-1.6L4.5 1.4l1.6 1.1 1.3-.6zM8 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg></span>
+        Settings <span class="hi">/ सेटिंग्स</span></div>
+      <div class="fl-sub" id="ls-sub">Lists used across the safety registers</div>
+    </div>
+    <div id="ls-pane"><div class="fl-loading">Loading…</div></div>
+  </div>
+</div>
+
 <div class="view fl" id="view-ptw" style="padding:0">
   <div class="fl-wrap">
     <div class="fl-head">
@@ -4211,6 +4253,8 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
         fill="currentColor"><path d="M6 1h4a1 1 0 0 1 1 1v1H5V2a1 1 0 0 1 1-1z"/><path d="M4 3H2.6A.6.6 0 0 0 2 3.6v11.8a.6.6 0 0 0 .6.6h10.8a.6.6 0 0 0 .6-.6V3.6a.6.6 0 0 0-.6-.6H12v1.6H4V3z"/><path d="M5.6 9.4 7 10.8l3-3.4" stroke="#0b3b36" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         Permit to Work <span class="hi">/ कार्य अनुमति</span></div>
       <div class="fl-sub" id="ptw-datesub"></div>
+      <button class="pw-btn" style="margin-top:8px"
+        onclick="navigate('lists')">Manage people &amp; lists</button>
     </div>
     <div class="fl-toolbar">
       <div class="fl-seg" id="ptw-seg">
@@ -6578,10 +6622,10 @@ var ACTION_MAP = {
 // 'mhc', 'sop', 'image' are accepted but remapped to 'ref' inside navigate()
 // 'safety' stays valid: it is the target of live Telegram deep links and of the
 // KPI/chart drill-throughs inside the Safety view. It resolves to 'hira'.
-var VALID_HASHES = ['dashboard', 'board', 'planner', 'labels', 'safety', 'hira', 'incidents', 'hk', 'readings', 'ptw', 'checklist', 'bd', 'pm', 'clit', 'ref', 'mhc', 'sop', 'image'];
+var VALID_HASHES = ['dashboard', 'board', 'planner', 'labels', 'safety', 'hira', 'incidents', 'hk', 'readings', 'ptw', 'lists', 'checklist', 'bd', 'pm', 'clit', 'ref', 'mhc', 'sop', 'image'];
 
 // Global nav hashes — shown without machine context
-var GLOBAL_HASHES = ['dashboard', 'board', 'planner', 'labels', 'safety', 'hira', 'incidents', 'hk', 'readings', 'ptw'];
+var GLOBAL_HASHES = ['dashboard', 'board', 'planner', 'labels', 'safety', 'hira', 'incidents', 'hk', 'readings', 'ptw', 'lists'];
 
 // ═══════════════════════════════════════════════════════
 // NAVIGATION CORE
@@ -6707,6 +6751,7 @@ function navigate(hash, machineId, skipPush) {
   if (hash === 'hk')        hkInit();
   if (hash === 'readings')  rdInit();
   if (hash === 'ptw')       { pwSyncSeg(); loadPtw(); }
+  if (hash === 'lists')     lsLoad();
   if (hash === 'checklist') {
     if (App.machineId) initChecklist(App.machineId);
     else { navigate('board'); return; }
@@ -14803,6 +14848,172 @@ document.addEventListener('click', function(e){
 document.getElementById('rd-rep-meter') && document.getElementById('rd-rep-meter').addEventListener('change', rdLoadReport);
 
 /* ═══════════════════════════════════════════════════════════════
+   SETTINGS — the OHS_LISTS vocabulary
+   These lists drive every dropdown in the safety module. Writes are
+   admin-gated server-side; the token is entered here and held only
+   for the session, never stored.
+   ═══════════════════════════════════════════════════════════════ */
+var LS = { data:null, token:'', dirty:{} };
+
+function lsEsc(v){
+  return String(v==null?'':v).replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
+}
+
+function lsLoad(){
+  var pane = document.getElementById('ls-pane'); if(!pane) return;
+  pane.innerHTML = '<div class="fl-loading">Loading…</div>';
+  google.script.run.withSuccessHandler(function(r){
+    if(!r || !r.success){
+      pane.innerHTML = '<div class="pw-err">Failed to load: '+lsEsc((r&&r.error)||'')+
+        ' <button class="pw-btn" onclick="lsLoad()">Retry</button></div>';
+      return;
+    }
+    LS.data = r; LS.dirty = {};
+    lsRender();
+  }).withFailureHandler(function(e){
+    pane.innerHTML = '<div class="pw-err">'+lsEsc((e&&e.message)||e)+'</div>';
+  }).getListsAdmin();
+}
+
+function lsRender(){
+  var pane = document.getElementById('ls-pane'); if(!pane || !LS.data) return;
+  var h = '<div class="fl-group"><div class="fl-grouphd">Admin token</div>' +
+    '<div class="pw-note">Changing a list changes what every register offers, ' +
+    'so saving needs the admin token. It is held for this session only.</div>' +
+    '<div class="ls-tok"><input type="password" id="ls-token" ' +
+      'placeholder="Admin token" value="'+lsEsc(LS.token)+'" ' +
+      'aria-label="Admin token" oninput="LS.token=this.value">' +
+    '</div></div>';
+
+  LS.data.lists.forEach(function(l){
+    var dirty = !!LS.dirty[l.key];
+    h += '<div class="fl-group" id="ls-g-'+lsEsc(l.key)+'">' +
+      '<div class="fl-grouphd">'+lsEsc(l.label)+
+        ' <span class="hi" style="font-weight:400">'+lsEsc(l.hi)+'</span>' +
+        '<span class="n" id="ls-n-'+lsEsc(l.key)+'">'+l.items.length+'</span></div>' +
+      (l.note?'<div class="pw-note">'+lsEsc(l.note)+'</div>':'') +
+      (l.duplicates?'<div class="pw-note" style="color:var(--flwarn)">'+
+        l.duplicates+' duplicate entr'+(l.duplicates>1?'ies were':'y was')+
+        ' folded together. Saving will write the de-duplicated list.</div>':'') +
+      '<div id="ls-l-'+lsEsc(l.key)+'">';
+    l.items.forEach(function(v,i){ h += lsRow(l.key, v, i); });
+    h += '</div><div class="ls-foot">' +
+      '<button class="pw-btn" data-add="'+lsEsc(l.key)+'">+ Add</button>' +
+      '<button class="pw-btn go" data-save="'+lsEsc(l.key)+'">Save</button>' +
+      '<span class="ls-dirty" id="ls-d-'+lsEsc(l.key)+'">'+(dirty?'unsaved changes':'')+'</span>' +
+      '</div><div id="ls-m-'+lsEsc(l.key)+'"></div></div>';
+  });
+
+  h += '<div class="fl-group"><div class="fl-grouphd">Not editable here</div>' +
+    '<div class="ls-locked">' + LS.data.locked.join(', ') +
+    ' drive the risk-matrix maths (1–5 scales and two-value flags). ' +
+    'Changing them from a text box would silently change every risk score, ' +
+    'so they stay in the sheet.</div></div>';
+  pane.innerHTML = h;
+  /* Delegated: quoting an argument inside an onclick inside a JS string broke
+     this file twice, so the key rides on a data attribute instead. */
+  pane.addEventListener('click', function(e){
+    var a = e.target.closest('[data-add]');  if(a){ lsAdd(a.getAttribute('data-add')); return; }
+    var v = e.target.closest('[data-save]'); if(v){ lsSave(v.getAttribute('data-save')); return; }
+  });
+  pane.addEventListener('input', function(e){
+    var t = e.target.closest('[data-touch]');
+    if(t) lsTouch(t.getAttribute('data-touch'));
+  });
+  if(typeof pwHeadings === 'function') pwHeadings(pane);
+}
+
+function lsRow(key, v, i){
+  return '<div class="ls-item" data-k="'+lsEsc(key)+'">' +
+    '<input value="'+lsEsc(v)+'" aria-label="'+lsEsc(key)+' entry '+(i+1)+'" ' +
+      'data-touch="'+lsEsc(key)+'">' +
+    (key==='PERSONS'?'<span class="ls-use" data-for="'+lsEsc(v)+'"></span>':'') +
+    '<button class="rm" type="button" aria-label="Remove entry" ' +
+      'onclick="lsRemove(this)">&times;</button>' +
+    '</div>';
+}
+
+function lsTouch(key){
+  LS.dirty[key] = true;
+  var d = document.getElementById('ls-d-'+key);
+  if(d) d.textContent = 'unsaved changes';
+}
+
+function lsAdd(key){
+  var box = document.getElementById('ls-l-'+key); if(!box) return;
+  box.insertAdjacentHTML('beforeend', lsRow(key, '', box.children.length));
+  var rows = box.querySelectorAll('.ls-item input');
+  rows[rows.length-1].focus();
+  lsTouch(key);
+}
+
+/* Removal is marked, not immediate: on PERSONS a name may be on dozens of
+   records, and the count next to it says how many before anything is saved. */
+function lsRemove(btn){
+  var row = btn.closest('.ls-item'); if(!row) return;
+  var key = row.getAttribute('data-k');
+  var inp = row.querySelector('input');
+  if(!inp.value.trim()){ row.remove(); lsTouch(key); return; }
+  row.classList.toggle('gone');
+  btn.innerHTML = row.classList.contains('gone') ? '&#8630;' : '&times;';
+  if(key === 'PERSONS' && row.classList.contains('gone')) lsUsage(row, inp.value.trim());
+  lsTouch(key);
+}
+
+function lsUsage(row, name){
+  var tag = row.querySelector('.ls-use'); if(!tag) return;
+  tag.textContent = '…';
+  google.script.run.withSuccessHandler(function(r){
+    if(!r || !r.success){ tag.textContent = ''; return; }
+    var total = (r.hits||[]).reduce(function(a,c){ return a + c.count; }, 0);
+    if(!total){ tag.textContent = 'unused'; return; }
+    tag.textContent = 'on ' + total + ' record' + (total>1?'s':'');
+    tag.className = 'ls-use hot';
+    tag.title = r.hits.map(function(h){ return h.count+' '+h.where; }).join(', ');
+  }).withFailureHandler(function(){ tag.textContent=''; }).getListUsage('PERSONS', name);
+}
+
+function lsSave(key){
+  var box = document.getElementById('ls-l-'+key);
+  var msg = document.getElementById('ls-m-'+key);
+  if(!box) return;
+  if(!LS.token){
+    msg.innerHTML = '<div class="pw-err">Enter the admin token before saving.</div>';
+    var t = document.getElementById('ls-token'); if(t) t.focus();
+    return;
+  }
+  var items = [];
+  box.querySelectorAll('.ls-item').forEach(function(r){
+    if(r.classList.contains('gone')) return;      // marked for removal
+    var v = r.querySelector('input').value.trim();
+    if(v) items.push(v);
+  });
+  if(!items.length){
+    msg.innerHTML = '<div class="pw-err">A list cannot be emptied. Keep at least one entry.</div>';
+    return;
+  }
+  msg.innerHTML = '<div class="pw-note">Saving…</div>';
+  google.script.run.withSuccessHandler(function(r){
+    if(!r || !r.success){
+      msg.innerHTML = '<div class="pw-err">'+lsEsc((r&&r.error)||'Save failed')+'</div>';
+      return;
+    }
+    LS.dirty[key] = false;
+    var d = document.getElementById('ls-d-'+key); if(d) d.textContent = '';
+    var n = document.getElementById('ls-n-'+key); if(n) n.textContent = r.count;
+    msg.innerHTML = '<div class="pw-ok">Saved. '+r.count+' entr'+(r.count===1?'y':'ies')+
+      (r.removed && r.removed.length ? '. Removed: '+lsEsc(r.removed.join(', ')) : '') +
+      '</div>';
+    /* PTW holds its own copy of PERSONS from the bootstrap; drop it so the next
+       visit re-reads rather than offering a stale approver list. */
+    if(key === 'PERSONS' && typeof PW !== 'undefined') PW.data = null;
+  }).withFailureHandler(function(e){
+    msg.innerHTML = '<div class="pw-err">'+lsEsc((e&&e.message)||e)+'</div>';
+  }).setOhsList({ key:key, items:items }, LS.token);
+}
+
+/* ═══════════════════════════════════════════════════════════════
    PTW / JSA — Permit to Work and Job Safety Analysis
    Backed by PtwJsa.js. The workflow is enforced server-side; this
    view mirrors it so the floor sees WHY something is refused rather
@@ -14860,6 +15071,7 @@ function pwRender(){
   else if(PW.tab==='jsa') pane.innerHTML = pwListJsa();
   else                    pane.innerHTML = pwNewPane();
   if(PW.tab==='new') pwWireNew();
+  pwPersonDatalist();
   pwHeadings(pane);
 }
 
@@ -14952,6 +15164,21 @@ function pwListPermits(){
 }
 
 function pwFilter(v){ PW.filter = (PW.filter===v?'':v); pwRender(); }
+
+/* One shared datalist for the per-hazard owner inputs. Suggests the master
+   without forcing it: a contractor's man on site may genuinely not be staff. */
+function pwPersonDatalist(){
+  var list = (PW.data && PW.data.persons) || [];
+  var dl = document.getElementById('pw-persons');
+  if(!dl){
+    dl = document.createElement('datalist');
+    dl.id = 'pw-persons';
+    document.body.appendChild(dl);
+  }
+  dl.innerHTML = list.map(function(p){
+    return '<option value="'+pwEsc(p)+'"></option>';
+  }).join('');
+}
 
 /* Named handler rather than an inline quoted expression: nesting quotes inside
    an onclick inside a JS string is how the empty state broke the parse once. */
@@ -15048,6 +15275,36 @@ function pwTrade(code){
   return out;
 }
 
+function pwPersonOptions(sel){
+  var list = (PW.data && PW.data.persons) || [];
+  var h = '<option value="">Select…</option>';
+  var found = false;
+  list.forEach(function(p){
+    var on = (p === sel); if(on) found = true;
+    h += '<option value="'+pwEsc(p)+'"'+(on?' selected':'')+'>'+pwEsc(p)+'</option>';
+  });
+  /* A name already on a record but since removed from the master still has to
+     display, or opening an old JSA would silently blank its approver. */
+  if(sel && !found) h += '<option value="'+pwEsc(sel)+'" selected>'+pwEsc(sel)+' (not in list)</option>';
+  return h;
+}
+
+/* Same shape as pwField, but the control is the PERSONS master. */
+function pwPerson(id, label, hi, opts){
+  opts = opts || {};
+  var list = (PW.data && PW.data.persons) || [];
+  var ctrl = list.length
+    ? '<select class="fl-ctrl" id="'+id+'"'+(opts.req?' required aria-required="true"':'')+'>' +
+        pwPersonOptions(opts.val||'') + '</select>'
+    : '<input class="fl-ctrl" id="'+id+'" type="text"'+(opts.req?' required aria-required="true"':'') +
+        ' placeholder="Name">';
+  return '<div class="pw-f'+(opts.wide?' wide':'')+'">' +
+    '<label for="'+id+'">'+pwEsc(label)+
+      (hi?' <span class="hi">'+pwEsc(hi)+'</span>':'') +
+      (opts.req?' <span class="pw-req" aria-hidden="true">*</span>':'') + '</label>' +
+    ctrl + '</div>';
+}
+
 function pwField(id, label, hi, opts){
   opts = opts || {};
   return '<div class="pw-f'+(opts.wide?' wide':'')+'">' +
@@ -15075,7 +15332,7 @@ function pwBuildJsaForm(code){
     pwField('pw-j-date','Date','दिनांक',{val:PW.data.today}) +
     pwField('pw-j-loc','Location','स्थान',{}) +
     pwField('pw-j-con','Contractor / Agency','ठेकेदार',{}) +
-    pwField('pw-j-by','Carried out by','द्वारा',{}) +
+    pwPerson('pw-j-by','Carried out by','द्वारा',{}) +
     pwField('pw-j-desc','Job / activity description','कार्य विवरण',
       {wide:true,area:true,req:true,ph:'What work is being done, and where exactly?'}) +
     '</div></div>';
@@ -15115,14 +15372,14 @@ function pwBuildJsaForm(code){
     pwField('pw-j-tbd','Date','',{val:PW.data.today}) +
     pwField('pw-j-tbt','Time','',{ph:'HH:MM'}) +
     pwField('pw-j-tbc','No. briefed','',{mode:'numeric'}) +
-    pwField('pw-j-tbby','Conducted by','',{}) +
+    pwPerson('pw-j-tbby','Conducted by','',{}) +
     '</div></div>';
 
   h += '<div class="fl-group"><div class="fl-grouphd">Sign-off</div>' +
     '<div class="pw-grid">' +
-    pwField('pw-j-prep','Prepared by','सुपरवाइज़र',{req:true}) +
-    pwField('pw-j-rev','Reviewed by','सेफ्टी ऑफिसर',{}) +
-    pwField('pw-j-appr','Approved by','इशूइंग अथॉरिटी',{wide:true}) +
+    pwPerson('pw-j-prep','Prepared by','सुपरवाइज़र',{req:true}) +
+    pwPerson('pw-j-rev','Reviewed by','सेफ्टी ऑफिसर',{}) +
+    pwPerson('pw-j-appr','Approved by','इशूइंग अथॉरिटी',{wide:true}) +
     '</div>' +
     '<div class="pw-note">Named an approver? The JSA saves as <b>Approved</b> and ' +
     'can carry a permit. Left blank it saves as <b>Draft</b>.</div>' +
@@ -15151,7 +15408,8 @@ function pwBuildJsaForm(code){
   var pf = pwEl('pw-j-photo');
   if(pf) pf.addEventListener('change', function(){ pwStagePhoto(this); });
   var ap = pwEl('pw-j-appr');
-  if(ap) ap.addEventListener('input', pwSaveLabel);
+  if(ap){ ap.addEventListener('input', pwSaveLabel);
+          ap.addEventListener('change', pwSaveLabel); }
   pwSaveLabel();
   pwHeadings(box);
 }
@@ -15223,7 +15481,7 @@ function pwConfirmStrip(withMore, n){
       'aria-pressed="false" aria-label="Not applicable'+of+'">' +
       '<span class="mk" aria-hidden="true">–</span>N/A</button>' +
     '<input class="pw-hz-resp fl-ctrl" placeholder="Responsible person" ' +
-      'aria-label="Responsible person'+of+'">' +
+      'list="pw-persons" aria-label="Responsible person'+of+'">' +
     '<span class="pw-hzacts">' +
       (withMore?'<button type="button" class="more" onclick="pwMoreHz(this)" ' +
         'aria-expanded="false" aria-label="Show full control text'+of+'"></button>':'') +
@@ -15389,7 +15647,7 @@ function pwBuildPtwForm(jsaNo){
   h += '<div class="fl-group"><div class="fl-grouphd">Applicant / Performing Authority</div>' +
     '<div class="pw-grid">' +
     pwField('pw-p-co','Company name','',{}) +
-    pwField('pw-p-nm','Name / designation','नाम',{req:true}) +
+    pwPerson('pw-p-nm','Name / designation','नाम',{req:true}) +
     pwField('pw-p-ph','Phone number','',{mode:'tel'}) +
     '</div>' +
     '<div class="pw-note"><b>Declaration:</b> I declare that the information provided ' +
@@ -15620,7 +15878,7 @@ function pwVerifyForm(no){
   h += '<div class="fl-group"><div class="fl-grouphd">Issuing Authority' +
     '<span class="n" id="pw-v-n">0/'+PW.cat.verify.length+'</span></div>' +
     '<div class="pw-grid">' +
-    pwField('pw-v-nm','Name / designation','नाम',{req:true}) +
+    pwPerson('pw-v-nm','Name / designation','नाम',{req:true}) +
     pwField('pw-v-dp','Department','',{}) +
     pwField('pw-v-ph','Phone number','',{mode:'tel'}) +
     '</div>' +
@@ -15671,9 +15929,9 @@ function pwCloseForm(no){
     '<div class="pw-note"><b>Closure:</b> I confirm that the work area has been restored ' +
     'to its original condition and no hazards have been introduced.</div></div>' +
     '<div class="fl-group"><div class="fl-grouphd">Sign-off</div><div class="pw-grid">' +
-    pwField('pw-c-pa','Performing Authority','',{req:true}) +
-    pwField('pw-c-ia','Issuing Authority','',{req:true}) +
-    pwField('pw-c-so','Safety Officer','',{}) +
+    pwPerson('pw-c-pa','Performing Authority','',{req:true}) +
+    pwPerson('pw-c-ia','Issuing Authority','',{req:true}) +
+    pwPerson('pw-c-so','Safety Officer','',{}) +
     '</div></div><div id="pw-c-msg"></div>' +
     '<button class="fl-submit" style="background:var(--flR)" ' +
     'onclick="pwDoClose(\'' + pwEsc(no) + '\')">Close permit</button>';
