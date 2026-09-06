@@ -3194,9 +3194,15 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   font:700 var(--t-xs)/1.3 'Archivo',sans-serif; color:var(--flG); }
 .rd-kind.is-done .rd-kg{ opacity:.6; }
 
-@media (max-width:420px){
-  .rd-kinds{ grid-template-columns:1fr 1fr; }
-  .rd-kind:last-child{ grid-column:1 / -1; }
+/* Three kinds, one row, always. The earlier 2+1 wrap stranded Solar on a line of
+   its own, which read as a different kind of control. Below 400px the Hindi gloss
+   and the glyph step aside instead — the English label plus the + still fit. */
+@media (max-width:400px){
+  .rd-kbtn{ padding:9px 2px 9px 7px; gap:5px; }
+  .rd-kg{ display:none; }
+  .rd-kt{ font-size:var(--t-xs); }
+  .rd-kt .hi{ display:none; }
+  .rd-kadd{ width:38px; }
 }
 
 .fl-toolbar{ display:flex; gap:9px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
@@ -3569,6 +3575,41 @@ select.fl-ctrl{ font-weight:600; cursor:pointer;
 .fl-mbtn:active{ transform:translateY(1px); }
 .fl-gridwrap{ overflow-x:auto; border:1px solid var(--fledge); border-radius:12px;
   -webkit-overflow-scrolling:touch; background:var(--flpanel); }
+
+/* ── Readings table → stacked records on a phone ────────────────────────────
+   The electricity report is 8 columns. On a 390px screen that meant a sideways
+   scroller inside a vertically scrolling page — the affordance DESIGN.md bans
+   because nothing announces it and a thumb covers it, and in practice kVAr, PF,
+   V, A and the monthly total were simply off-screen and never seen.
+   Below 700px each row becomes a record: date and time as its heading, then one
+   labelled line per value. The label comes from the column's own <th> via
+   data-l, so a new column cannot silently render as an unlabelled number. */
+@media (max-width:700px){
+  #rd-reptable .fl-gridwrap, .fl-gridwrap.rd-stack{ overflow-x:visible; border:0;
+    border-radius:0; background:transparent; }
+  .fl-tbl.rd-stack{ display:block; }
+  .fl-tbl.rd-stack thead{ display:none; }
+  .fl-tbl.rd-stack tbody,.fl-tbl.rd-stack tfoot{ display:block; }
+  .fl-tbl.rd-stack tr{ display:block; background:var(--flpanel);
+    border:1px solid var(--fledge); border-radius:var(--r-md);
+    padding:10px 12px; margin-bottom:8px; }
+  .fl-tbl.rd-stack td{ display:flex; justify-content:space-between; gap:12px;
+    align-items:baseline; padding:5px 0; border:0; white-space:normal;
+    text-align:right; font-variant-numeric:tabular-nums; }
+  .fl-tbl.rd-stack td::before{ content:attr(data-l); flex:none; text-align:left;
+    color:var(--flfaint); font-weight:700; font-size:var(--t-xs);
+    letter-spacing:.05em; text-transform:uppercase; }
+  /* Date+time lead the record and read as its title, not as two more fields. */
+  .fl-tbl.rd-stack td:first-child,
+  .fl-tbl.rd-stack td:nth-child(2){ position:static; border-right:0;
+    font-weight:700; color:var(--flink); }
+  .fl-tbl.rd-stack td:first-child{ font-size:var(--t-md); padding-top:0; }
+  .fl-tbl.rd-stack td:first-child::before{ content:'Date'; }
+  .fl-tbl.rd-stack tfoot tr{ background:var(--flaccw); border-color:var(--flaccd); }
+  .fl-tbl.rd-stack tfoot td{ font-weight:800; color:var(--flink); }
+  .fl-tbl.rd-stack tfoot td[colspan]{ justify-content:flex-start; }
+  .fl-tbl.rd-stack tfoot td[colspan]::before{ content:''; }
+}
 .fl-tbl{ border-collapse:collapse; width:100%; font-size:14px; font-variant-numeric:tabular-nums; }
 .fl-tbl th,.fl-tbl td{ padding:12px 14px; border-bottom:1px solid var(--fledge); white-space:nowrap; text-align:right; }
 /* z-index on the sticky header: on light the row beneath showed THROUGH it while
@@ -3599,7 +3640,14 @@ select.fl-ctrl{ font-weight:600; cursor:pointer;
    sprawl and 6 still fit on one line. */
 .fl-kpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,260px));
   gap:10px; margin:16px 0 4px; justify-content:start; }
-@media(max-width:460px){ .fl-kpis{ grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); } }
+/* Two summary numbers were taking ~150px of vertical space above the data they
+   summarise. On a phone they become a compact pair, not stacked hero cards. */
+@media(max-width:460px){
+  .fl-kpis{ grid-template-columns:1fr 1fr; gap:8px; margin:12px 0 4px; }
+  .fl-kpi{ padding:9px 10px; border-radius:var(--r-md); box-shadow:none; text-align:left; }
+  .fl-kpi .k{ font-size:var(--t-xs); margin-bottom:2px; }
+  .fl-kpi .v{ font-size:19px; }
+}
 .fl-kpi{ background:var(--flpanel); border:1px solid var(--fledge); border-radius:13px;
   padding:14px 12px; text-align:center;
   /* On light, a 1px border alone made the tile disappear into the page tint. */
@@ -14995,22 +15043,32 @@ function rdLoadReport(){
   var _sum=document.getElementById('rd-repsum'); if(_sum) _sum.innerHTML='';
   google.script.run.withSuccessHandler(function(r){
     if(!r||!r.success){ document.getElementById('rd-reptable').innerHTML='<div class="fl-loading">'+esc((r&&r.error)||'?')+'</div>'; return; }
-    var h='<table class="fl-tbl"><thead><tr>';
+    /* rd-stack: below 700px this table renders as one card per reading. Every td
+       carries data-l so the stacked view labels its own values. */
+    var h='<table class="fl-tbl rd-stack"><thead><tr>';
     if(FL.rdRepKind==='elec'){ h+='<th>Date</th><th>Time</th><th>kWh</th><th>kVAr</th><th>PF P/M</th><th>V R/Y/B</th><th>A R/Y/B</th><th>Used</th></tr></thead><tbody>';
       r.rows.forEach(function(o){ var amber=o.warnings&&o.warnings.length?' class="amber"':'';
-        h+='<tr><td>'+esc(o.date)+'</td><td>'+esc(o.time)+'</td><td>'+esc(o.kWh)+'</td><td>'+esc(o.kVAr)+'</td><td>'+esc(o.pfPanel)+'/'+esc(o.pfMeter)+'</td>'+
-          '<td'+amber+'>'+esc(o.vR)+'/'+esc(o.vY)+'/'+esc(o.vB)+'</td><td>'+esc(o.aR)+'/'+esc(o.aY)+'/'+esc(o.aB)+'</td><td>'+esc(o.used)+'</td></tr>'; });
-      h+='</tbody><tfoot><tr><td colspan="7">Total kWh used</td><td>'+esc(r.totals.used)+'</td></tr></tfoot>';
+        h+='<tr><td data-l="Date">'+esc(o.date)+'</td><td data-l="Time">'+esc(o.time)+'</td>'+
+          '<td data-l="kWh">'+esc(o.kWh)+'</td><td data-l="kVAr">'+esc(o.kVAr)+'</td>'+
+          '<td data-l="PF P/M">'+esc(o.pfPanel)+'/'+esc(o.pfMeter)+'</td>'+
+          '<td data-l="V R/Y/B"'+amber+'>'+esc(o.vR)+'/'+esc(o.vY)+'/'+esc(o.vB)+'</td>'+
+          '<td data-l="A R/Y/B">'+esc(o.aR)+'/'+esc(o.aY)+'/'+esc(o.aB)+'</td>'+
+          '<td data-l="Used">'+esc(o.used)+'</td></tr>'; });
+      h+='</tbody><tfoot><tr><td colspan="7">Total kWh used</td><td data-l="Total">'+esc(r.totals.used)+'</td></tr></tfoot>';
     } else if(FL.rdRepKind==='solar'){
       h+='<th>Date</th><th>Time</th><th>Meter</th><th>Generated</th><th>Expected</th><th>%</th><th>kWh/kWp</th></tr></thead><tbody>';
       r.rows.forEach(function(o){
         var p=Number(o.percent), cls=(o.percent===''||isNaN(p))?'':(p>=85?' class="ok"':p>=50?'':' class="amber"');
-        h+='<tr><td>'+esc(o.date)+'</td><td>'+esc(o.time)+'</td><td>'+esc(o.reading)+'</td><td>'+esc(o.generated)+'</td>'+
-           '<td>'+esc(o.expected)+'</td><td'+cls+'>'+(o.percent===''?'—':esc(o.percent)+'%')+'</td><td>'+esc(o.specific)+'</td></tr>'; });
-      h+='</tbody><tfoot><tr><td colspan="3">Total generated</td><td>'+esc(r.totals.generated)+'</td><td>'+esc(r.totals.expected)+'</td><td>'+(r.totals.percent===''?'—':esc(r.totals.percent)+'%')+'</td><td></td></tr></tfoot>';
+        h+='<tr><td data-l="Date">'+esc(o.date)+'</td><td data-l="Time">'+esc(o.time)+'</td>'+
+           '<td data-l="Meter">'+esc(o.reading)+'</td><td data-l="Generated">'+esc(o.generated)+'</td>'+
+           '<td data-l="Expected">'+esc(o.expected)+'</td>'+
+           '<td data-l="%"'+cls+'>'+(o.percent===''?'—':esc(o.percent)+'%')+'</td>'+
+           '<td data-l="kWh/kWp">'+esc(o.specific)+'</td></tr>'; });
+      h+='</tbody><tfoot><tr><td colspan="3">Total generated</td><td data-l="Generated">'+esc(r.totals.generated)+'</td><td data-l="Expected">'+esc(r.totals.expected)+'</td><td data-l="%">'+(r.totals.percent===''?'—':esc(r.totals.percent)+'%')+'</td><td></td></tr></tfoot>';
     } else { h+='<th>Date</th><th>Time</th><th>Reading</th><th>Used</th></tr></thead><tbody>';
-      r.rows.forEach(function(o){ h+='<tr><td>'+esc(o.date)+'</td><td>'+esc(o.time)+'</td><td>'+esc(o.reading)+'</td><td>'+esc(o.used)+'</td></tr>'; });
-      h+='</tbody><tfoot><tr><td colspan="3">Total used</td><td>'+esc(r.totals.used)+'</td></tr></tfoot>'; }
+      r.rows.forEach(function(o){ h+='<tr><td data-l="Date">'+esc(o.date)+'</td><td data-l="Time">'+esc(o.time)+'</td>'+
+        '<td data-l="Reading">'+esc(o.reading)+'</td><td data-l="Used">'+esc(o.used)+'</td></tr>'; });
+      h+='</tbody><tfoot><tr><td colspan="3">Total used</td><td data-l="Total">'+esc(r.totals.used)+'</td></tr></tfoot>'; }
     h+='</table>';
     if(!r.rows.length) h='<div class="fl-loading">No readings recorded this month.</div>';
     document.getElementById('rd-reptable').innerHTML=h;
