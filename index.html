@@ -238,7 +238,10 @@ body {
 .view {
   display: none;
   animation: fadeIn 0.18s ease;
-  padding: 12px;
+  /* Bottom pad clears the fixed 58px nav. The body is the scrolling element, so
+     the margin on .app-content reserves nothing at the end of a long list and the
+     final row of every view sat under the bar. */
+  padding: 12px 12px calc(var(--nav-h) + 12px);
 }
 .view.active { display: block; }
 @keyframes fadeIn {
@@ -2750,7 +2753,14 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   font-variant-numeric:tabular-nums; letter-spacing:-.01em; }
 /* Fill the whole scroll area with the dark bg so no white shows below content.
    These views manage their own padding via .fl-wrap, so kill .view's padding. */
-.view.fl{ padding:0; background:var(--flbg); min-height:calc(100vh - var(--hdr-h) - var(--nav-h)); }
+/* padding-bottom, not margin on .app-content: the BODY is what scrolls here, so
+   a margin on the (non-scrolling) content wrapper sits inside the scrolled region
+   and reserves nothing at the end of the list. The nav is fixed and 58px tall, so
+   the last row of Housekeeping, Readings and PTW sat underneath it and could not
+   be scrolled into view — one of the eleven housekeeping activities was simply
+   unreachable. The pad belongs on the long scrolling surface itself. */
+.view.fl{ padding:0 0 calc(var(--nav-h) + 12px); background:var(--flbg);
+          min-height:calc(100vh - var(--hdr-h) - var(--nav-h)); }
 /* Responsive shell. Was a hard 760px centred column, which left ~71% of a
    desktop viewport empty. Now the content width answers the viewport. */
 .fl-wrap{ max-width:760px; margin:0 auto; padding:16px 14px 90px; }
