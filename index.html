@@ -2910,10 +2910,30 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   min-width:0; }
 .pw-hz .ref .haz{ color:var(--flR); }
 .pw-hz .ref .ctl{ color:var(--fldim); line-height:1.5; }
-/* A hanging indent on the wrapped lines keeps the HAZARD / CONTROL tag readable
-   as a label instead of the first word of the sentence. */
+/* HAZARD / CONTROL tags sit on their own short line rather than inline, so the
+   sentence beneath them starts at the left margin and gets the full measure.
+   Inline, each tag stole ~55px from the first line of a five-line paragraph and
+   pushed a word onto an extra line. */
 .pw-hz .ctlwrap p, .pw-hz .ref p{ padding-left:0; }
-.pw-hz .tag{ margin-right:5px; }
+.pw-hz .tag{ display:block; margin:0 0 1px; font-size:10.5px; }
+
+/* The full control text is now shown, which costs real height — 241 characters
+   at 12.5px is five lines and that is the point of the change. The height is
+   bought back where it carries no information: the confirm strip. Its buttons
+   keep 44px, but the strip stops being a separate 44px band under the text and
+   sits tight against it. */
+.pw-hz .fields > .pw-conf{ margin-top:3px; }
+
+/* PHONE: the number moves out of its own column and onto the step line. A 15px
+   gutter plus its gap cost 22px of measure on every line of a five-line
+   paragraph — roughly one line per row across twelve rows. The row keeps its
+   left status stripe, so position in the list is still readable at a glance. */
+@media (max-width:560px){
+  .pw-hz{ grid-template-columns:1fr; padding:9px 12px 8px 14px; }
+  .pw-hz .idx{ display:inline; float:left; margin-right:6px; padding-top:0;
+    line-height:1.3; }
+  .pw-hz .step{ display:block; }
+}
 .pw-hz .ref p{ margin:0 0 2px; display:flex; gap:5px; align-items:baseline;
   min-width:0; }
 .pw-hz .ref p .haz{ white-space:normal; min-width:0; flex:1; }
