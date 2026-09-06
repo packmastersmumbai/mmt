@@ -3061,9 +3061,24 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .pw-ok{ font-size:var(--t-sm); color:var(--flgood); background:var(--flgoodw);
   border:1px solid var(--flgoodb); border-radius:var(--r-md); padding:11px 13px;
   margin:11px 0; line-height:1.5; }
-.pw-empty{ text-align:center; padding:38px 20px; color:var(--flfaint);
-  font-size:var(--t-sm); line-height:1.6; }
-.pw-empty b{ color:var(--fldim); }
+/* An empty permit register is the NORMAL state of this screen — most days no
+   hot work is running — so it is composed as a statement of the rule rather than
+   as an apology floating in the middle of a blank page. Left-aligned on a ruled
+   band, like the register it stands in for: the sequence JSA → permit is the
+   thing worth teaching here, and the first step is the only button. */
+.pw-empty{ text-align:left; padding:20px 0 0; color:var(--fldim);
+  font-size:var(--t-sm); line-height:1.6; border-top:1px solid var(--fledge); }
+.pw-empty b{ display:block; color:var(--flink); font-size:var(--t-lg);
+  letter-spacing:-.01em; margin-bottom:4px; }
+/* The two-step sequence, stated as steps rather than prose. */
+.pw-empty .pw-steps-hint{ display:flex; align-items:center; gap:8px;
+  margin:14px 0 16px; font:700 var(--t-xs) 'Archivo',sans-serif;
+  color:var(--flfaint); letter-spacing:.04em; text-transform:uppercase; }
+.pw-empty .pw-steps-hint i{ display:grid; place-items:center; width:20px; height:20px;
+  border-radius:50%; background:var(--flaccw); color:var(--flacc);
+  font-style:normal; font-size:11px; border:1px solid var(--flaccd); }
+.pw-empty .pw-steps-hint s{ flex:1; height:1px; background:var(--fledge2);
+  text-decoration:none; }
 
 /* Detail view. */
 .pw-kv{ display:grid; grid-template-columns:auto 1fr; gap:7px 14px;
@@ -3520,8 +3535,11 @@ select.fl-ctrl{ font-weight:600; cursor:pointer;
   .fl-actname{ flex:1 1 auto; font-size:var(--t-sm); }
   .fl-actname small{ margin-top:1px; }
   /* Dots drop to their own full-width line under the name rather than squeezing
-     the name into two lines. Order keeps them below the label they describe. */
-  .fl-acthd .fl-dots{ order:5; flex-basis:100%; margin:0 0 0 20px; }
+     the name into two lines. Order keeps them below the label they describe.
+     Negative top margin pulls them up against the Hindi line they belong to —
+     without it the row carried a band of dead space and the list read looser than
+     the register it is meant to be. */
+  .fl-acthd .fl-dots{ order:5; flex-basis:100%; margin:-4px 0 0 20px; }
 }
 /* Status badge. The 7px coloured box-shadows on the LEDs were outer glows —
    replaced with a solid dot plus a tinted background on the badge itself. */
@@ -15531,10 +15549,13 @@ function pwListPermits(){
 
   if(!all.length){
     /* Five zeroes above an empty list is chrome, not information. */
-    return '<div class="pw-empty"><b>No permits yet.</b><br>' +
-      'Every permit starts with a Job Safety Analysis.<br><br>' +
-      '<button class="pw-btn go" onclick="pwGoNew()">' +
-      'Start a JSA</button></div>';
+    /* State the sequence as two steps. A permit cannot exist without an approved
+       JSA — that is enforced server-side, so the empty state teaches the rule
+       instead of leaving the operator to discover it via a refusal. */
+    return '<div class="pw-empty"><b>No permits open</b>' +
+      'Nothing is authorised for work right now.' +
+      '<div class="pw-steps-hint"><i>1</i> Walk the job (JSA) <s></s> <i>2</i> Raise the permit</div>' +
+      '<button class="pw-btn go" onclick="pwGoNew()">Start a JSA</button></div>';
   }
   if(!rows.length){
     return h + '<div class="pw-empty">No permits with status <b>'+pwEsc(f)+'</b>.</div>';
