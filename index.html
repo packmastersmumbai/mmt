@@ -2738,77 +2738,213 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 /* Responsive shell. Was a hard 760px centred column, which left ~71% of a
    desktop viewport empty. Now the content width answers the viewport. */
 .fl-wrap{ max-width:760px; margin:0 auto; padding:16px 14px 90px; }
-/* ── PTW / JSA ──────────────────────────────────────────────── */
-.pw-card{ background:#fff; border:1px solid #e2e8f0; border-radius:7px; padding:12px 13px;
-  margin-bottom:10px; }
-.pw-card.pw-x{ border-left:3px solid #dc2626; }
-.pw-card.pw-a{ border-left:3px solid #16a34a; }
-.pw-card.pw-c{ border-left:3px solid #94a3b8; }
-.pw-card.pw-d{ border-left:3px solid #ca8a04; }
-.pw-row{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
-.pw-no{ font-weight:700; font-size:14px; color:#0f172a; letter-spacing:.01em; }
-.pw-pill{ font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
-  padding:2px 7px; border-radius:99px; white-space:nowrap; }
-.pw-pill.a{ background:#dcfce7; color:#15803d; }
-.pw-pill.x{ background:#fee2e2; color:#b91c1c; }
-.pw-pill.c{ background:#f1f5f9; color:#475569; }
-.pw-pill.d{ background:#fef9c3; color:#a16207; }
-.pw-pill.i{ background:#dbeafe; color:#1d4ed8; }
-.pw-meta{ font-size:12px; color:#64748b; margin-top:5px; line-height:1.5; }
-.pw-meta b{ color:#334155; font-weight:600; }
-.pw-jsa{ display:inline-block; font-size:11px; color:#0f766e; background:#f0fdfa;
-  border:1px solid #99f6e4; border-radius:4px; padding:1px 6px; margin-top:6px; }
-.pw-acts{ display:flex; gap:7px; margin-top:9px; flex-wrap:wrap; }
-.pw-btn{ font:600 12px/1 'PMDev','Archivo',system-ui,sans-serif; padding:7px 11px;
-  border-radius:7px; border:1px solid #cbd5e1; background:#fff; color:#334155; cursor:pointer; }
-.pw-btn:hover{ background:#f8fafc; }
-.pw-btn.go{ background:#0f766e; border-color:#0f766e; color:#fff; }
-.pw-btn.go:hover{ background:#0d5f58; }
-.pw-btn.warn{ background:#b91c1c; border-color:#b91c1c; color:#fff; }
-.pw-empty{ text-align:center; padding:34px 16px; color:#64748b; font-size:13px; }
-.pw-cnt{ display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
-.pw-cnt div{ flex:1 1 70px; background:#fff; border:1px solid #e2e8f0; border-radius:7px;
-  padding:8px 6px; text-align:center; }
-.pw-cnt b{ display:block; font-size:17px; color:#0f172a; line-height:1.2; }
-.pw-cnt span{ font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:.05em; }
-.pw-sec{ font:700 11px/1 'PMDev','Archivo',system-ui,sans-serif; text-transform:uppercase;
-  letter-spacing:.07em; color:#0f766e; margin:16px 0 8px; }
-.pw-f{ margin-bottom:10px; }
-.pw-f label{ display:block; font-size:11px; font-weight:600; color:#475569; margin-bottom:3px; }
-.pw-f input,.pw-f select,.pw-f textarea{ width:100%; box-sizing:border-box; font:400 13px/1.4
-  'PMDev','Archivo',system-ui,sans-serif; padding:8px 9px; border:1px solid #cbd5e1;
-  border-radius:7px; background:#fff; color:#0f172a; }
-.pw-f textarea{ min-height:58px; resize:vertical; }
-.pw-g2{ display:grid; grid-template-columns:1fr 1fr; gap:9px; }
-.pw-chips{ display:flex; flex-wrap:wrap; gap:6px; }
-.pw-chip{ font-size:11.5px; padding:5px 9px; border-radius:99px; border:1px solid #cbd5e1;
-  background:#fff; color:#475569; cursor:pointer; user-select:none; }
-.pw-chip.on{ background:#0f766e; border-color:#0f766e; color:#fff; }
-.pw-hz{ border:1px solid #e2e8f0; border-radius:7px; padding:9px 10px; margin-bottom:8px;
-  background:#fcfcfd; }
-.pw-hz textarea{ min-height:40px; }
-.pw-chk{ display:flex; align-items:flex-start; gap:9px; padding:8px 0;
-  border-bottom:1px solid #f1f5f9; }
-.pw-chk:last-child{ border-bottom:none; }
-.pw-chk p{ margin:0; font-size:12.5px; color:#334155; line-height:1.45; flex:1; }
-.pw-yn{ display:flex; gap:4px; flex:0 0 auto; }
-.pw-yn button{ font:600 10.5px/1 'PMDev','Archivo',system-ui,sans-serif; padding:5px 7px;
-  border:1px solid #cbd5e1; background:#fff; border-radius:4px; cursor:pointer; color:#64748b; }
-.pw-yn button.on[data-v="Yes"]{ background:#16a34a; border-color:#16a34a; color:#fff; }
-.pw-yn button.on[data-v="No"]{ background:#dc2626; border-color:#dc2626; color:#fff; }
-.pw-yn button.on[data-v="N/A"]{ background:#64748b; border-color:#64748b; color:#fff; }
-.pw-note{ font-size:11.5px; color:#64748b; background:#f8fafc; border-left:2px solid #cbd5e1;
-  padding:7px 10px; margin:9px 0; line-height:1.5; border-radius:0 4px 4px 0; }
-.pw-gate{ font-size:12px; color:#92400e; background:#fffbeb; border:1px solid #fde68a;
-  border-radius:7px; padding:9px 11px; margin-bottom:11px; line-height:1.5; }
-.pw-err{ font-size:12.5px; color:#b91c1c; background:#fef2f2; border:1px solid #fecaca;
-  border-radius:7px; padding:9px 11px; margin:10px 0; line-height:1.5; }
-.pw-ok{ font-size:12.5px; color:#15803d; background:#f0fdf4; border:1px solid #bbf7d0;
-  border-radius:7px; padding:9px 11px; margin:10px 0; }
-.pw-ph{ display:flex; gap:7px; flex-wrap:wrap; margin-top:8px; }
-.pw-ph img{ width:74px; height:74px; object-fit:cover; border-radius:7px;
-  border:1px solid #e2e8f0; }
-@media(max-width:520px){ .pw-g2{ grid-template-columns:1fr; } }
+/* ── PTW / JSA ───────────────────────────────────────────────────
+   Uses the .fl token system and the existing component vocabulary
+   (.fl-group, .fl-grouphd, .fl-ctrl, .fl-pchip, .fl-submit) rather
+   than a parallel set. Only what PTW genuinely adds lives here. */
+
+/* Permit row — the register row, not a card. Ruled, hard-edged, status
+   carried by a dot and a pill, never by a thick coloured rail. */
+.pw-row{ display:flex; gap:11px; align-items:flex-start; padding:11px 13px;
+  border-bottom:1px solid var(--fledge); background:var(--flpanel);
+  cursor:pointer; transition:background .16s var(--ease); }
+.pw-row:last-child{ border-bottom:0; }
+.pw-row:hover{ background:var(--flpanel2); }
+.pw-dot{ width:9px; height:9px; border-radius:50%; flex:none; margin-top:5px;
+  background:var(--flfaint); }
+.pw-dot.a{ background:var(--flgood); } .pw-dot.x{ background:var(--flR); }
+.pw-dot.d{ background:var(--flwarn); } .pw-dot.c{ background:var(--fledge3); }
+.pw-body{ flex:1; min-width:0; }
+.pw-l1{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.pw-no{ font-family:'PMMono',ui-monospace,monospace; font-weight:700;
+  font-variant-numeric:tabular-nums; font-size:var(--t-md); color:var(--flink);
+  letter-spacing:-.01em; }
+.pw-l2{ font-size:var(--t-sm); color:var(--fldim); margin-top:3px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pw-l3{ font-size:var(--t-xs); color:var(--flfaint); margin-top:3px;
+  font-variant-numeric:tabular-nums; }
+.pw-l3 .sep{ color:var(--fledge2); margin:0 5px; }
+
+/* Status pill — wash + matching foreground, always labelled. */
+.pw-pill{ font:700 var(--t-xs) 'Archivo',sans-serif; padding:2px 8px;
+  border-radius:999px; white-space:nowrap; border:1px solid transparent;
+  letter-spacing:.04em; text-transform:uppercase; }
+.pw-pill.a{ background:var(--flgoodw); color:var(--flgood); border-color:var(--flgoodb); }
+.pw-pill.x{ background:var(--flRw);    color:var(--flR);    border-color:var(--flRb); }
+.pw-pill.d{ background:var(--flYw);    color:var(--flwarn); border-color:var(--flYb); }
+.pw-pill.c{ background:var(--flpanel2);color:var(--flfaint);border-color:var(--fledge2); }
+.pw-pill.i{ background:var(--flaccw);  color:var(--flB);    border-color:var(--flBb); }
+
+/* Countdown — the one number that decides whether work may continue. */
+.pw-clock{ font-family:'PMMono',ui-monospace,monospace; font-weight:700;
+  font-variant-numeric:tabular-nums; font-size:var(--t-xs); }
+.pw-clock.soon{ color:var(--flwarn); } .pw-clock.over{ color:var(--flR); }
+
+/* Counters — a filter bar that states the position, not KPI hero tiles. */
+.pw-tally{ display:flex; gap:1px; background:var(--fledge); border:1px solid var(--fledge);
+  border-radius:var(--r-md); overflow:hidden; margin-bottom:12px; }
+.pw-tally button{ flex:1; background:var(--flpanel); border:0; cursor:pointer;
+  padding:9px 4px; text-align:center; font-family:inherit;
+  transition:background .16s var(--ease); }
+.pw-tally button:hover{ background:var(--flpanel2); }
+.pw-tally button.on{ background:var(--flaccw); box-shadow:inset 0 -2px 0 var(--flacc); }
+.pw-tally b{ display:block; font-family:'PMMono',ui-monospace,monospace;
+  font-variant-numeric:tabular-nums; font-size:var(--t-lg); color:var(--flink);
+  line-height:1.15; }
+.pw-tally span{ display:block; font-size:var(--t-xs); color:var(--fldim);
+  text-transform:uppercase; letter-spacing:.05em; margin-top:2px; }
+.pw-tally button.on span{ color:var(--flacc); }
+
+/* Step rail — the JSA → PTW sequence made visible, because the gate is the
+   whole point of the module and a refusal must be predictable. */
+.pw-steps{ display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+.pw-step{ display:flex; align-items:center; gap:7px; font-size:var(--t-xs);
+  font-weight:700; color:var(--flfaint); text-transform:uppercase;
+  letter-spacing:.05em; }
+.pw-step .n{ width:20px; height:20px; border-radius:50%; display:grid;
+  place-items:center; background:var(--flpanel2); border:1px solid var(--fledge2);
+  font-family:'PMMono',ui-monospace,monospace; font-size:var(--t-xs); color:var(--flfaint); }
+.pw-step.on{ color:var(--flacc); }
+.pw-step.on .n{ background:var(--flacc); border-color:var(--flacc); color:var(--flon); }
+.pw-step.done .n{ background:var(--flgood); border-color:var(--flgood); color:var(--flon); }
+.pw-steps .bar{ flex:1; height:1px; background:var(--fledge2); }
+
+/* Hazard row — a ruled register line inside .fl-group, never a nested card.
+   Grid so step / hazard / control align down the page like a printed JSA. */
+.pw-hz{ display:grid; grid-template-columns:22px 1fr; gap:0 10px;
+  padding:10px 13px; border-bottom:1px solid var(--fledge); align-items:start; }
+.pw-hz:last-child{ border-bottom:0; }
+.pw-hz.std{ background:var(--flpanel); }
+.pw-hz.add{ background:var(--flpanel2); }
+.pw-hz .idx{ font-family:'PMMono',ui-monospace,monospace; font-size:var(--t-xs);
+  color:var(--flfaint); font-weight:700; padding-top:9px; }
+.pw-hz .fields{ min-width:0; display:grid; gap:6px; }
+.pw-hz textarea,.pw-hz input{ width:100%; box-sizing:border-box;
+  background:var(--flfield); border:1px solid var(--fledge2);
+  border-radius:var(--r-sm); padding:8px 10px; color:var(--flink);
+  font:400 var(--t-sm)/1.45 'Archivo','PMDev',sans-serif; outline:none;
+  transition:border-color .16s var(--ease); }
+.pw-hz textarea{ min-height:44px; resize:vertical; }
+.pw-hz textarea:focus,.pw-hz input:focus{ border-color:var(--flacc);
+  box-shadow:0 0 0 3px var(--flaccw); }
+.pw-hz .hzl{ font:700 var(--t-xs) 'Archivo',sans-serif; color:var(--fldim);
+  text-transform:uppercase; letter-spacing:.05em; }
+/* The standard rows arrive pre-written from the document set; they read as
+   given text until touched, so the crew edits rather than retypes. */
+.pw-hz.std textarea{ background:var(--flpanel2); border-style:dashed; }
+.pw-hz.std textarea:focus{ background:var(--flfield); border-style:solid; }
+
+/* Field grid. 44px controls come from .fl-ctrl; only the layout is here. */
+.pw-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:10px; padding:12px 13px; }
+.pw-f label{ display:block; font:700 var(--t-xs) 'Archivo',sans-serif;
+  color:var(--fldim); text-transform:uppercase; letter-spacing:.05em;
+  margin-bottom:5px; }
+.pw-f label .hi{ text-transform:none; letter-spacing:0; color:var(--flfaint);
+  font-weight:400; }
+.pw-f .fl-ctrl{ max-width:none; }
+.pw-f textarea.fl-ctrl{ min-height:66px; padding:10px 12px; resize:vertical;
+  line-height:1.45; }
+.pw-f.wide{ grid-column:1/-1; }
+.pw-req{ color:var(--flR); }
+
+/* Check row — reuses .fl-pchip for the Yes/No/NA marks. */
+.pw-chk{ display:flex; align-items:center; gap:11px; padding:9px 13px;
+  border-bottom:1px solid var(--fledge); }
+.pw-chk:last-child{ border-bottom:0; }
+.pw-chk .q{ flex:1; font-size:var(--t-sm); line-height:1.45; color:var(--flink);
+  min-width:0; }
+.pw-chk .qn{ font-family:'PMMono',ui-monospace,monospace; color:var(--flfaint);
+  font-size:var(--t-xs); margin-right:7px; }
+.pw-yn{ display:flex; gap:5px; flex:none; }
+.pw-yn button{ min-width:44px; min-height:44px; border-radius:var(--r-sm);
+  border:1px solid var(--fledge2); background:var(--flpanel); cursor:pointer;
+  font:700 var(--t-xs) 'Archivo',sans-serif; color:var(--flfaint);
+  transition:background .16s var(--ease),border-color .16s var(--ease); }
+.pw-yn button:hover{ background:var(--flpanel2); }
+.pw-yn button.on[data-v="Yes"]{ background:var(--flgoodw); border-color:var(--flgoodb); color:var(--flgood); }
+.pw-yn button.on[data-v="No"]{ background:var(--flRw); border-color:var(--flRb); color:var(--flR); }
+.pw-yn button.on[data-v="N/A"]{ background:var(--flpanel2); border-color:var(--fledge2); color:var(--flfaint); }
+.pw-chk.unanswered{ background:var(--flYw); }
+
+/* PPE chips — selection, 44px target. */
+.pw-chips{ display:flex; flex-wrap:wrap; gap:7px; padding:12px 13px; }
+.pw-chip{ font:600 var(--t-sm) 'Archivo','PMDev',sans-serif; padding:0 13px;
+  min-height:44px; display:inline-flex; align-items:center; gap:8px;
+  border-radius:var(--r-sm); border:1.5px solid var(--fledge2);
+  background:var(--flpanel); color:var(--fldim); cursor:pointer;
+  user-select:none; transition:background .16s var(--ease),border-color .16s var(--ease); }
+.pw-chip .mk{ width:18px; height:18px; border-radius:var(--r-sm); flex:none;
+  border:2px solid var(--fledge2); display:grid; place-items:center;
+  font-size:11px; font-weight:700; color:transparent; }
+.pw-chip.on{ background:var(--flaccw); border-color:var(--flacc); color:var(--flaccd); }
+.pw-chip.on .mk{ background:var(--flacc); border-color:var(--flacc); color:var(--flon); }
+
+/* Messages. */
+.pw-note{ font-size:var(--t-sm); color:var(--fldim); background:var(--flpanel2);
+  border-left:1px solid var(--fledge2); padding:9px 12px; margin:0;
+  line-height:1.5; }
+.pw-gate{ display:flex; gap:10px; align-items:flex-start; font-size:var(--t-sm);
+  color:var(--flwarn); background:var(--flYw); border:1px solid var(--flYb);
+  border-radius:var(--r-md); padding:11px 13px; margin-bottom:12px; line-height:1.5; }
+.pw-err{ font-size:var(--t-sm); color:var(--flR); background:var(--flRw);
+  border:1px solid var(--flRb); border-radius:var(--r-md); padding:11px 13px;
+  margin:11px 0; line-height:1.5; }
+.pw-ok{ font-size:var(--t-sm); color:var(--flgood); background:var(--flgoodw);
+  border:1px solid var(--flgoodb); border-radius:var(--r-md); padding:11px 13px;
+  margin:11px 0; line-height:1.5; }
+.pw-empty{ text-align:center; padding:38px 20px; color:var(--flfaint);
+  font-size:var(--t-sm); line-height:1.6; }
+.pw-empty b{ color:var(--fldim); }
+
+/* Detail view. */
+.pw-kv{ display:grid; grid-template-columns:auto 1fr; gap:7px 14px;
+  padding:12px 13px; font-size:var(--t-sm); }
+.pw-kv dt{ color:var(--flfaint); font-weight:600; white-space:nowrap; }
+.pw-kv dd{ margin:0; color:var(--flink); min-width:0; overflow-wrap:anywhere; }
+.pw-kv dd.num{ font-family:'PMMono',ui-monospace,monospace; font-weight:700;
+  font-variant-numeric:tabular-nums; }
+.pw-ph{ display:flex; gap:8px; flex-wrap:wrap; padding:12px 13px; }
+.pw-ph img{ width:78px; height:78px; object-fit:cover; border-radius:var(--r-sm);
+  border:1px solid var(--fledge); }
+.pw-back{ display:inline-flex; align-items:center; gap:7px; min-height:44px;
+  padding:0 13px; border:1px solid var(--fledge2); border-radius:var(--r-sm);
+  background:var(--flpanel); color:var(--fldim); cursor:pointer;
+  font:600 var(--t-sm) 'Archivo',sans-serif; margin-bottom:12px; }
+.pw-back:hover{ background:var(--flpanel2); }
+
+/* Row actions sit in the register row's right rail. */
+.pw-acts{ display:flex; gap:7px; flex:none; align-items:center; }
+.pw-btn{ min-height:38px; padding:0 12px; border-radius:var(--r-sm);
+  border:1px solid var(--fledge2); background:var(--flpanel); color:var(--fldim);
+  cursor:pointer; font:600 var(--t-xs) 'Archivo',sans-serif; white-space:nowrap;
+  transition:background .16s var(--ease); }
+.pw-btn:hover{ background:var(--flpanel2); }
+.pw-btn.go{ background:var(--flacc); border-color:var(--flacc); color:var(--flon); }
+.pw-btn.go:hover{ background:var(--flacc2); }
+.pw-btn.warn{ background:var(--flpanel); border-color:var(--flRb); color:var(--flR); }
+.pw-btn.warn:hover{ background:var(--flRw); }
+
+/* Sticky action bar — the submit must be reachable without scrolling back. */
+.pw-foot{ position:sticky; bottom:0; background:var(--flpanel);
+  border-top:1px solid var(--fledge); padding:11px 13px;
+  box-shadow:0 -1px 2px rgba(0,0,0,.06); margin:0 -13px -13px;
+  border-radius:0 0 var(--r-lg) var(--r-lg); }
+
+:where(.pw-btn,.pw-chip,.pw-back,.pw-tally button,.pw-yn button,.pw-row):focus-visible{
+  outline:2px solid var(--flacc); outline-offset:2px; }
+
+@media(max-width:560px){
+  .pw-grid{ grid-template-columns:1fr 1fr; }
+  .pw-f.wide,.pw-f.full{ grid-column:1/-1; }
+  .pw-chk{ flex-direction:column; align-items:stretch; gap:8px; }
+  .pw-yn{ width:100%; } .pw-yn button{ flex:1; }
+  .pw-acts{ width:100%; } .pw-acts .pw-btn{ flex:1; }
+  .pw-row{ flex-wrap:wrap; }
+}
+@media(prefers-reduced-motion:reduce){
+  .pw-row,.pw-btn,.pw-chip,.pw-yn button,.pw-tally button{ transition:none; }
+}
 @media (min-width:1101px){
   .fl-wrap{ max-width:1180px; display:grid; gap:22px;
     grid-template-columns:minmax(0,1fr) 300px; align-items:start;
@@ -14550,7 +14686,8 @@ document.getElementById('rd-rep-meter') && document.getElementById('rd-rep-meter
    view mirrors it so the floor sees WHY something is refused rather
    than a bare error.
    ═══════════════════════════════════════════════════════════════ */
-var PW = { data:null, tab:'permits', cat:null, sel:null, busy:false, photos:[] };
+var PW = { data:null, tab:'permits', cat:null, sel:null, busy:false, photos:[],
+           filter:'', step:1 };
 
 function pwEsc(v){
   return String(v==null?'':v).replace(/[&<>"']/g,function(c){
@@ -14604,96 +14741,155 @@ function pwRender(){
 }
 
 /* ── Permits list (the landing tab) ───────────────────────────── */
-function pwListPermits(){
-  var d = PW.data, rows = d.ptw || [];
-  var c = d.counts || {};
-  var h = '<div class="pw-cnt">' +
-    '<div><b>'+(c.active||0)+'</b><span>Active</span></div>' +
-    '<div><b>'+(c.expired||0)+'</b><span>Expired</span></div>' +
-    '<div><b>'+(c.draft||0)+'</b><span>Draft</span></div>' +
-    '<div><b>'+(c.closed||0)+'</b><span>Closed</span></div>' +
-    '</div>';
-  if(!rows.length){
-    return h + '<div class="pw-empty">No permits yet.<br>' +
-      'A permit needs an approved JSA first — start on the <b>New</b> tab.</div>';
+function pwFmtLeft(p){
+  /* Time remaining is the number that decides whether work may continue, so it
+     is stated outright rather than left for the reader to subtract. */
+  if(p.status==='Closed') return {t:'closed', c:''};
+  var m = String(p.expiryDate||'').match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if(!m) return {t:'no expiry', c:'over'};
+  var mt = String(p.timeExpiry||'').match(/^(\d{1,2}):(\d{2})$/);
+  var at = new Date(+m[3], +m[2]-1, +m[1], mt?+mt[1]:23, mt?+mt[2]:59);
+  var diff = at.getTime() - Date.now();
+  if(diff <= 0){
+    var od = Math.floor(-diff/3600000);
+    return {t: od<24 ? od+'h overdue' : Math.floor(od/24)+'d overdue', c:'over'};
   }
-  rows.forEach(function(p){
-    var cl = pwStatusClass(p.status);
-    h += '<div class="pw-card '+cl[1]+'">' +
-      '<div class="pw-row"><span class="pw-no">'+pwEsc(p.permitNo)+'</span>' +
-      '<span class="pw-pill '+cl[0]+'">'+pwEsc(p.status)+'</span></div>' +
-      '<div class="pw-meta">'+pwEsc(p.description||'')+'<br>' +
-      (p.location?'<b>'+pwEsc(p.location)+'</b> · ':'') +
-      (p.contractor?pwEsc(p.contractor)+' · ':'') +
-      'valid '+pwEsc(p.issueDate)+' '+pwEsc(p.timeIssued)+
-      ' → '+pwEsc(p.expiryDate)+' '+pwEsc(p.timeExpiry)+'</div>' +
-      (p.jsaNo?'<span class="pw-jsa">JSA '+pwEsc(p.jsaNo)+'</span>':'') +
-      '<div class="pw-acts">' +
-      '<button class="pw-btn" onclick="pwOpen(\'' + pwEsc(p.permitNo) + '\')">Open</button>' +
-      (p.status==='Draft'
-        ? '<button class="pw-btn go" onclick="pwVerifyForm(\'' + pwEsc(p.permitNo) + '\')">Verify &amp; authorise</button>' : '') +
-      (p.status==='Active'||p.status==='Expired'
-        ? '<button class="pw-btn warn" onclick="pwCloseForm(\'' + pwEsc(p.permitNo) + '\')">Close out</button>' : '') +
-      '</div></div>';
-  });
-  return h;
+  var h = Math.floor(diff/3600000);
+  if(h < 1)  return {t: Math.floor(diff/60000)+'m left', c:'soon'};
+  if(h < 24) return {t: h+'h left', c:'soon'};
+  return {t: Math.floor(h/24)+'d left', c:''};
 }
 
-/* ── JSA list ─────────────────────────────────────────────────── */
+function pwListPermits(){
+  var d = PW.data, all = d.ptw || [];
+  var c = d.counts || {};
+  var f = PW.filter || '';
+  var rows = f ? all.filter(function(p){ return p.status===f; }) : all;
+
+  var tally = [['','All',all.length],['Active','Active',c.active||0],
+               ['Expired','Expired',c.expired||0],['Draft','Draft',c.draft||0],
+               ['Closed','Closed',c.closed||0]];
+  var h = '<div class="pw-tally">';
+  tally.forEach(function(t){
+    h += '<button class="'+(f===t[0]?'on':'')+'" onclick="pwFilter(\''+t[0]+'\')">' +
+      '<b>'+t[2]+'</b><span>'+t[1]+'</span></button>';
+  });
+  h += '</div>';
+
+  if(!all.length){
+    return h + '<div class="pw-empty"><b>No permits yet.</b><br>' +
+      'A permit needs an approved JSA first.<br>Start on the <b>New</b> tab.</div>';
+  }
+  if(!rows.length){
+    return h + '<div class="pw-empty">No permits with status <b>'+pwEsc(f)+'</b>.</div>';
+  }
+
+  h += '<div class="fl-group"><div class="fl-grouphd">Permits' +
+    '<span class="n">'+rows.length+'</span></div>';
+  rows.forEach(function(p){
+    var cl = pwStatusClass(p.status), left = pwFmtLeft(p);
+    h += '<div class="pw-row" tabindex="0" onclick="pwOpen(\''+pwEsc(p.permitNo)+'\')" ' +
+      'onkeydown="if(event.key===\'Enter\')pwOpen(\''+pwEsc(p.permitNo)+'\')">' +
+      '<span class="pw-dot '+cl[0]+'"></span>' +
+      '<div class="pw-body">' +
+        '<div class="pw-l1"><span class="pw-no">'+pwEsc(p.permitNo)+'</span>' +
+          '<span class="pw-pill '+cl[0]+'">'+pwEsc(p.status)+'</span>' +
+          (left.t?'<span class="pw-clock '+left.c+'">'+pwEsc(left.t)+'</span>':'') +
+        '</div>' +
+        '<div class="pw-l2">'+pwEsc(p.description||'')+'</div>' +
+        '<div class="pw-l3">'+
+          (p.location?pwEsc(p.location)+'<span class="sep">·</span>':'') +
+          pwEsc(p.expiryDate)+' '+pwEsc(p.timeExpiry) +
+          (p.jsaNo?'<span class="sep">·</span>JSA '+pwEsc(p.jsaNo):'') +
+        '</div>' +
+      '</div>' +
+      '<div class="pw-acts" onclick="event.stopPropagation()">' +
+      (p.status==='Draft'
+        ? '<button class="pw-btn go" onclick="pwVerifyForm(\''+pwEsc(p.permitNo)+'\')">Authorise</button>' : '') +
+      (p.status==='Active'||p.status==='Expired'
+        ? '<button class="pw-btn warn" onclick="pwCloseForm(\''+pwEsc(p.permitNo)+'\')">Close out</button>' : '') +
+      '</div></div>';
+  });
+  return h + '</div>';
+}
+
+function pwFilter(v){ PW.filter = (PW.filter===v?'':v); pwRender(); }
+
 function pwListJsa(){
   var rows = (PW.data.jsa)||[];
-  if(!rows.length) return '<div class="pw-empty">No JSA recorded yet.</div>';
-  var h = '';
+  if(!rows.length) return '<div class="pw-empty"><b>No JSA recorded yet.</b><br>' +
+    'Every permit starts with one.</div>';
+  var h = '<div class="fl-group"><div class="fl-grouphd">Job Safety Analysis' +
+    '<span class="n">'+rows.length+'</span></div>';
   rows.forEach(function(j){
-    var cl = j.status==='Approved' ? ['a','pw-a']
-           : j.status==='Closed'   ? ['c','pw-c'] : ['d','pw-d'];
+    var cl = j.status==='Approved' ? 'a' : j.status==='Closed' ? 'c' : 'd';
     var trade = j.trade;
-    if(PW.cat){
-      PW.cat.trades.forEach(function(t){ if(t.code===j.trade) trade = t.title; });
-    }
-    h += '<div class="pw-card '+cl[1]+'">' +
-      '<div class="pw-row"><span class="pw-no">'+pwEsc(j.jsaNo)+'</span>' +
-      '<span class="pw-pill '+cl[0]+'">'+pwEsc(j.status)+'</span></div>' +
-      '<div class="pw-meta"><b>'+pwEsc(trade)+'</b><br>' +
-      pwEsc(j.description||'') + '<br>' +
-      (j.location?pwEsc(j.location)+' · ':'') +
-      (j.hazards?j.hazards.length:0)+' hazard rows · '+pwEsc(j.date)+'</div>' +
-      (j.permitNo?'<span class="pw-jsa">Permit '+pwEsc(j.permitNo)+'</span>':'') +
-      '<div class="pw-acts">' +
-      '<button class="pw-btn" onclick="pwOpenJsa(\'' + pwEsc(j.jsaNo) + '\')">Open</button>' +
-      '</div></div>';
+    if(PW.cat) PW.cat.trades.forEach(function(t){ if(t.code===j.trade) trade=t.title; });
+    h += '<div class="pw-row" tabindex="0" onclick="pwOpenJsa(\''+pwEsc(j.jsaNo)+'\')" ' +
+      'onkeydown="if(event.key===\'Enter\')pwOpenJsa(\''+pwEsc(j.jsaNo)+'\')">' +
+      '<span class="pw-dot '+cl+'"></span><div class="pw-body">' +
+      '<div class="pw-l1"><span class="pw-no">'+pwEsc(j.jsaNo)+'</span>' +
+      '<span class="pw-pill '+cl+'">'+pwEsc(j.status)+'</span></div>' +
+      '<div class="pw-l2">'+pwEsc(trade)+' — '+pwEsc(j.description||'')+'</div>' +
+      '<div class="pw-l3">'+(j.hazards?j.hazards.length:0)+' hazards' +
+      '<span class="sep">·</span>'+pwEsc(j.date) +
+      (j.permitNo?'<span class="sep">·</span>'+pwEsc(j.permitNo):'') +
+      '</div></div></div>';
   });
-  return h;
+  return h + '</div>';
 }
 
-/* ── New: JSA form, then PTW form ─────────────────────────────── */
+/* ── New ──────────────────────────────────────────────────────────
+   Two steps, shown as a rail so the gate is predictable rather than
+   discovered by being refused. */
 function pwNewPane(){
   var cat = PW.cat;
   if(!cat) return '<div class="pw-err">Catalogue unavailable.</div>';
   var open = PW.data.openJsa || [];
+  var step = PW.step || 1;
 
-  var h = '<div class="pw-sec">Step 1 — Job Safety Analysis</div>' +
-    '<div class="pw-note">' + pwEsc(cat.jsaInstructions[0]||'') + '</div>' +
-    '<div class="pw-f"><label>Trade / कार्य प्रकार</label><select id="pw-trade">' +
-    '<option value="">Select trade…</option>';
-  cat.trades.forEach(function(t){
-    h += '<option value="'+pwEsc(t.code)+'">'+pwEsc(t.title)+'</option>';
-  });
-  h += '</select></div><div id="pw-jsabody"></div>';
+  var h = '<div class="pw-steps">' +
+    '<span class="pw-step '+(step===1?'on':'done')+'"><span class="n">1</span>JSA</span>' +
+    '<span class="bar"></span>' +
+    '<span class="pw-step '+(step===2?'on':'')+'"><span class="n">2</span>Permit</span>' +
+    '</div>';
 
-  h += '<div class="pw-sec">Step 2 — Permit to Work</div>';
-  if(open.length){
-    h += '<div class="pw-f"><label>Attach an approved JSA</label>' +
-      '<select id="pw-usejsa"><option value="">Select a JSA…</option>';
-    open.forEach(function(j){
-      h += '<option value="'+pwEsc(j.jsaNo)+'">'+pwEsc(j.jsaNo)+' — '+
-        pwEsc((j.description||'').slice(0,44))+'</option>';
+  if(step === 1){
+    h += '<div class="fl-group">' +
+      '<div class="fl-grouphd">Step 1 — Job Safety Analysis</div>' +
+      '<div class="pw-note">'+pwEsc(cat.jsaInstructions[0]||'')+'</div>' +
+      '<div class="pw-grid"><div class="pw-f wide">' +
+      '<label>Trade <span class="hi">/ कार्य प्रकार</span> <span class="pw-req">*</span></label>' +
+      '<select class="fl-ctrl" id="pw-trade"><option value="">Select the trade…</option>';
+    cat.trades.forEach(function(t){
+      h += '<option value="'+pwEsc(t.code)+'">'+pwEsc(t.title)+'</option>';
     });
-    h += '</select></div><div id="pw-ptwbody"></div>';
-  } else {
-    h += '<div class="pw-gate">No approved JSA is waiting for a permit. ' +
-      'Complete Step 1 first — a permit cannot be raised without one.</div>';
+    h += '</select></div></div></div><div id="pw-jsabody"></div>';
+    if(open.length){
+      h += '<div class="pw-note" style="margin-top:12px;border-radius:var(--r-md);' +
+        'border:1px solid var(--fledge)">' + open.length +
+        ' approved JSA waiting for a permit. <a href="#" onclick="PW.step=2;pwRender();' +
+        'return false" style="color:var(--flacc);font-weight:700">Raise a permit →</a></div>';
+    }
+    return h;
   }
+
+  if(!open.length){
+    return h + '<div class="pw-gate"><span>⚠</span><div>' +
+      '<b>No approved JSA is waiting for a permit.</b><br>' +
+      'A permit cannot be raised without one — that is the rule the form itself sets. ' +
+      '<a href="#" onclick="PW.step=1;pwRender();return false" ' +
+      'style="color:var(--flwarn);font-weight:700">Complete Step 1 →</a></div></div>';
+  }
+  h += '<div class="fl-group"><div class="fl-grouphd">Step 2 — Permit to Work</div>' +
+    '<div class="pw-grid"><div class="pw-f wide">' +
+    '<label>Attach an approved JSA <span class="pw-req">*</span></label>' +
+    '<select class="fl-ctrl" id="pw-usejsa"><option value="">Select a JSA…</option>';
+  open.forEach(function(j){
+    h += '<option value="'+pwEsc(j.jsaNo)+'">'+pwEsc(j.jsaNo)+' — '+
+      pwEsc((j.description||'').slice(0,44))+'</option>';
+  });
+  h += '</select></div></div></div><div id="pw-ptwbody"></div>';
   return h;
 }
 
@@ -14710,191 +14906,207 @@ function pwTrade(code){
   return out;
 }
 
+function pwField(id, label, hi, opts){
+  opts = opts || {};
+  return '<div class="pw-f'+(opts.wide?' wide':'')+'">' +
+    '<label for="'+id+'">'+pwEsc(label)+
+      (hi?' <span class="hi">/ '+pwEsc(hi)+'</span>':'') +
+      (opts.req?' <span class="pw-req">*</span>':'') + '</label>' +
+    (opts.area
+      ? '<textarea class="fl-ctrl" id="'+id+'"'+(opts.ph?' placeholder="'+pwEsc(opts.ph)+'"':'')+'></textarea>'
+      : '<input class="fl-ctrl" id="'+id+'" type="'+(opts.type||'text')+'"' +
+        (opts.val?' value="'+pwEsc(opts.val)+'"':'') +
+        (opts.ph?' placeholder="'+pwEsc(opts.ph)+'"':'') +
+        (opts.mode?' inputmode="'+opts.mode+'"':'') + '>') +
+    '</div>';
+}
+
 function pwBuildJsaForm(code){
   var box = pwEl('pw-jsabody'); if(!box) return;
   if(!code){ box.innerHTML=''; return; }
   var t = pwTrade(code); if(!t){ box.innerHTML=''; return; }
 
-  var h = '<div class="pw-g2">' +
-    '<div class="pw-f"><label>Date</label><input id="pw-j-date" value="'+
-      pwEsc(PW.data.today)+'"></div>' +
-    '<div class="pw-f"><label>Location</label><input id="pw-j-loc"></div>' +
-    '<div class="pw-f"><label>Contractor / Agency</label><input id="pw-j-con"></div>' +
-    '<div class="pw-f"><label>Carried Out By</label><input id="pw-j-by"></div>' +
-    '</div>' +
-    '<div class="pw-f"><label>Job / Activity Description</label>' +
-    '<textarea id="pw-j-desc"></textarea></div>';
+  var h = '<div class="fl-group"><div class="fl-grouphd">The job</div>' +
+    '<div class="pw-grid">' +
+    pwField('pw-j-date','Date','दिनांक',{val:PW.data.today}) +
+    pwField('pw-j-loc','Location','स्थान',{}) +
+    pwField('pw-j-con','Contractor / Agency','ठेकेदार',{}) +
+    pwField('pw-j-by','Carried out by','द्वारा',{}) +
+    pwField('pw-j-desc','Job / activity description','कार्य विवरण',
+      {wide:true,area:true,req:true,ph:'What work is being done, and where exactly?'}) +
+    '</div></div>';
 
-  h += '<div class="pw-f"><label>Recommended PPE for this Job</label>' +
+  h += '<div class="fl-group"><div class="fl-grouphd">Recommended PPE' +
+    '<span class="n" id="pw-ppe-n">0/'+t.ppe.length+'</span></div>' +
     '<div class="pw-chips" id="pw-j-ppe">';
   t.ppe.forEach(function(p){
-    h += '<span class="pw-chip" data-ppe="'+pwEsc(p)+'">'+pwEsc(p)+'</span>';
+    h += '<span class="pw-chip" role="checkbox" aria-checked="false" tabindex="0" ' +
+      'data-ppe="'+pwEsc(p)+'"><span class="mk">✓</span>'+pwEsc(p)+'</span>';
   });
   h += '</div>' + (t.ppeNote?'<div class="pw-note">'+pwEsc(t.ppeNote)+'</div>':'') + '</div>';
 
-  /* The prefilled rows are the standard analysis for this trade, shown in full
-     and editable. Blank rows are for what the walk finds on the day — the form
-     says "Add any step or hazard specific to this location". */
-  h += '<div class="pw-f"><label>Hazard and Control Analysis — '+t.hazards.length+
-    ' standard rows</label><div id="pw-j-hz">';
-  t.hazards.forEach(function(z,i){
-    h += pwHzRow(i, z.step, z.hazard, z.control);
-  });
-  h += pwHzRow(t.hazards.length,'','','');
-  h += '</div><button class="pw-btn" type="button" onclick="pwAddHz()">+ Add row</button></div>';
+  /* The standard analysis is collapsed by default. Thirteen open blocks was the
+     defect: the crew must READ these, and a wall of identical textareas is not
+     read. Collapsed, the count is the information; opened, each row is editable. */
+  h += '<div class="fl-group"><div class="fl-grouphd" style="cursor:pointer" ' +
+    'onclick="pwToggleHz()">Hazard &amp; control analysis' +
+    '<span class="n" id="pw-hz-n">'+t.hazards.length+' standard</span></div>' +
+    '<div class="pw-note">Standard rows for this trade are pre-written. ' +
+    'Walk the job and edit anything that differs; add rows for what is specific ' +
+    'to this location.</div>' +
+    '<div id="pw-j-hz" style="display:none">';
+  t.hazards.forEach(function(z,i){ h += pwHzRow(i, z.step, z.hazard, z.control, true); });
+  h += '</div>' +
+    '<div id="pw-j-hz-extra"></div>' +
+    '<div style="padding:10px 13px"><button type="button" class="pw-btn" ' +
+    'onclick="pwAddHz()">+ Add a hazard found on the walk</button></div></div>';
 
-  h += '<div class="pw-sec">Toolbox Talk</div><div class="pw-g2">' +
-    '<div class="pw-f"><label>Date</label><input id="pw-j-tbd" value="'+pwEsc(PW.data.today)+'"></div>' +
-    '<div class="pw-f"><label>Time</label><input id="pw-j-tbt" placeholder="HH:MM"></div>' +
-    '<div class="pw-f"><label>No. Briefed</label><input id="pw-j-tbc" inputmode="numeric"></div>' +
-    '<div class="pw-f"><label>Conducted By</label><input id="pw-j-tbby"></div></div>';
+  h += '<div class="fl-group"><div class="fl-grouphd">Toolbox talk</div>' +
+    '<div class="pw-grid">' +
+    pwField('pw-j-tbd','Date','',{val:PW.data.today}) +
+    pwField('pw-j-tbt','Time','',{ph:'HH:MM'}) +
+    pwField('pw-j-tbc','No. briefed','',{mode:'numeric'}) +
+    pwField('pw-j-tbby','Conducted by','',{}) +
+    '</div></div>';
 
-  h += '<div class="pw-sec">Sign-off</div><div class="pw-g2">' +
-    '<div class="pw-f"><label>Prepared By (Supervisor) *</label><input id="pw-j-prep"></div>' +
-    '<div class="pw-f"><label>Reviewed By (Safety Officer)</label><input id="pw-j-rev"></div>' +
-    '<div class="pw-f"><label>Approved By (Issuing Authority)</label><input id="pw-j-appr"></div>' +
+  h += '<div class="fl-group"><div class="fl-grouphd">Sign-off</div>' +
+    '<div class="pw-grid">' +
+    pwField('pw-j-prep','Prepared by (Supervisor)','',{req:true}) +
+    pwField('pw-j-rev','Reviewed by (Safety Officer)','',{}) +
+    pwField('pw-j-appr','Approved by (Issuing Authority)','',{}) +
     '</div>' +
-    '<div class="pw-note">A JSA is saved as <b>Approved</b> only when an approver is ' +
-    'named. A permit can attach an approved JSA only.</div>';
-
-  h += '<div class="pw-f"><label>Photo evidence (optional)</label>' +
-    '<input type="file" accept="image/*" id="pw-j-photo"></div>' +
-    '<div class="pw-ph" id="pw-j-phlist"></div>';
+    '<div class="pw-note">Named an approver? The JSA saves as <b>Approved</b> and ' +
+    'can carry a permit. Left blank it saves as <b>Draft</b>.</div>' +
+    '<div class="pw-grid"><div class="pw-f wide">' +
+    '<label for="pw-j-photo">Photo evidence</label>' +
+    '<input class="fl-ctrl" type="file" accept="image/*" id="pw-j-photo" ' +
+    'style="padding:10px 12px"></div></div>' +
+    '<div class="pw-ph" id="pw-j-phlist"></div></div>';
 
   h += '<div id="pw-j-msg"></div>' +
-    '<button class="pw-btn go" style="width:100%;padding:11px" onclick="pwSaveJsa()">Save JSA</button>';
+    '<button class="fl-submit" onclick="pwSaveJsa()">Save JSA</button>';
   box.innerHTML = h;
 
   box.querySelectorAll('#pw-j-ppe .pw-chip').forEach(function(c){
-    c.addEventListener('click', function(){ this.classList.toggle('on'); });
+    var tog = function(){
+      c.classList.toggle('on');
+      c.setAttribute('aria-checked', c.classList.contains('on')?'true':'false');
+      var n = box.querySelectorAll('#pw-j-ppe .pw-chip.on').length;
+      var lbl = pwEl('pw-ppe-n'); if(lbl) lbl.textContent = n+'/'+t.ppe.length;
+    };
+    c.addEventListener('click', tog);
+    c.addEventListener('keydown', function(e){
+      if(e.key===' '||e.key==='Enter'){ e.preventDefault(); tog(); }
+    });
   });
   var pf = pwEl('pw-j-photo');
   if(pf) pf.addEventListener('change', function(){ pwStagePhoto(this); });
 }
 
-function pwHzRow(i, step, hz, ctl){
-  return '<div class="pw-hz" data-hz="'+i+'">' +
-    '<input class="pw-hz-step" placeholder="Job step" value="'+pwEsc(step)+'" ' +
-      'style="width:100%;box-sizing:border-box;font:400 12px/1.4 \'PMDev\',system-ui,sans-serif;' +
-      'padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;margin-bottom:5px">' +
-    '<input class="pw-hz-hz" placeholder="Potential hazard" value="'+pwEsc(hz)+'" ' +
-      'style="width:100%;box-sizing:border-box;font:400 12px/1.4 \'PMDev\',system-ui,sans-serif;' +
-      'padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;margin-bottom:5px">' +
-    '<textarea class="pw-hz-ctl" placeholder="Control measure" ' +
-      'style="width:100%;box-sizing:border-box;font:400 12px/1.4 \'PMDev\',system-ui,sans-serif;' +
-      'padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;min-height:40px;resize:vertical"' +
-      '>'+pwEsc(ctl)+'</textarea>' +
-    '<input class="pw-hz-resp" placeholder="Responsibility" ' +
-      'style="width:100%;box-sizing:border-box;font:400 12px/1.4 \'PMDev\',system-ui,sans-serif;' +
-      'padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;margin-top:5px">' +
-    '</div>';
+function pwToggleHz(){
+  var b = pwEl('pw-j-hz'); if(!b) return;
+  b.style.display = b.style.display==='none' ? 'block' : 'none';
+}
+
+function pwHzRow(i, step, hz, ctl, std){
+  return '<div class="pw-hz '+(std?'std':'add')+'">' +
+    '<div class="idx">'+(i+1)+'</div><div class="fields">' +
+    '<input class="pw-hz-step" placeholder="Job step" value="'+pwEsc(step||'')+'">' +
+    '<input class="pw-hz-hz" placeholder="Potential hazard" value="'+pwEsc(hz||'')+'">' +
+    '<textarea class="pw-hz-ctl" placeholder="Control measure to be put in place">'+pwEsc(ctl||'')+'</textarea>' +
+    '<input class="pw-hz-resp" placeholder="Responsibility">' +
+    '</div></div>';
 }
 
 function pwAddHz(){
-  var box = pwEl('pw-j-hz'); if(!box) return;
-  var n = box.querySelectorAll('.pw-hz').length;
-  box.insertAdjacentHTML('beforeend', pwHzRow(n,'','',''));
+  var box = pwEl('pw-j-hz-extra'); if(!box) return;
+  var n = document.querySelectorAll('#pw-j-hz .pw-hz, #pw-j-hz-extra .pw-hz').length;
+  box.insertAdjacentHTML('beforeend', pwHzRow(n,'','','',false));
+  var rows = box.querySelectorAll('.pw-hz');
+  var last = rows[rows.length-1];
+  if(last){ var f = last.querySelector('input'); if(f) f.focus(); }
 }
 
 function pwCollectHz(){
   var out = [];
-  document.querySelectorAll('#pw-j-hz .pw-hz').forEach(function(r){
+  document.querySelectorAll('#pw-j-hz .pw-hz, #pw-j-hz-extra .pw-hz').forEach(function(r){
     var g = function(c){ var e=r.querySelector(c); return e?e.value.trim():''; };
     var hz = g('.pw-hz-hz'), ctl = g('.pw-hz-ctl');
-    if(!hz || !ctl) return;      // a row without both is not an analysis
+    if(!hz || !ctl) return;
     out.push({ step:g('.pw-hz-step'), hazard:hz, control:ctl, resp:g('.pw-hz-resp'), status:'' });
   });
   return out;
 }
 
-function pwSaveJsa(){
-  if(PW.busy) return;
-  var msg = pwEl('pw-j-msg');
-  var v = function(id){ var e=pwEl(id); return e?e.value.trim():''; };
-  var ppe = [];
-  document.querySelectorAll('#pw-j-ppe .pw-chip.on').forEach(function(c){
-    ppe.push(c.getAttribute('data-ppe'));
-  });
-  var payload = {
-    trade: v('pw-trade'), date: v('pw-j-date'), location: v('pw-j-loc'),
-    contractor: v('pw-j-con'), description: v('pw-j-desc'), carriedBy: v('pw-j-by'),
-    ppe: ppe, hazards: pwCollectHz(),
-    toolbox: { date:v('pw-j-tbd'), time:v('pw-j-tbt'), count:v('pw-j-tbc'), by:v('pw-j-tbby') },
-    preparedBy: v('pw-j-prep'), reviewedBy: v('pw-j-rev'), approvedBy: v('pw-j-appr')
-  };
-  if(!payload.hazards.length){
-    msg.innerHTML = '<div class="pw-err">At least one hazard row needs both a hazard and a control.</div>';
-    return;
-  }
-  PW.busy = true;
-  msg.innerHTML = '<div class="pw-note">Saving…</div>';
-  google.script.run.withSuccessHandler(function(r){
-    PW.busy = false;
-    if(!r || !r.success){
-      msg.innerHTML = '<div class="pw-err">'+pwEsc((r&&r.error)||'Save failed')+'</div>';
-      return;
-    }
-    msg.innerHTML = '<div class="pw-ok">Saved '+pwEsc(r.jsaNo)+' ('+pwEsc(r.status)+
-      '). '+(r.status==='Approved'
-        ? 'It is now available to attach to a permit.'
-        : 'Name an approver before a permit can attach it.')+'</div>';
-    pwFlushPhotos('jsa', r.jsaNo, function(){ loadPtw(true); });
-  }).withFailureHandler(function(e){
-    PW.busy = false;
-    msg.innerHTML = '<div class="pw-err">'+pwEsc((e&&e.message)||e)+'</div>';
-  }).submitJsa(payload);
-}
-
-/* ── PTW form ─────────────────────────────────────────────────── */
 function pwBuildPtwForm(jsaNo){
   var box = pwEl('pw-ptwbody'); if(!box) return;
   if(!jsaNo){ box.innerHTML=''; return; }
   var cat = PW.cat;
 
-  var h = '<div class="pw-note">' + pwEsc(cat.instructions[2]||'') + '</div>' +
-    '<div class="pw-g2">' +
-    '<div class="pw-f"><label>Date of Issue</label><input id="pw-p-id" value="'+pwEsc(PW.data.today)+'"></div>' +
-    '<div class="pw-f"><label>Time Issued</label><input id="pw-p-it" placeholder="HH:MM"></div>' +
-    '<div class="pw-f"><label>Date of Expiry *</label><input id="pw-p-ed" placeholder="dd-mm-yyyy"></div>' +
-    '<div class="pw-f"><label>Time Expiry *</label><input id="pw-p-et" placeholder="HH:MM"></div>' +
-    '<div class="pw-f"><label>Lock Number</label><input id="pw-p-lock"></div>' +
-    '<div class="pw-f"><label>Key Number</label><input id="pw-p-key"></div>' +
-    '<div class="pw-f"><label>Exact Location</label><input id="pw-p-loc"></div>' +
-    '<div class="pw-f"><label>Equipment</label><input id="pw-p-eq"></div>' +
-    '<div class="pw-f"><label>Contractor / Agency</label><input id="pw-p-con"></div>' +
-    '<div class="pw-f"><label>No. of Workers</label><input id="pw-p-wk" inputmode="numeric"></div>' +
-    '</div>';
+  var h = '<div class="fl-group"><div class="fl-grouphd">Validity</div>' +
+    '<div class="pw-note">'+pwEsc(cat.instructions[2]||'')+'</div>' +
+    '<div class="pw-grid">' +
+    pwField('pw-p-id','Date of issue','',{val:PW.data.today}) +
+    pwField('pw-p-it','Time issued','',{ph:'HH:MM'}) +
+    pwField('pw-p-ed','Date of expiry','',{req:true,ph:'dd-mm-yyyy'}) +
+    pwField('pw-p-et','Time expiry','',{req:true,ph:'HH:MM'}) +
+    '</div></div>';
 
-  h += '<div class="pw-f"><label>Permit Class</label><div class="pw-chips" id="pw-p-cls">';
+  h += '<div class="fl-group"><div class="fl-grouphd">Where &amp; who</div>' +
+    '<div class="pw-grid">' +
+    pwField('pw-p-loc','Exact location','स्थान',{}) +
+    pwField('pw-p-eq','Equipment','उपकरण',{}) +
+    pwField('pw-p-con','Contractor / Agency','ठेकेदार',{}) +
+    pwField('pw-p-wk','No. of workers','',{mode:'numeric'}) +
+    pwField('pw-p-lock','Lock number','',{}) +
+    pwField('pw-p-key','Key number','',{}) +
+    pwField('pw-p-desc','Description of work','कार्य विवरण',{wide:true,area:true,req:true}) +
+    '</div></div>';
+
+  h += '<div class="fl-group"><div class="fl-grouphd">Permit class' +
+    '<span class="n" id="pw-cls-n">0</span></div>' +
+    '<div class="pw-chips" id="pw-p-cls">';
   cat.ptwClasses.forEach(function(c){
-    h += '<span class="pw-chip" data-cls="'+pwEsc(c)+'">'+pwEsc(c)+'</span>';
+    h += '<span class="pw-chip" role="checkbox" aria-checked="false" tabindex="0" ' +
+      'data-cls="'+pwEsc(c)+'"><span class="mk">✓</span>'+pwEsc(c)+'</span>';
   });
   h += '</div></div>';
 
-  h += '<div class="pw-f"><label>Description of Work *</label><textarea id="pw-p-desc"></textarea></div>';
-
-  h += '<div class="pw-sec">Section II — Pre-Work Checks</div><div id="pw-p-pre">';
+  h += '<div class="fl-group"><div class="fl-grouphd">Section II — Pre-work checks' +
+    '<span class="n" id="pw-pre-n">0/'+cat.preWork.length+'</span></div>' +
+    '<div id="pw-p-pre">';
   cat.preWork.forEach(function(q,i){ h += pwCheckRow('pre',i,q); });
-  h += '</div>';
+  h += '</div></div>';
 
-  h += '<div class="pw-sec">Applicant / Performing Authority</div><div class="pw-g2">' +
-    '<div class="pw-f"><label>Company Name</label><input id="pw-p-co"></div>' +
-    '<div class="pw-f"><label>Name / Designation *</label><input id="pw-p-nm"></div>' +
-    '<div class="pw-f"><label>Phone Number</label><input id="pw-p-ph" inputmode="tel"></div>' +
+  h += '<div class="fl-group"><div class="fl-grouphd">Applicant / Performing Authority</div>' +
+    '<div class="pw-grid">' +
+    pwField('pw-p-co','Company name','',{}) +
+    pwField('pw-p-nm','Name / designation','नाम',{req:true}) +
+    pwField('pw-p-ph','Phone number','',{mode:'tel'}) +
     '</div>' +
-    '<div class="pw-note">Declaration: I declare that the information provided is accurate ' +
-    'and the control measures listed above have been effectively implemented.</div>';
-
-  h += '<div class="pw-f"><label>Photo evidence (optional)</label>' +
-    '<input type="file" accept="image/*" id="pw-p-photo"></div>' +
-    '<div class="pw-ph" id="pw-p-phlist"></div>';
+    '<div class="pw-note"><b>Declaration:</b> I declare that the information provided ' +
+    'is accurate and the control measures listed above have been effectively implemented.</div>' +
+    '<div class="pw-grid"><div class="pw-f wide">' +
+    '<label for="pw-p-photo">Photo evidence</label>' +
+    '<input class="fl-ctrl" type="file" accept="image/*" id="pw-p-photo" ' +
+    'style="padding:10px 12px"></div></div>' +
+    '<div class="pw-ph" id="pw-p-phlist"></div></div>';
 
   h += '<div id="pw-p-msg"></div>' +
-    '<button class="pw-btn go" style="width:100%;padding:11px" onclick="pwSavePtw()">Raise permit</button>';
+    '<button class="fl-submit" onclick="pwSavePtw()">Raise permit</button>';
   box.innerHTML = h;
 
   box.querySelectorAll('#pw-p-cls .pw-chip').forEach(function(c){
-    c.addEventListener('click', function(){ this.classList.toggle('on'); });
+    var tog = function(){
+      c.classList.toggle('on');
+      c.setAttribute('aria-checked', c.classList.contains('on')?'true':'false');
+      var n = box.querySelectorAll('#pw-p-cls .pw-chip.on').length;
+      var lbl = pwEl('pw-cls-n'); if(lbl) lbl.textContent = n;
+    };
+    c.addEventListener('click', tog);
+    c.addEventListener('keydown', function(e){
+      if(e.key===' '||e.key==='Enter'){ e.preventDefault(); tog(); }
+    });
   });
   pwWireChecks(box);
   var pf = pwEl('pw-p-photo');
@@ -14902,8 +15114,9 @@ function pwBuildPtwForm(jsaNo){
 }
 
 function pwCheckRow(kind, i, q){
-  return '<div class="pw-chk" data-'+kind+'="'+i+'"><p>'+pwEsc(q)+'</p>' +
-    '<div class="pw-yn">' +
+  return '<div class="pw-chk" data-'+kind+'="'+i+'">' +
+    '<div class="q"><span class="qn">'+(i+1)+'</span>'+pwEsc(q)+'</div>' +
+    '<div class="pw-yn" role="radiogroup">' +
     '<button type="button" data-v="Yes">Yes</button>' +
     '<button type="button" data-v="No">No</button>' +
     '<button type="button" data-v="N/A">N/A</button>' +
@@ -14916,8 +15129,50 @@ function pwWireChecks(scope){
       var row = this.closest('.pw-chk');
       row.querySelectorAll('.pw-yn button').forEach(function(x){ x.classList.remove('on'); });
       this.classList.add('on');
+      row.classList.remove('unanswered');
+      pwCountChecks(scope);
     });
   });
+}
+
+/* An unanswered check is the thing that gets a permit refused at the very end,
+   so the count is shown while filling rather than discovered on submit. */
+function pwCountChecks(scope){
+  var pre = scope.querySelector('#pw-p-pre');
+  if(pre){
+    var rows = pre.querySelectorAll('.pw-chk');
+    var done = pre.querySelectorAll('.pw-yn button.on').length;
+    var lbl = document.getElementById('pw-pre-n');
+    if(lbl) lbl.textContent = done + '/' + rows.length;
+  }
+  var v = scope.querySelector('#pw-v-list');
+  if(v){
+    var vr = v.querySelectorAll('.pw-chk');
+    var vd = v.querySelectorAll('.pw-yn button.on').length;
+    var vl = document.getElementById('pw-v-n');
+    if(vl) vl.textContent = vd + '/' + vr.length;
+    var no = v.querySelectorAll('.pw-yn button.on[data-v="No"]').length;
+    var btn = document.getElementById('pw-v-submit');
+    if(btn){
+      btn.disabled = (vd < vr.length) || no > 0;
+      btn.textContent = no > 0
+        ? 'Cannot authorise — ' + no + ' check answered No'
+        : (vd < vr.length ? 'Answer all ' + vr.length + ' checks' : 'Authorise — safe to proceed');
+    }
+  }
+}
+
+/* Mark what is missing, and put the first gap on screen. */
+function pwFlagUnanswered(sel){
+  var miss = 0, first = null;
+  document.querySelectorAll(sel + ' .pw-chk').forEach(function(r){
+    if(!r.querySelector('.pw-yn button.on')){
+      r.classList.add('unanswered'); miss++;
+      if(!first) first = r;
+    }
+  });
+  if(first) first.scrollIntoView({behavior:'smooth', block:'center'});
+  return miss;
 }
 
 function pwCollectChecks(sel, attr){
@@ -14928,6 +15183,61 @@ function pwCollectChecks(sel, attr){
                a: on ? on.getAttribute('data-v') : '', remark: '' });
   });
   return out;
+}
+
+function pwSaveJsa(){
+  if(PW.busy) return;
+  var msg = pwEl('pw-j-msg');
+  var v = function(id){ var e=pwEl(id); return e?e.value.trim():''; };
+  var ppe = [];
+  document.querySelectorAll('#pw-j-ppe .pw-chip.on').forEach(function(c){
+    ppe.push(c.getAttribute('data-ppe'));
+  });
+  var hz = pwCollectHz();
+  if(!hz.length){
+    msg.innerHTML = '<div class="pw-err">At least one hazard row needs both a hazard ' +
+      'and a control measure. Open the standard rows and check them against the job.</div>';
+    var box = pwEl('pw-j-hz');
+    if(box && box.style.display==='none'){ box.style.display='block'; box.scrollIntoView({behavior:'smooth',block:'center'}); }
+    return;
+  }
+  if(!v('pw-j-desc')){
+    msg.innerHTML = '<div class="pw-err">Job description is required.</div>';
+    var d = pwEl('pw-j-desc'); if(d){ d.focus(); d.scrollIntoView({behavior:'smooth',block:'center'}); }
+    return;
+  }
+  if(!v('pw-j-prep')){
+    msg.innerHTML = '<div class="pw-err">Prepared By is required — a JSA needs a named preparer.</div>';
+    var pr = pwEl('pw-j-prep'); if(pr){ pr.focus(); pr.scrollIntoView({behavior:'smooth',block:'center'}); }
+    return;
+  }
+  var payload = {
+    trade: v('pw-trade'), date: v('pw-j-date'), location: v('pw-j-loc'),
+    contractor: v('pw-j-con'), description: v('pw-j-desc'), carriedBy: v('pw-j-by'),
+    ppe: ppe, hazards: hz,
+    toolbox: { date:v('pw-j-tbd'), time:v('pw-j-tbt'), count:v('pw-j-tbc'), by:v('pw-j-tbby') },
+    preparedBy: v('pw-j-prep'), reviewedBy: v('pw-j-rev'), approvedBy: v('pw-j-appr')
+  };
+  PW.busy = true;
+  msg.innerHTML = '<div class="pw-note">Saving…</div>';
+  google.script.run.withSuccessHandler(function(r){
+    PW.busy = false;
+    if(!r || !r.success){
+      msg.innerHTML = '<div class="pw-err">'+pwEsc((r&&r.error)||'Save failed')+'</div>';
+      return;
+    }
+    msg.innerHTML = '<div class="pw-ok">Saved <b>'+pwEsc(r.jsaNo)+'</b> ('+pwEsc(r.status)+'). '+
+      (r.status==='Approved'
+        ? 'It can now carry a permit.'
+        : 'Name an approver before a permit can attach it.')+'</div>';
+    pwFlushPhotos('jsa', r.jsaNo, function(){
+      loadPtw(true);
+      if(r.status === 'Approved'){ PW.step = 2; setTimeout(pwRender, 400); }
+    });
+  }).withFailureHandler(function(e){
+    PW.busy = false;
+    msg.innerHTML = '<div class="pw-err">'+pwEsc((e&&e.message)||e)+'</div>';
+  }).submitJsa(payload);
 }
 
 function pwSavePtw(){
@@ -14947,6 +15257,12 @@ function pwSavePtw(){
     preWork: pwCollectChecks('#pw-p-pre','pre'),
     applicant: { company:v('pw-p-co'), name:v('pw-p-nm'), phone:v('pw-p-ph') }
   };
+  var miss = pwFlagUnanswered('#pw-p-pre');
+  if(miss){
+    msg.innerHTML = '<div class="pw-err">'+miss+' pre-work check'+(miss>1?'s are':' is')+
+      ' unanswered. Every check needs Yes, No or N/A before the permit is raised.</div>';
+    return;
+  }
   PW.busy = true;
   msg.innerHTML = '<div class="pw-note">Saving…</div>';
   google.script.run.withSuccessHandler(function(r){
@@ -14969,24 +15285,29 @@ function pwSavePtw(){
 /* ── Section III verify ───────────────────────────────────────── */
 function pwVerifyForm(no){
   var pane = pwEl('ptw-pane'); if(!pane || !PW.cat) return;
-  var h = '<button class="pw-btn" onclick="PW.tab=\'permits\';pwRender();pwSyncSeg()">← Back</button>' +
-    '<div class="pw-sec">Section III — Verification · '+pwEsc(no)+'</div>' +
-    '<div class="pw-note">To be completed by the Issuing Authority. ' +
-    'Every check must be Yes or N/A — a No cannot be authorised.</div>' +
+  var h = '<button class="pw-back" onclick="PW.tab=\'permits\';pwRender();pwSyncSeg()">← Permits</button>' +
+    '<div class="fl-group"><div class="fl-grouphd">Section III — Verification' +
+    '<span class="n">'+pwEsc(no)+'</span></div>' +
+    '<div class="pw-note">To be completed by the Issuing Authority. Every check must be ' +
+    '<b>Yes</b> or <b>N/A</b> — a single <b>No</b> blocks authorisation.</div>' +
     '<div id="pw-v-list">';
   PW.cat.verify.forEach(function(q,i){ h += pwCheckRow('v',i,q); });
-  h += '</div><div class="pw-sec">Issuing Authority</div><div class="pw-g2">' +
-    '<div class="pw-f"><label>Name / Designation *</label><input id="pw-v-nm"></div>' +
-    '<div class="pw-f"><label>Department</label><input id="pw-v-dp"></div>' +
-    '<div class="pw-f"><label>Phone Number</label><input id="pw-v-ph" inputmode="tel"></div>' +
+  h += '</div></div>';
+  h += '<div class="fl-group"><div class="fl-grouphd">Issuing Authority' +
+    '<span class="n" id="pw-v-n">0/'+PW.cat.verify.length+'</span></div>' +
+    '<div class="pw-grid">' +
+    pwField('pw-v-nm','Name / designation','नाम',{req:true}) +
+    pwField('pw-v-dp','Department','',{}) +
+    pwField('pw-v-ph','Phone number','',{mode:'tel'}) +
     '</div>' +
-    '<div class="pw-note">Confirmation: I confirm that I have verified the above ' +
-    'information and ensured that the necessary precautions have been taken.</div>' +
+    '<div class="pw-note"><b>Confirmation:</b> I confirm that I have verified the above ' +
+    'information and ensured that the necessary precautions have been taken.</div></div>' +
     '<div id="pw-v-msg"></div>' +
-    '<button class="pw-btn go" style="width:100%;padding:11px" ' +
-    'onclick="pwDoVerify(\'' + pwEsc(no) + '\')">Authorise — safe to proceed</button>';
+    '<button class="fl-submit" id="pw-v-submit" disabled ' +
+    'onclick="pwDoVerify(\'' + pwEsc(no) + '\')">Answer all ' + PW.cat.verify.length + ' checks</button>';
   pane.innerHTML = h;
   pwWireChecks(pane);
+  pwCountChecks(pane);
 }
 
 function pwDoVerify(no){
@@ -15011,22 +15332,25 @@ function pwDoVerify(no){
 /* ── Section IV close out ─────────────────────────────────────── */
 function pwCloseForm(no){
   var pane = pwEl('ptw-pane'); if(!pane || !PW.cat) return;
-  var h = '<button class="pw-btn" onclick="PW.tab=\'permits\';pwRender();pwSyncSeg()">← Back</button>' +
-    '<div class="pw-sec">Section IV — Close Out · '+pwEsc(no)+'</div>' +
-    '<div class="pw-f"><label>Result</label><select id="pw-c-res">';
+  var h = '<button class="pw-back" onclick="PW.tab=\'permits\';pwRender();pwSyncSeg()">← Permits</button>' +
+    '<div class="fl-group"><div class="fl-grouphd">Section IV — Close out' +
+    '<span class="n">'+pwEsc(no)+'</span></div><div class="pw-grid">' +
+    '<div class="pw-f wide"><label for="pw-c-res">Result <span class="pw-req">*</span></label>' +
+    '<select class="fl-ctrl" id="pw-c-res">';
   PW.cat.closeOut.forEach(function(o){
     h += '<option value="'+pwEsc(o)+'">'+pwEsc(o)+'</option>';
   });
   h += '</select></div>' +
-    '<div class="pw-f"><label>Remark</label><textarea id="pw-c-rem"></textarea></div>' +
-    '<div class="pw-note">Closure: I confirm that the work area has been restored to its ' +
-    'original condition and no hazards have been introduced.</div>' +
-    '<div class="pw-g2">' +
-    '<div class="pw-f"><label>Performing Authority *</label><input id="pw-c-pa"></div>' +
-    '<div class="pw-f"><label>Issuing Authority *</label><input id="pw-c-ia"></div>' +
-    '<div class="pw-f"><label>Safety Officer</label><input id="pw-c-so"></div>' +
-    '</div><div id="pw-c-msg"></div>' +
-    '<button class="pw-btn warn" style="width:100%;padding:11px" ' +
+    pwField('pw-c-rem','Remark','टिप्पणी',{wide:true,area:true}) +
+    '</div>' +
+    '<div class="pw-note"><b>Closure:</b> I confirm that the work area has been restored ' +
+    'to its original condition and no hazards have been introduced.</div></div>' +
+    '<div class="fl-group"><div class="fl-grouphd">Sign-off</div><div class="pw-grid">' +
+    pwField('pw-c-pa','Performing Authority','',{req:true}) +
+    pwField('pw-c-ia','Issuing Authority','',{req:true}) +
+    pwField('pw-c-so','Safety Officer','',{}) +
+    '</div></div><div id="pw-c-msg"></div>' +
+    '<button class="fl-submit" style="background:var(--flR)" ' +
     'onclick="pwDoClose(\'' + pwEsc(no) + '\')">Close permit</button>';
   pane.innerHTML = h;
 }
@@ -15060,12 +15384,15 @@ function pwOpen(no){
   pane.innerHTML = '<div class="fl-loading">Loading…</div>';
   google.script.run.withSuccessHandler(function(r){
     if(!r || !r.success){ pane.innerHTML='<div class="pw-err">'+pwEsc((r&&r.error)||'')+'</div>'; return; }
-    var p = r.ptw, cl = pwStatusClass(p.status);
-    var h = '<button class="pw-btn" onclick="PW.tab=\'permits\';pwRender();pwSyncSeg()">← Back</button>' +
-      '<div class="pw-card '+cl[1]+'" style="margin-top:10px">' +
-      '<div class="pw-row"><span class="pw-no">'+pwEsc(p.permitNo)+'</span>' +
-      '<span class="pw-pill '+cl[0]+'">'+pwEsc(p.status)+'</span></div>' +
-      '<div class="pw-meta">'+pwEsc(p.description)+'</div></div>';
+    var p = r.ptw, cl = pwStatusClass(p.status), left = pwFmtLeft(p);
+    var h = '<button class="pw-back" onclick="PW.tab=\'permits\';pwRender();pwSyncSeg()">← Permits</button>' +
+      '<div class="fl-group"><div class="pw-row" style="cursor:default">' +
+      '<span class="pw-dot '+cl[0]+'"></span><div class="pw-body">' +
+      '<div class="pw-l1"><span class="pw-no">'+pwEsc(p.permitNo)+'</span>' +
+      '<span class="pw-pill '+cl[0]+'">'+pwEsc(p.status)+'</span>' +
+      (left.t?'<span class="pw-clock '+left.c+'">'+pwEsc(left.t)+'</span>':'')+'</div>' +
+      '<div class="pw-l2" style="white-space:normal">'+pwEsc(p.description)+'</div>' +
+      '</div></div></div>';
     h += pwKV('Section I — Permit Details', [
       ['JSA attached', p.jsaNo], ['Location', p.location], ['Equipment', p.equipment],
       ['Contractor', p.contractor], ['Workers', p.workers],
@@ -15092,16 +15419,18 @@ function pwOpen(no){
       ['Closed at', (p.closeSigns||{}).closedAt]
     ]);
     if((p.photos||[]).length){
-      h += '<div class="pw-sec">Photo evidence</div><div class="pw-ph">';
+      h += '<div class="fl-group"><div class="fl-grouphd">Photo evidence' +
+        '<span class="n">'+p.photos.length+'</span></div><div class="pw-ph">';
       p.photos.forEach(function(ph){
         h += '<a href="'+pwEsc(ph.url)+'" target="_blank" rel="noopener">' +
           '<img src="'+pwEsc(ph.url)+'" alt="evidence"></a>';
       });
-      h += '</div>';
+      h += '</div></div>';
     }
     if(r.jsa){
-      h += '<div class="pw-sec">Attached JSA — '+pwEsc(r.jsa.jsaNo)+'</div>' +
-        pwHazTable(r.jsa.hazards||[]);
+      h += '<div class="fl-group"><div class="fl-grouphd">Attached JSA' +
+        '<span class="n">'+pwEsc(r.jsa.jsaNo)+'</span></div>' +
+        pwHazTable(r.jsa.hazards||[]) + '</div>';
     }
     pane.innerHTML = h;
   }).getPtwDetail(no);
@@ -15113,8 +15442,8 @@ function pwOpenJsa(no){
   google.script.run.withSuccessHandler(function(r){
     if(!r || !r.success){ pane.innerHTML='<div class="pw-err">'+pwEsc((r&&r.error)||'')+'</div>'; return; }
     var j = r.jsa;
-    var h = '<button class="pw-btn" onclick="PW.tab=\'jsa\';pwRender();pwSyncSeg()">← Back</button>' +
-      '<div class="pw-sec">'+pwEsc(j.jsaNo)+' — '+pwEsc(j.status)+'</div>' +
+    var h = '<button class="pw-back" onclick="PW.tab=\'jsa\';pwRender();pwSyncSeg()">← JSA</button>' +
+      '' +
       pwKV('JSA Details', [
         ['Trade', j.trade], ['Date', j.date], ['Location', j.location],
         ['Contractor', j.contractor], ['Carried out by', j.carriedBy],
@@ -15123,34 +15452,43 @@ function pwOpenJsa(no){
         ['Prepared by', j.preparedBy], ['Reviewed by', j.reviewedBy],
         ['Approved by', j.approvedBy]
       ]) +
-      '<div class="pw-sec">Hazard and Control Analysis</div>' + pwHazTable(j.hazards||[]);
+      '<div class="fl-group"><div class="fl-grouphd">Hazard &amp; control analysis' +
+      '<span class="n">'+(j.hazards||[]).length+'</span></div>' +
+      pwHazTable(j.hazards||[]) + '</div>';
     if((j.photos||[]).length){
-      h += '<div class="pw-sec">Photo evidence</div><div class="pw-ph">';
+      h += '<div class="fl-group"><div class="fl-grouphd">Photo evidence' +
+        '<span class="n">'+j.photos.length+'</span></div><div class="pw-ph">';
       j.photos.forEach(function(ph){
         h += '<a href="'+pwEsc(ph.url)+'" target="_blank" rel="noopener">' +
           '<img src="'+pwEsc(ph.url)+'" alt="evidence"></a>';
       });
-      h += '</div>';
+      h += '</div></div>';
     }
     pane.innerHTML = h;
   }).getJsaDetail(no);
 }
 
 function pwKV(title, rows){
-  var h = '<div class="pw-sec">'+pwEsc(title)+'</div><div class="pw-card">';
+  var body = '';
   rows.forEach(function(r){
     if(!r[1]) return;
-    h += '<div class="pw-meta"><b>'+pwEsc(r[0])+':</b> '+pwEsc(r[1])+'</div>';
+    var num = /^d|^[A-Z]{2,}-/.test(String(r[1])) && String(r[1]).length < 32;
+    body += '<dt>'+pwEsc(r[0])+'</dt><dd'+(num?' class="num"':'')+'>'+pwEsc(r[1])+'</dd>';
   });
-  return h + '</div>';
+  if(!body) return '';
+  return '<div class="fl-group"><div class="fl-grouphd">'+pwEsc(title)+'</div>' +
+    '<dl class="pw-kv">'+body+'</dl></div>';
 }
 
 function pwChecks(title, list){
-  var h = '<div class="pw-sec">'+pwEsc(title)+'</div><div class="pw-card">';
-  list.forEach(function(c){
-    var col = c.a==='Yes' ? '#15803d' : c.a==='No' ? '#b91c1c' : '#64748b';
-    h += '<div class="pw-meta"><span style="color:'+col+';font-weight:700">'+
-      pwEsc(c.a||'—')+'</span> · '+pwEsc(c.q)+'</div>';
+  var done = list.filter(function(c){ return c.a; }).length;
+  var h = '<div class="fl-group"><div class="fl-grouphd">'+pwEsc(title)+
+    '<span class="n">'+done+'/'+list.length+'</span></div>';
+  list.forEach(function(c,i){
+    var cls = c.a==='Yes' ? 'a' : c.a==='No' ? 'x' : 'c';
+    h += '<div class="pw-chk"><div class="q"><span class="qn">'+(i+1)+'</span>'+
+      pwEsc(c.q)+'</div>' +
+      '<span class="pw-pill '+cls+'">'+pwEsc(c.a||'—')+'</span></div>';
   });
   return h + '</div>';
 }
@@ -15159,11 +15497,14 @@ function pwHazTable(rows){
   if(!rows.length) return '<div class="pw-empty">No hazard rows recorded.</div>';
   var h = '';
   rows.forEach(function(z,i){
-    h += '<div class="pw-hz"><div class="pw-meta"><b>'+(i+1)+'. '+pwEsc(z.step||'—')+'</b></div>' +
-      '<div class="pw-meta"><b>Hazard:</b> '+pwEsc(z.hazard)+'</div>' +
-      '<div class="pw-meta"><b>Control:</b> '+pwEsc(z.control)+'</div>' +
-      (z.resp?'<div class="pw-meta"><b>Responsibility:</b> '+pwEsc(z.resp)+'</div>':'') +
-      '</div>';
+    h += '<div class="pw-hz add"><div class="idx">'+(i+1)+'</div><div class="fields">' +
+      (z.step?'<div style="font-weight:700;font-size:var(--t-sm)">'+pwEsc(z.step)+'</div>':'') +
+      '<div style="font-size:var(--t-sm);color:var(--flR)"><span class="hzl">Hazard</span><br>'+
+        pwEsc(z.hazard)+'</div>' +
+      '<div style="font-size:var(--t-sm);color:var(--fldim)"><span class="hzl">Control</span><br>'+
+        pwEsc(z.control)+'</div>' +
+      (z.resp?'<div style="font-size:var(--t-xs);color:var(--flfaint)">'+pwEsc(z.resp)+'</div>':'') +
+      '</div></div>';
   });
   return h;
 }
@@ -15212,6 +15553,7 @@ document.addEventListener('DOMContentLoaded', function(){
   if(seg) seg.addEventListener('click', function(e){
     var b = e.target.closest('.fl-segbtn'); if(!b) return;
     PW.tab = b.getAttribute('data-ptwview');
+    if(PW.tab === 'new') PW.step = 1;
     pwSyncSeg(); pwRender();
   });
 });
