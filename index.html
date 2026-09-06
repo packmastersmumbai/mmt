@@ -2862,8 +2862,11 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 
 /* Hazard row — a ruled register line inside .fl-group, never a nested card.
    Grid so step / hazard / control align down the page like a printed JSA. */
-.pw-hz{ display:grid; grid-template-columns:18px 1fr; gap:0 8px;
-  padding:8px 12px; border-bottom:1px solid var(--fledge); align-items:start;
+/* Tighter gutter and padding: the index column was 18px wide holding a 2-digit
+   number, and 8px of vertical padding on both sides of a 215px row is slack that
+   twelve rows multiply into a screen and a half. */
+.pw-hz{ display:grid; grid-template-columns:15px 1fr; gap:0 7px;
+  padding:9px 12px 8px; border-bottom:1px solid var(--fledge); align-items:start;
   position:relative; }
 /* State reads from the left edge at a glance: amber = still to walk,
    green = confirmed in place, slate = ruled out. Colour is never the only
@@ -2876,8 +2879,8 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .pw-hz.std{ background:var(--flpanel); }
 .pw-hz.add{ background:var(--flpanel2); }
 .pw-hz .idx{ font-family:'PMMono',ui-monospace,monospace; font-size:var(--t-xs);
-  color:var(--flfaint); font-weight:700; padding-top:9px; }
-.pw-hz .fields{ min-width:0; max-width:100%; display:grid; gap:5px;
+  color:var(--flfaint); font-weight:700; padding-top:1px; }
+.pw-hz .fields{ min-width:0; max-width:100%; display:grid; gap:4px;
   overflow:hidden; }
 .pw-hz textarea,.pw-hz input{ width:100%; box-sizing:border-box;
   background:var(--flfield); border:1px solid var(--fledge2);
@@ -2911,7 +2914,7 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
    as a label instead of the first word of the sentence. */
 .pw-hz .ctlwrap p, .pw-hz .ref p{ padding-left:0; }
 .pw-hz .tag{ margin-right:5px; }
-.pw-hz .ref p{ margin:0 0 3px; display:flex; gap:5px; align-items:baseline;
+.pw-hz .ref p{ margin:0 0 2px; display:flex; gap:5px; align-items:baseline;
   min-width:0; }
 .pw-hz .ref p .haz{ white-space:normal; min-width:0; flex:1; }
 .pw-hz .ref p{ display:block; }
@@ -2945,8 +2948,14 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
    somebody stands in front of the control and says otherwise. */
 /* One row: two state buttons + the owner. No section label — the buttons say
    what they do, and a label per row × 12 rows is 12 lines of nothing. */
+/* Twelve rows x ~215px was 2778px of a 4529px form — the walk was nine screens
+   of scrolling. The text itself is only ~110px of each row; the rest was the
+   confirm strip sitting on its own line beneath it plus slack.
+   The strip now shares a line with Edit and rides tight under the text. The two
+   decision buttons keep 44px — they are the gloved targets and are not shrunk —
+   but the row loses its dead space. */
 .pw-conf{ display:flex; gap:6px; align-items:center; flex-wrap:wrap;
-  margin-top:5px; max-width:100%; }
+  margin-top:4px; max-width:100%; }
 .pw-conf button{ min-height:44px; padding:0 11px; border-radius:var(--r-sm);
   border:1.5px solid var(--fledge2); background:var(--flpanel);
   color:var(--fldim); cursor:pointer; font:700 var(--t-xs) 'Archivo',sans-serif;
