@@ -2826,7 +2826,8 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .pw-hz.add{ background:var(--flpanel2); }
 .pw-hz .idx{ font-family:'PMMono',ui-monospace,monospace; font-size:var(--t-xs);
   color:var(--flfaint); font-weight:700; padding-top:9px; }
-.pw-hz .fields{ min-width:0; display:grid; gap:5px; }
+.pw-hz .fields{ min-width:0; max-width:100%; display:grid; gap:5px;
+  overflow:hidden; }
 .pw-hz textarea,.pw-hz input{ width:100%; box-sizing:border-box;
   background:var(--flfield); border:1px solid var(--fledge2);
   border-radius:var(--r-sm); padding:8px 10px; color:var(--flink);
@@ -2843,13 +2844,21 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 /* A standard row is REFERENCE first: read it, accept it, edit only if the job
    differs. Rendering 12 of them as 48 empty-looking inputs was the defect —
    nobody reads a wall of textareas, and reading them is the entire point. */
-.pw-hz .ref{ font-size:var(--t-sm); line-height:1.45; color:var(--flink); }
+.pw-hz .ref{ font-size:var(--t-sm); line-height:1.45; color:var(--flink);
+  min-width:0; }
 .pw-hz .ref .haz{ color:var(--flR); }
 .pw-hz .ref .ctl{ color:var(--fldim); }
-.pw-hz .ref p{ margin:0 0 3px; }
+.pw-hz .ref p{ margin:0 0 3px; display:flex; gap:5px; align-items:baseline;
+  min-width:0; }
+.pw-hz .ref p .haz{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  min-width:0; flex:1; }
+.pw-hz.expand .ref p{ display:block; }
+.pw-hz.expand .ref p .haz{ white-space:normal; overflow:visible; }
 .pw-hz .ref p:last-child{ margin-bottom:0; }
 .pw-hz .step{ font-weight:700; font-size:var(--t-sm); color:var(--flink);
-  margin-bottom:2px; line-height:1.3; }
+  margin-bottom:2px; line-height:1.3; overflow:hidden; text-overflow:ellipsis;
+  white-space:nowrap; }
+.pw-hz.expand .step{ white-space:normal; }
 /* The control text is the long part. Clamp it to three lines with the full
    text one tap away — visible by default, never truncated silently. */
 .pw-hz .ctlwrap{ position:relative; }
@@ -2866,8 +2875,8 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   padding-left:4px; }
 .pw-hz.expand .more::after{ content:'Less'; }
 .pw-hz:not(.expand) .more::after{ content:'Full control text'; }
-.pw-hz .tag{ display:inline; font:700 var(--t-xs) 'Archivo',sans-serif;
-  text-transform:uppercase; letter-spacing:.06em; margin-right:5px; }
+.pw-hz .tag{ flex:none; font:700 var(--t-xs) 'Archivo',sans-serif;
+  text-transform:uppercase; letter-spacing:.06em; }
 .pw-hz .tag.h{ color:var(--flR); } .pw-hz .tag.c{ color:var(--flfaint); }
 .pw-hzedit{ font:700 var(--t-xs) 'Archivo',sans-serif;
   background:none; border:0; color:var(--flfaint); cursor:pointer; padding:2px 0; }
@@ -2878,7 +2887,7 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 /* One row: two state buttons + the owner. No section label — the buttons say
    what they do, and a label per row × 12 rows is 12 lines of nothing. */
 .pw-conf{ display:flex; gap:6px; align-items:center; flex-wrap:wrap;
-  margin-top:5px; }
+  margin-top:5px; max-width:100%; }
 .pw-conf button{ min-height:44px; padding:0 11px; border-radius:var(--r-sm);
   border:1.5px solid var(--fledge2); background:var(--flpanel);
   color:var(--fldim); cursor:pointer; font:700 var(--t-xs) 'Archivo',sans-serif;
