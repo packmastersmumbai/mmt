@@ -13430,17 +13430,24 @@ function sfCollectControls(){
    and a measure with no evidence gets NO suggestion at all rather than a
    default. A reviewer can then disagree with something specific. */
 var SF_COC_SIGNALS=[
-  /* Ordered most-effective-first, matching SF_COC_LEVELS. Each pattern is
-     deliberately narrow: a miss (no suggestion) costs a few seconds of reading,
-     a false suggestion costs the register's credibility. */
-  {k:'Elimination',   re:/\beliminat|\bdiscontinu|\bstop(ped)? using|\bno longer used|\bremoved from service\b/i},
-  {k:'Substitution',  re:/\bsubstitut|\breplaced? with\b|\bwater[- ]based\b|\blow[- ]voc\b|\bless hazardous\b/i},
+  /* Ordered most-effective-first, matching SF_COC_LEVELS.
+     Patterns are STEMS, not inflected whole words. The original table used
+     \btraining\b, \binspection\b, \bsignage\b — and this register writes
+     "trained", "inspected", "signages", so every one of them missed: the
+     suggestion slot was empty for all 106 unclassified measures. Anything that
+     can take a plural or a verb ending is matched on its stem now, verified
+     against the live register rather than assumed.
+     Still deliberately narrow: a miss costs a few seconds of reading, a false
+     suggestion costs the register's credibility. 24 measures match nothing and
+     that is correct — "Correct tool for the job" is a judgement, not a keyword. */
+  {k:'Elimination',   re:/\beliminat|\bdiscontinu|\bstop(?:ped)? using\b|\bno longer used\b|\bremoved from service\b|\bno personnel under\b|\bno simultaneous\b/i},
+  {k:'Substitution',  re:/\bsubstitut|\breplaced? with\b|\bwater[- ]based\b|\blow[- ]voc\b|\bless hazardous\b|\bin place of\b|\bled system|\bantiglare|\banti[- ]glare/i},
   /* elcb/rccb/mcb appear as "MCBs/RCCBs" and "MCB,s" in this register, so the
      trailing boundary is (s|,|/|\b) rather than \b — a slash or comma directly
      after the acronym defeated \b and skipped a real Engineering control. */
-  {k:'Engineering',   re:/\bguard(ed|ing|s)?\b|\binterlock|\benclosure|\bexhaust\b|\bventilat|\bearthing\b|\bbonding\b|\b(?:elcb|rccb|mcb)s?\b|\bbarricad|\brailing|\bdetector\b|\balarm\b|\bextinguisher|\bcanopy\b|\bcage\b|\brestraint\b|\bscrubber\b|\blocal exhaust\b|\blightning arrest|\bcable tray/i},
-  {k:'Administrative',re:/\btraining\b|\btool ?box\b|\bsop\b|\bprocedure\b|\bsignage\b|\bdisplay(ed)?\b|\bawareness\b|\bpermit\b|\bregister\b|\bchecklist\b|\binspection\b|\bmonitor(ing)?\b|\baudit\b|\bcompetent\b|\bauthoris|\bauthoriz|\bonly trained\b|\bmock drill\b|\bmsds\b/i},
-  {k:'PPE',           re:/\bppe\b|\bhelmet|\bgoggle|\beyewear\b|\bface ?shield|\brespirator|\bdust mask|\bear ?plug|\bear ?muff|\bsafety shoe|\bgloves\b|\bapron\b|\bfull sleeve/i}
+  {k:'Engineering',   re:/\bguard|\binterlock|\benclos|\bexhaust|\bventilat|\bearthing\b|\bearthed\b|\bbonding\b|\b(?:elcb|rccb|mcb)s?\b|\bbarricad|\brailing|\bhandrail|\bdetector|\balarm|\bextinguisher|\bhydrant|\bcanopy|\bcage\b|\brestraint|\bscrubber|\blightning arrest|\bcable tray|\bregulator|\bsafety cutter\b|\bretractable\b|\bsensor|\bchock|\bdock leveller|\bramp\b|\banti[- ]slip mat|\bnon[- ]slip\b|\binsulat|\bups\b|\bemergency light|\brefrigerat|\bpallet wrap|\bstrapping\b|\bfloor marking|\bwarning tape|\btool bag\b|\btool belt\b/i},
+  {k:'Administrative',re:/\btrain|\btool ?box\b|\bsop\b|\bocp\b|\bprocedure|\bsignage|\bsign board|\bsign[- ]off\b|\bdisplay|\bawareness|\bpermit|\bregister\b|\bchecklist|\bchecksheet\b|\binspect|\bmonitor|\baudit|\bcompeten|\bauthoris|\bauthoriz|\bmock drill\b|\bmsds\b|\bsegregat|\blabell?ed\b|\btagged\b|\brecord|\bschedul|\breview|\bclearance\b|\bhousekeep|\brotation|\bnear miss\b|\bfifo\b|\bloto\b|\bbanksman\b|\bspotter\b|\bbuddy system\b|\bfirst aid\b|\bassembly point\b|\bemergency contact|\bfssai\b|\bpuc\b|\bcalibrat|\b20-20-20\b|\bthree[- ]point contact\b|\bdesignated area\b|\bdemarcation\b|\bverified by\b|\bapproved\b/i},
+  {k:'PPE',           re:/\bppe\b|\bhelmet|\bgoggle|\beyewear\b|\bface ?shield|\brespirator|\bdust mask|\bnose mask\b|\bear ?plug|\bear ?muff|\bsafety shoe|\bglove|\bapron|\bfull sleeve|\bsafety belt\b|\bharness|\bmoisteriz|\bmoisturiz/i}
 ];
 /* Return {level, why} only when the evidence points ONE way. Two or more
    different control types in one measure means the measure describes two
@@ -13467,6 +13474,14 @@ function sfBuildReviewQueue(){
       if(/^\[[^\]]+\]/.test(p)) return;               // already classified
       var txt=sfStripMarker(p);
       if(!txt) return;
+      /* 11 rows in this register carry "-----------" as their control text —
+         a placeholder someone typed to fill the cell. sfStripMarker removes one
+         leading dash, so the rest survived and they appeared in the queue as
+         measures awaiting classification. They are not measures; asking anyone
+         to assign a hierarchy level to a row of dashes is noise that hides the
+         real work. Skipped here rather than deleted from the sheet: the register
+         is the customer's record, and emptying cells is their call, not mine. */
+      if(/^[-–—_.\s]+$/.test(txt)) return;
       out.push({sr:h.sr, idx:i, text:txt, risk:h.risk||0,
         cls:h.classification||'', hazard:h.hazard||'', activity:h.activity||'',
         suggest:sfSuggestLevel(txt)});
