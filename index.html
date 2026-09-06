@@ -3311,6 +3311,53 @@ select.fl-ctrl{ font-weight:600; cursor:pointer;
   display:inline-flex; align-items:center; justify-content:center; gap:9px; }
 .fl-allok:hover{ background:var(--flgoodw); }
 .fl-allok:active{ transform:scale(.985); }
+/* PHONE: "Mark ALL" is a shortcut, not the subject of the screen — but at full
+   width, 16px, ringed in the accent, it read as loud as the Submit button at the
+   bottom and pushed the first real activity further down. It becomes a right-
+   aligned action on the ACTIVITIES rule instead: still a 44px target, no longer
+   a second primary. */
+@media (max-width:560px){
+  .fl-allok{ width:auto; margin:0; padding:0 12px; font-size:var(--t-sm);
+    border-radius:var(--r-sm); box-shadow:inset 0 0 0 1px var(--flaccd);
+    background:transparent; }
+}
+/* Seated on the Activities rule. Kept at 38px rather than 44px deliberately: this
+   is a convenience shortcut sitting on a heading, and the per-activity "All"
+   buttons — the ones actually used with gloves — remain full size. */
+.fl-allok.inline{ min-height:38px; margin-left:auto; font-size:var(--t-xs);
+  letter-spacing:0; text-transform:none; white-space:nowrap; }
+#hk-acts .fl-grouphd .n{ margin-left:auto; }
+#hk-acts .fl-grouphd{ gap:10px; }
+
+/* ── Activity register ─────────────────────────────────────────────────────
+   The list was a bordered card wrapping bordered rows — a box inside a box.
+   On a phone it becomes what the north star actually asks for: ruled rows on the
+   page, separated by hairlines, with one heading rule above them. Nothing floats. */
+@media (max-width:560px){
+  #hk-acts > .fl-group{ border-left:0; border-right:0; border-radius:0;
+    margin-left:-12px; margin-right:-12px; margin-bottom:0; }
+  #hk-acts .fl-grouphd{ background:transparent; padding-left:12px; padding-right:12px;
+    border-bottom-color:var(--fledge2); }
+  #hk-acts .fl-acthd{ padding-left:12px; padding-right:12px; }
+  /* An open activity gets a left rule in the accent — it marks depth without
+     boxing the row, and reads as a margin note rather than a card. */
+  #hk-acts .fl-act.open{ background:var(--flaccw); box-shadow:inset 2px 0 0 var(--flacc); }
+
+  /* Same rule for PTW's permit and JSA lists, and for the Readings records: on a
+     phone a bordered card holding bordered rows is one border too many. The list
+     runs edge to edge and hairlines do the separating. Applied to the LIST groups
+     only — a form's field groups still need their box to read as one unit. */
+  #view-ptw .fl-group.pw-list,
+  #view-readings .fl-group.pw-list{ border-left:0; border-right:0; border-radius:0;
+    margin-left:-12px; margin-right:-12px; }
+  #view-ptw .fl-group.pw-list > .fl-grouphd{ background:transparent;
+    padding-left:12px; padding-right:12px; }
+  .fl-tbl.rd-stack tr{ border-left:0; border-right:0; border-radius:0;
+    margin-left:-12px; margin-right:-12px; padding-left:12px; padding-right:12px;
+    margin-bottom:0; border-top:0; }
+  .fl-tbl.rd-stack tbody tr + tr{ border-top:1px solid var(--fledge); }
+  .fl-tbl.rd-stack tfoot tr{ border-top:2px solid var(--flaccd); }
+}
 /* "Clear all" — the reversal. Neutral, no accent: undoing is not the thing to
    reach for, and it must not look like the action it undoes. */
 .fl-allok.undo{ background:var(--flpanel); color:var(--flink);
@@ -3373,9 +3420,20 @@ select.fl-ctrl{ font-weight:600; cursor:pointer;
 /* Housekeeping summary — one panel replacing the four restating pills.
    Segments are drawn against the CONFIGURED total, so the bar's empty remainder is
    literally the work still owed; the legend names every segment so no colour has to
-   be decoded. */
+   be decoded.
+
+   PHONE: the panel loses its box. Four stacked bordered objects — segmented
+   control, summary card, Mark-ALL button, section header — stood between the
+   operator and the first checkbox, and a border around a progress figure adds no
+   information. It becomes a ruled band instead: the numbers sit on the page and a
+   hairline separates them from the work. (Card overuse is the tell; grouping by
+   rule and space is the fix.) */
 .hk-sum{ background:var(--flpanel); border:1px solid var(--fledge);
   border-radius:var(--r-md); padding:11px 13px; }
+@media (max-width:560px){
+  .hk-sum{ background:transparent; border:0; border-bottom:1px solid var(--fledge);
+    border-radius:0; padding:2px 2px 10px; }
+}
 .hk-sum-t{ display:flex; align-items:baseline; gap:8px; margin-bottom:9px; }
 /* Archivo with tnum, NOT the PMMono face this carries via .num. PMMono's only
    zero glyph is the DOTTED one, so at this size a score of 0 rendered as a
@@ -4357,7 +4415,7 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
            with nothing in between. The supervisor select used to split the two;
            it is optional (only `by` is required to submit) and is read at submit
            time, so it now sits beside the submit button where it is used. -->
-      <button class="fl-allok" id="hk-allok" onclick="hkAllOk()">&#x2713; Mark ALL activities OK / सब ठीक</button>
+      <div id="hk-allok-home"><button class="fl-allok" id="hk-allok" onclick="hkAllOk()">&#x2713; Mark ALL activities OK / सब ठीक</button></div>
       <div id="hk-acts"><div class="fl-skel" aria-busy="true" aria-label="Loading activities">
         <div style="--i:0"><i style="width:46%"></i></div>
         <div style="--i:1"><i style="width:62%"></i></div>
@@ -14511,9 +14569,43 @@ function hkRenderForm(){
     '<div class="fl-group"><div class="fl-grouphd">Activities'+
     '<span class="n" id="hk-grpn">0/'+FL.hkCfg.length+'</span></div>'+h+'</div>';
   var ab=document.getElementById('hk-allok');
-  if(ab){ ab.classList.remove('undo'); ab.innerHTML='✓ Mark ALL activities OK / सब ठीक'; }
+  if(ab) ab.classList.remove('undo');
+  /* Move the shortcut ONTO the Activities rule rather than leaving it as a
+     full-width band above the list. Moved in the DOM, not duplicated, so
+     hkAllOk/hkUpdateSummary keep addressing the same node and its label logic
+     is untouched. On wide screens it stays where it was. */
+  hkPlaceAllOk();
   hkUpdateSummary();
 }
+/* Below 560px the Mark-ALL shortcut belongs on the Activities heading rule; above
+   it, back in its own row. Re-run on resize so a rotated phone is not left with
+   the button orphaned in the wrong place. */
+/* The button says the same thing in two registers: full sentence when it owns a
+   row, verb only when it sits on the Activities rule (the rule supplies the noun). */
+function hkAllOkLabel(){
+  var ab=document.getElementById('hk-allok'); if(!ab) return;
+  var undo=ab.classList.contains('undo');
+  var tight=ab.classList.contains('inline');
+  ab.innerHTML = undo
+    ? (tight ? '↺ Clear' : '↺ Clear all / सब हटाएँ')
+    : (tight ? '✓ All OK' : '✓ Mark ALL activities OK / सब ठीक');
+}
+function hkPlaceAllOk(){
+  var ab=document.getElementById('hk-allok');
+  var hd=document.querySelector('#hk-acts .fl-grouphd');
+  var home=document.getElementById('hk-allok-home');
+  if(!ab||!hd) return;
+  if(window.matchMedia('(max-width:560px)').matches){
+    if(ab.parentNode!==hd){ ab.classList.add('inline'); hd.appendChild(ab); }
+  } else if(home && ab.parentNode!==home){
+    ab.classList.remove('inline'); home.appendChild(ab);
+  }
+  hkAllOkLabel();
+}
+window.addEventListener('resize', function(){
+  if(document.getElementById('hk-acts')) hkPlaceAllOk();
+});
+
 // Set every parameter of one activity to Y (or clear it if already all-Y).
 function hkActOk(ai){
   var a=FL.hkCfg[ai], st=FL.hkState[a.en];
@@ -14546,7 +14638,7 @@ function hkAllOk(){
     hkBadge(ai);
   });
   btn.classList.toggle('undo', !undo);
-  btn.innerHTML=undo?'✓ Mark ALL activities OK / सब ठीक':'↺ Clear all / सब हटाएँ';
+  hkAllOkLabel();
   hkUpdateSummary();
   showStatus(undo?'Cleared — mark each item':'All marked OK — now change only the exceptions','info',3500);
 }
@@ -15448,7 +15540,7 @@ function pwListPermits(){
     return h + '<div class="pw-empty">No permits with status <b>'+pwEsc(f)+'</b>.</div>';
   }
 
-  h += '<div class="fl-group"><div class="fl-grouphd">Permits' +
+  h += '<div class="fl-group pw-list"><div class="fl-grouphd">Permits' +
     '<span class="n">'+rows.length+'</span></div>';
   rows.forEach(function(p){
     var cl = pwStatusClass(p.status), left = pwFmtLeft(p);
@@ -15502,7 +15594,7 @@ function pwListJsa(){
   var rows = (PW.data.jsa)||[];
   if(!rows.length) return '<div class="pw-empty"><b>No JSA recorded yet.</b><br>' +
     'Every permit starts with one.</div>';
-  var h = '<div class="fl-group"><div class="fl-grouphd">Job Safety Analysis' +
+  var h = '<div class="fl-group pw-list"><div class="fl-grouphd">Job Safety Analysis' +
     '<span class="n">'+rows.length+'</span></div>';
   rows.forEach(function(j){
     var cl = j.status==='Approved' ? 'a' : j.status==='Closed' ? 'c' : 'd';
