@@ -2944,9 +2944,13 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
    staying nine screens long from first tap to last. The text is never destroyed,
    only folded, so nothing is hidden that has not been explicitly decided. */
 .pw-hz.ok, .pw-hz.skip{ cursor:pointer; }
-.pw-hz.ok:not(.reopen) .ref,
+/* Hide the HAZARD line and the control paragraph — NOT the step. A folded row
+   that shows only a number and a tick states that something was confirmed
+   without saying what, which is worse than the verbose version it replaced.
+   The step name is the row's identity and always stays. */
+.pw-hz.ok:not(.reopen) .ref > p,
 .pw-hz.ok:not(.reopen) .ctlwrap,
-.pw-hz.skip:not(.reopen) .ref,
+.pw-hz.skip:not(.reopen) .ref > p,
 .pw-hz.skip:not(.reopen) .ctlwrap{ display:none; }
 /* Collapsed: the confirm strip becomes a compact status line, not three targets. */
 .pw-hz.ok:not(.reopen) .pw-conf,
@@ -2959,8 +2963,12 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .pw-hz.ok:not(.reopen) .pw-hz-resp,
 .pw-hz.skip:not(.reopen) .pw-hz-resp{ min-height:30px; flex:1 1 90px;
   border-style:dashed; }
+/* Folded, the step is a one-line title and ellipsises if it is long — the full
+   text is one tap away and the row is no longer an open question. Unfolded it
+   wraps in full, because then it IS the question. */
 .pw-hz.ok:not(.reopen) .step,
-.pw-hz.skip:not(.reopen) .step{ margin-bottom:2px; }
+.pw-hz.skip:not(.reopen) .step{ margin-bottom:3px; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis; }
 /* "Reopen" replaces "Edit" while folded — the row's own affordance to unfold. */
 .pw-hz.ok:not(.reopen) .pw-hzedit,
 .pw-hz.skip:not(.reopen) .pw-hzedit{ font-size:0; }
