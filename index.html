@@ -2811,8 +2811,16 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 
 /* Hazard row — a ruled register line inside .fl-group, never a nested card.
    Grid so step / hazard / control align down the page like a printed JSA. */
-.pw-hz{ display:grid; grid-template-columns:22px 1fr; gap:0 10px;
-  padding:10px 13px; border-bottom:1px solid var(--fledge); align-items:start; }
+.pw-hz{ display:grid; grid-template-columns:20px 1fr; gap:0 9px;
+  padding:9px 12px; border-bottom:1px solid var(--fledge); align-items:start;
+  position:relative; }
+/* State reads from the left edge at a glance: amber = still to walk,
+   green = confirmed in place, slate = ruled out. Colour is never the only
+   signal — the button label and the row tint carry it too. */
+.pw-hz::before{ content:''; position:absolute; left:0; top:0; bottom:-1px;
+  width:3px; background:var(--flwarn); }
+.pw-hz.ok::before{ background:var(--flgood); }
+.pw-hz.skip::before{ background:var(--fledge3); }
 .pw-hz:last-child{ border-bottom:0; }
 .pw-hz.std{ background:var(--flpanel); }
 .pw-hz.add{ background:var(--flpanel2); }
@@ -2835,31 +2843,47 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 /* A standard row is REFERENCE first: read it, accept it, edit only if the job
    differs. Rendering 12 of them as 48 empty-looking inputs was the defect —
    nobody reads a wall of textareas, and reading them is the entire point. */
-.pw-hz .ref{ font-size:var(--t-sm); line-height:1.5; color:var(--flink); }
-.pw-hz .ref .haz{ color:var(--flR); font-weight:600; }
+.pw-hz .ref{ font-size:var(--t-sm); line-height:1.45; color:var(--flink); }
+.pw-hz .ref .haz{ color:var(--flR); }
 .pw-hz .ref .ctl{ color:var(--fldim); }
-.pw-hz .ref p{ margin:0 0 5px; }
+.pw-hz .ref p{ margin:0 0 3px; }
 .pw-hz .ref p:last-child{ margin-bottom:0; }
 .pw-hz .step{ font-weight:700; font-size:var(--t-sm); color:var(--flink);
-  margin-bottom:4px; }
-.pw-hzedit{ margin-top:7px; font:600 var(--t-xs) 'Archivo',sans-serif;
-  background:none; border:0; color:var(--flacc); cursor:pointer; padding:6px 0;
-  min-height:32px; text-decoration:underline; text-underline-offset:2px; }
+  margin-bottom:3px; line-height:1.35; }
+/* The control text is the long part. Clamp it to three lines with the full
+   text one tap away — visible by default, never truncated silently. */
+.pw-hz .ctlwrap{ position:relative; }
+.pw-hz .ctlwrap .ctl{ display:-webkit-box; -webkit-line-clamp:3;
+  -webkit-box-orient:vertical; overflow:hidden; }
+.pw-hz.expand .ctlwrap .ctl{ display:block; }
+.pw-hz .more{ background:none; border:0; padding:2px 0; cursor:pointer;
+  font:700 var(--t-xs) 'Archivo',sans-serif; color:var(--flacc); }
+/* Both secondary affordances share one line under the control text. */
+.pw-hzacts{ display:flex; gap:14px; align-items:center; margin-top:2px; }
+.pw-hz.expand .more::after{ content:'Less'; }
+.pw-hz:not(.expand) .more::after{ content:'Full control text'; }
+.pw-hz .tag{ display:inline-block; font:700 var(--t-xs) 'Archivo',sans-serif;
+  text-transform:uppercase; letter-spacing:.06em; margin-right:6px; }
+.pw-hz .tag.h{ color:var(--flR); } .pw-hz .tag.c{ color:var(--flfaint); }
+.pw-hzedit{ font:700 var(--t-xs) 'Archivo',sans-serif;
+  background:none; border:0; color:var(--flfaint); cursor:pointer; padding:2px 0; }
+.pw-hzedit:hover{ color:var(--flacc); }
 
 /* Confirm strip — the walk, made into an action. A row is Pending until
    somebody stands in front of the control and says otherwise. */
-.pw-conf{ display:flex; gap:7px; align-items:center; flex-wrap:wrap;
-  margin-top:9px; padding-top:9px; border-top:1px dashed var(--fledge2); }
-.pw-conf .lbl{ font:700 var(--t-xs) 'Archivo',sans-serif; color:var(--flfaint);
-  text-transform:uppercase; letter-spacing:.06em; flex:1 0 100%; }
-.pw-conf button{ min-height:44px; padding:0 13px; border-radius:var(--r-sm);
+/* One row: two state buttons + the owner. No section label — the buttons say
+   what they do, and a label per row × 12 rows is 12 lines of nothing. */
+.pw-conf{ display:flex; gap:6px; align-items:center; flex-wrap:wrap;
+  margin-top:7px; }
+.pw-conf button{ min-height:44px; padding:0 11px; border-radius:var(--r-sm);
   border:1.5px solid var(--fledge2); background:var(--flpanel);
   color:var(--fldim); cursor:pointer; font:700 var(--t-xs) 'Archivo',sans-serif;
-  display:inline-flex; align-items:center; gap:7px;
+  display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
   transition:background .16s var(--ease),border-color .16s var(--ease); }
-.pw-conf button .mk{ width:16px; height:16px; border-radius:var(--r-sm);
+.pw-conf button .mk{ width:15px; height:15px; border-radius:var(--r-sm);
   border:2px solid var(--fledge2); flex:none; display:grid; place-items:center;
-  font-size:var(--t-xs); color:transparent; }
+  font-size:var(--t-xs); color:transparent; line-height:1; }
+.pw-conf .pw-hz-resp{ flex:1 1 130px; min-width:0; min-height:44px; }
 .pw-conf button.on[data-st="In place"]{ background:var(--flgoodw);
   border-color:var(--flgood); color:var(--flgood); }
 .pw-conf button.on[data-st="In place"] .mk{ background:var(--flgood);
@@ -2875,8 +2899,9 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .pw-hz.flag{ box-shadow:inset 3px 0 0 var(--flwarn); }
 
 /* Walk progress — states how much of the analysis is actually done. */
-.pw-walk{ display:flex; align-items:center; gap:10px; padding:10px 13px;
-  border-bottom:1px solid var(--fledge); background:var(--flpanel2); }
+.pw-walk{ display:flex; align-items:center; gap:10px; padding:9px 12px;
+  border-bottom:1px solid var(--fledge); background:var(--flpanel2);
+  position:sticky; top:0; z-index:3; }
 .pw-walk .bar{ flex:1; height:6px; border-radius:999px;
   background:var(--fledge); overflow:hidden; }
 .pw-walk .bar i{ display:block; height:100%; width:0;
@@ -2889,7 +2914,7 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 
 /* Field grid. 44px controls come from .fl-ctrl; only the layout is here. */
 .pw-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-  gap:10px; padding:12px 13px; }
+  gap:9px 10px; padding:10px 12px; }
 .pw-f label{ display:block; font:700 var(--t-xs) 'Archivo',sans-serif;
   color:var(--fldim); text-transform:uppercase; letter-spacing:.05em;
   margin-bottom:5px; min-height:28px; }
@@ -2925,9 +2950,10 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .pw-chk.unanswered{ background:var(--flYw); }
 
 /* PPE chips — selection, 44px target. */
-.pw-chips{ display:flex; flex-wrap:wrap; gap:7px; padding:12px 13px; }
-.pw-chip{ font:600 var(--t-sm) 'Archivo','PMDev',sans-serif; padding:0 13px;
-  min-height:44px; display:inline-flex; align-items:center; gap:8px;
+.pw-chips{ display:grid; grid-template-columns:repeat(auto-fill,minmax(158px,1fr));
+  gap:6px; padding:10px 12px; }
+.pw-chip{ font:600 var(--t-sm) 'Archivo','PMDev',sans-serif; padding:0 11px;
+  min-height:44px; display:flex; align-items:center; gap:8px;
   border-radius:var(--r-sm); border:1.5px solid var(--fledge2);
   background:var(--flpanel); color:var(--fldim); cursor:pointer;
   user-select:none; transition:background .16s var(--ease),border-color .16s var(--ease); }
@@ -2939,8 +2965,8 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 
 /* Messages. */
 .pw-note{ font-size:var(--t-sm); color:var(--fldim); background:var(--flpanel2);
-  border-left:1px solid var(--fledge2); padding:9px 12px; margin:0;
-  line-height:1.5; }
+  border-bottom:1px solid var(--fledge); padding:8px 12px; margin:0;
+  line-height:1.45; }
 .pw-gate{ display:flex; gap:10px; align-items:flex-start; font-size:var(--t-sm);
   color:var(--flwarn); background:var(--flYw); border:1px solid var(--flYb);
   border-radius:var(--r-md); padding:11px 13px; margin-bottom:12px; line-height:1.5; }
@@ -3235,6 +3261,8 @@ select.fl-ctrl{ font-weight:600; cursor:pointer;
    activity (11 activities: ~3 screens of scrolling down to ~1.4). */
 .fl-group{ border:1px solid var(--fledge); border-radius:var(--r-lg);
   background:var(--flpanel); overflow:hidden; margin-bottom:11px; }
+/* PTW/JSA runs many short groups down one column; tighten only this module. */
+#view-ptw .fl-group{ margin-bottom:9px; }
 .fl-grouphd{ display:flex; align-items:center; gap:9px; padding:9px 13px;
   background:var(--flpanel2); border-bottom:1px solid var(--fledge);
   font:700 var(--t-xs) 'Archivo',sans-serif; letter-spacing:.07em;
@@ -15002,24 +15030,22 @@ function pwBuildJsaForm(code){
   });
   h += '</div>' + (t.ppeNote?'<div class="pw-note">'+pwEsc(t.ppeNote)+'</div>':'') + '</div>';
 
-  /* The standard analysis is collapsed by default. Thirteen open blocks was the
-     defect: the crew must READ these, and a wall of identical textareas is not
-     read. Collapsed, the count is the information; opened, each row is editable. */
-  h += '<div class="fl-group"><div class="fl-grouphd" style="cursor:pointer" ' +
-    'onclick="pwToggleHz()">Hazard &amp; control analysis' +
-    '<span class="n" id="pw-hz-n">0/'+t.hazards.length+' confirmed</span></div>' +
-    '<div class="pw-note">These are the standard hazards for this trade. ' +
-    '<b>Walk the job with the crew and confirm each control is actually in ' +
-    'place</b> — that confirmation is what the JSA is for. Mark anything that ' +
-    'does not apply as Not applicable, edit wording that differs, and add rows ' +
-    'for hazards specific to this location.</div>' +
+  /* OPEN by default. Collapsing this was the defect: the crew must SEE the
+     controls they are walking, and a section that appears only when saving
+     fails is a section nobody walked. Density comes from tighter rows, not
+     from hiding the substance of the form. */
+  h += '<div class="fl-group"><div class="fl-grouphd">Walk the job' +
+    '<span class="n" id="pw-hz-n">0/'+t.hazards.length+'</span></div>' +
+    '<div class="pw-note">Stand at the job with the crew. For each control ' +
+    'below, mark <b>In place</b> once you can see it, or <b>N/A</b> if it does ' +
+    'not apply here. Add anything this location needs that is not listed.</div>' +
     '<div class="pw-walk"><span class="bar"><i id="pw-walk-bar"></i></span>' +
     '<span class="txt" id="pw-walk-txt">0 / '+t.hazards.length+' confirmed</span></div>' +
-    '<div id="pw-j-hz" style="display:none">';
+    '<div id="pw-j-hz">';
   t.hazards.forEach(function(z,i){ h += pwHzRow(i, z.step, z.hazard, z.control, true); });
   h += '</div>' +
     '<div id="pw-j-hz-extra"></div>' +
-    '<div style="padding:10px 13px"><button type="button" class="pw-btn" ' +
+    '<div style="padding:9px 12px"><button type="button" class="pw-btn" ' +
     'onclick="pwAddHz()">+ Add a hazard found on the walk</button></div></div>';
 
   h += '<div class="fl-group"><div class="fl-grouphd">Toolbox talk</div>' +
@@ -15064,28 +15090,32 @@ function pwBuildJsaForm(code){
   if(pf) pf.addEventListener('change', function(){ pwStagePhoto(this); });
 }
 
-function pwToggleHz(){
-  var b = pwEl('pw-j-hz'); if(!b) return;
-  b.style.display = b.style.display==='none' ? 'block' : 'none';
-}
+/* The hazard list no longer collapses — retained only so an old inline handler
+   cannot throw. */
+function pwToggleHz(){}
 
 function pwHzRow(i, step, hz, ctl, std){
   if(std){
     /* Read-only until the crew says otherwise. The values ride along in hidden
        inputs so pwCollectHz keeps working unchanged. */
-    return '<div class="pw-hz std" data-i="'+i+'">' +
+    var longCtl = String(ctl||'').length > 150;
+    return '<div class="pw-hz std pending" data-i="'+i+'">' +
       '<div class="idx">'+(i+1)+'</div><div class="fields">' +
       '<div class="ref">' +
         (step?'<div class="step">'+pwEsc(step)+'</div>':'') +
-        '<p><span class="hzl">Hazard</span><span class="haz">'+pwEsc(hz||'')+'</span></p>' +
-        '<p><span class="hzl">Control</span><span class="ctl">'+pwEsc(ctl||'')+'</span></p>' +
+        '<p><span class="tag h">Hazard</span><span class="haz">'+pwEsc(hz||'')+'</span></p>' +
+        '<div class="ctlwrap"><p><span class="tag c">Control</span>' +
+          '<span class="ctl">'+pwEsc(ctl||'')+'</span></p>' +
+          '<div class="pw-hzacts">' +
+            (longCtl?'<button type="button" class="more" onclick="pwMoreHz(this)"></button>':'') +
+            '<button type="button" class="pw-hzedit" onclick="pwEditHz(this)">Edit wording</button>' +
+          '</div>' +
+        '</div>' +
       '</div>' +
       '<input type="hidden" class="pw-hz-step" value="'+pwEsc(step||'')+'">' +
       '<input type="hidden" class="pw-hz-hz" value="'+pwEsc(hz||'')+'">' +
       '<input type="hidden" class="pw-hz-ctl" value="'+pwEsc(ctl||'')+'">' +
       pwConfirmStrip() +
-      '<button type="button" class="pw-hzedit" onclick="pwEditHz(this)">' +
-        'Edit wording for this job</button>' +
       '</div></div>';
   }
   return '<div class="pw-hz add">' +
@@ -15104,13 +15134,11 @@ function pwHzRow(i, step, hz, ctl, std){
    Pending is the default and confirming is a deliberate act, never a default. */
 function pwConfirmStrip(){
   return '<div class="pw-conf">' +
-    '<span class="lbl">Control in place?</span>' +
     '<button type="button" data-st="In place" onclick="pwSetHz(this)">' +
       '<span class="mk">✓</span>In place</button>' +
     '<button type="button" data-st="N/A" onclick="pwSetHz(this)">' +
-      '<span class="mk">–</span>Not applicable</button>' +
-    '<input class="pw-hz-resp" placeholder="Responsible person" ' +
-      'style="flex:1 1 150px;min-width:0">' +
+      '<span class="mk">–</span>N/A</button>' +
+    '<input class="pw-hz-resp fl-ctrl" placeholder="Responsible person">' +
     '<input type="hidden" class="pw-hz-status" value="Pending">' +
     '</div>';
 }
@@ -15164,6 +15192,10 @@ function pwWalkProgress(){
 
 /* Swap one standard row from reference text to editable fields, preserving what
    was written so an edit starts from the standard rather than from blank. */
+function pwMoreHz(btn){
+  var row = btn.closest('.pw-hz'); if(row) row.classList.toggle('expand');
+}
+
 function pwEditHz(btn){
   var row = btn.closest('.pw-hz');
   if(!row) return;
@@ -15368,9 +15400,7 @@ function pwSaveJsa(){
   var hz = pwCollectHz();
   if(!hz.length){
     msg.innerHTML = '<div class="pw-err">At least one hazard row needs both a hazard ' +
-      'and a control measure. Open the standard rows and check them against the job.</div>';
-    var box = pwEl('pw-j-hz');
-    if(box && box.style.display==='none'){ box.style.display='block'; box.scrollIntoView({behavior:'smooth',block:'center'}); }
+      'and a control measure.</div>';
     return;
   }
   if(!v('pw-j-desc')){
@@ -15392,8 +15422,6 @@ function pwSaveJsa(){
       if(!st || st.value === 'Pending'){ pend.push(r); r.classList.add('flag'); }
     });
     if(pend.length){
-      var box = pwEl('pw-j-hz');
-      if(box && box.style.display === 'none') box.style.display = 'block';
       msg.innerHTML = '<div class="pw-err"><b>' + pend.length + ' control' +
         (pend.length>1?'s are':' is') + ' still Pending.</b><br>' +
         'Approving a JSA means confirming every control is in place. Walk the job ' +
