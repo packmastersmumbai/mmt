@@ -2934,13 +2934,14 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 /* Field grid. 44px controls come from .fl-ctrl; only the layout is here. */
 .pw-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
   gap:9px 10px; padding:10px 12px; }
-.pw-f label{ display:block; font:700 var(--t-xs) 'Archivo',sans-serif;
+.pw-f label{ display:flex; flex-wrap:wrap; align-items:baseline; gap:0 5px;
+  font:700 var(--t-xs) 'Archivo',sans-serif;
   color:var(--fldim); text-transform:uppercase; letter-spacing:.05em;
-  margin-bottom:5px; min-height:28px; }
-/* The Hindi half sits on its own line: an EN/HI pair inlined at this width
-   wraps mid-phrase and knocks the two columns out of alignment. Equal weight
-   is preserved — same size, same family — it is stacked, not subordinated. */
-.pw-f label .hi{ display:block; }
+  margin-bottom:5px; min-height:16px; }
+/* EN and HI ride the same line as a flex pair, so the required marker cannot
+   be orphaned onto a third line. Equal weight: same size, same family. */
+.pw-f label .hi{ white-space:nowrap; }
+.pw-f label .pw-req{ margin-left:auto; }
 .pw-f label .hi{ text-transform:none; letter-spacing:0; color:var(--fldim);
   font-weight:400; }
 .pw-f .fl-ctrl{ max-width:none; }
@@ -2948,6 +2949,20 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   line-height:1.45; }
 .pw-f.wide{ grid-column:1/-1; }
 .pw-req{ color:var(--flR); }
+/* The native file widget was the only unstyled control in the form. */
+.pw-file{ width:100%; box-sizing:border-box; min-height:44px; padding:10px 12px;
+  border:1px dashed var(--fledge2); border-radius:var(--r-sm);
+  background:var(--flpanel2); color:var(--fldim);
+  font:500 var(--t-sm) 'Archivo',sans-serif; cursor:pointer; }
+.pw-file::file-selector-button{ min-height:32px; margin-right:10px; padding:0 12px;
+  border:1px solid var(--fledge2); border-radius:var(--r-sm);
+  background:var(--flpanel); color:var(--fldim); cursor:pointer;
+  font:700 var(--t-xs) 'Archivo',sans-serif; }
+.pw-file:hover{ border-color:var(--flacc); }
+/* Approving asserts every control is in place, so the button carries the
+   weight of that claim rather than looking like an ordinary save. */
+#view-ptw .fl-submit.pw-approve{ background:var(--flgood); }
+#view-ptw .fl-submit.pw-approve:hover{ background:#12692f; }
 
 /* Check row — reuses .fl-pchip for the Yes/No/NA marks. */
 .pw-chk{ display:flex; align-items:center; gap:11px; padding:9px 13px;
@@ -3282,6 +3297,9 @@ select.fl-ctrl{ font-weight:600; cursor:pointer;
   background:var(--flpanel); overflow:hidden; margin-bottom:11px; }
 /* PTW/JSA runs many short groups down one column; tighten only this module. */
 #view-ptw .fl-group{ margin-bottom:9px; }
+/* Group titles are real headings so the form can be navigated by structure;
+   h3 keeps the app's single h1/h2 hierarchy intact. */
+#view-ptw h3.fl-grouphd{ margin:0; font-size:var(--t-xs); }
 .fl-grouphd{ display:flex; align-items:center; gap:9px; padding:9px 13px;
   background:var(--flpanel2); border-bottom:1px solid var(--fledge);
   font:700 var(--t-xs) 'Archivo',sans-serif; letter-spacing:.07em;
@@ -14842,6 +14860,19 @@ function pwRender(){
   else if(PW.tab==='jsa') pane.innerHTML = pwListJsa();
   else                    pane.innerHTML = pwNewPane();
   if(PW.tab==='new') pwWireNew();
+  pwHeadings(pane);
+}
+
+/* Group titles are written as divs by the builders; give them heading semantics
+   so a 3.6-viewport form can be navigated by structure instead of by scrolling.
+   Done once after render rather than by hand-pairing 14 open/close tags. */
+function pwHeadings(scope){
+  scope.querySelectorAll('.fl-grouphd').forEach(function(el){
+    if(!el.getAttribute('role')){
+      el.setAttribute('role','heading');
+      el.setAttribute('aria-level','3');
+    }
+  });
 }
 
 /* ── Permits list (the landing tab) ───────────────────────────── */
@@ -14881,8 +14912,11 @@ function pwListPermits(){
   h += '</div>';
 
   if(!all.length){
-    return h + '<div class="pw-empty"><b>No permits yet.</b><br>' +
-      'A permit needs an approved JSA first.<br>Start on the <b>New</b> tab.</div>';
+    /* Five zeroes above an empty list is chrome, not information. */
+    return '<div class="pw-empty"><b>No permits yet.</b><br>' +
+      'Every permit starts with a Job Safety Analysis.<br><br>' +
+      '<button class="pw-btn go" onclick="pwGoNew()">' +
+      'Start a JSA</button></div>';
   }
   if(!rows.length){
     return h + '<div class="pw-empty">No permits with status <b>'+pwEsc(f)+'</b>.</div>';
@@ -14918,6 +14952,10 @@ function pwListPermits(){
 }
 
 function pwFilter(v){ PW.filter = (PW.filter===v?'':v); pwRender(); }
+
+/* Named handler rather than an inline quoted expression: nesting quotes inside
+   an onclick inside a JS string is how the empty state broke the parse once. */
+function pwGoNew(){ PW.tab = 'new'; PW.step = 1; pwSyncSeg(); pwRender(); }
 
 function pwListJsa(){
   var rows = (PW.data.jsa)||[];
@@ -14960,11 +14998,11 @@ function pwNewPane(){
 
   if(step === 1){
     h += '<div class="fl-group">' +
-      '<div class="fl-grouphd">Step 1 — Job Safety Analysis</div>' +
-      '<div class="pw-note">'+pwEsc(cat.jsaInstructions[0]||'')+'</div>' +
       '<div class="pw-grid"><div class="pw-f wide">' +
-      '<label>Trade <span class="hi">/ कार्य प्रकार</span> <span class="pw-req">*</span></label>' +
-      '<select class="fl-ctrl" id="pw-trade"><option value="">Select the trade…</option>';
+      '<label for="pw-trade">Which trade? <span class="hi">कौन सा कार्य</span>' +
+      '<span class="pw-req" aria-hidden="true">*</span></label>' +
+      '<select class="fl-ctrl" id="pw-trade" required aria-required="true">' +
+      '<option value="">Select the trade…</option>';
     cat.trades.forEach(function(t){
       h += '<option value="'+pwEsc(t.code)+'">'+pwEsc(t.title)+'</option>';
     });
@@ -15015,10 +15053,12 @@ function pwField(id, label, hi, opts){
   return '<div class="pw-f'+(opts.wide?' wide':'')+'">' +
     '<label for="'+id+'">'+pwEsc(label)+
       (hi?' <span class="hi">'+pwEsc(hi)+'</span>':'') +
-      (opts.req?' <span class="pw-req">*</span>':'') + '</label>' +
+      (opts.req?' <span class="pw-req" aria-hidden="true">*</span>':'') + '</label>' +
     (opts.area
-      ? '<textarea class="fl-ctrl" id="'+id+'"'+(opts.ph?' placeholder="'+pwEsc(opts.ph)+'"':'')+'></textarea>'
+      ? '<textarea class="fl-ctrl" id="'+id+'"'+(opts.req?' required aria-required="true"':'')+
+        (opts.ph?' placeholder="'+pwEsc(opts.ph)+'"':'')+'></textarea>'
       : '<input class="fl-ctrl" id="'+id+'" type="'+(opts.type||'text')+'"' +
+        (opts.req?' required aria-required="true"':'') +
         (opts.val?' value="'+pwEsc(opts.val)+'"':'') +
         (opts.ph?' placeholder="'+pwEsc(opts.ph)+'"':'') +
         (opts.mode?' inputmode="'+opts.mode+'"':'') + '>') +
@@ -15058,8 +15098,11 @@ function pwBuildJsaForm(code){
     '<div class="pw-note">Stand at the job with the crew. For each control ' +
     'below, mark <b>In place</b> once you can see it, or <b>N/A</b> if it does ' +
     'not apply here. Add anything this location needs that is not listed.</div>' +
-    '<div class="pw-walk"><span class="bar"><i id="pw-walk-bar"></i></span>' +
-    '<span class="txt" id="pw-walk-txt">0 / '+t.hazards.length+' confirmed</span></div>' +
+    '<div class="pw-walk"><span class="bar" role="progressbar" aria-valuemin="0" ' +
+    'aria-valuemax="'+t.hazards.length+'" aria-valuenow="0" ' +
+    'aria-label="Controls confirmed"><i id="pw-walk-bar"></i></span>' +
+    '<span class="txt" id="pw-walk-txt" aria-live="polite">0 / '+
+    t.hazards.length+' confirmed</span></div>' +
     '<div id="pw-j-hz">';
   t.hazards.forEach(function(z,i){ h += pwHzRow(i, z.step, z.hazard, z.control, true); });
   h += '</div>' +
@@ -15084,13 +15127,13 @@ function pwBuildJsaForm(code){
     '<div class="pw-note">Named an approver? The JSA saves as <b>Approved</b> and ' +
     'can carry a permit. Left blank it saves as <b>Draft</b>.</div>' +
     '<div class="pw-grid"><div class="pw-f wide">' +
-    '<label for="pw-j-photo">Photo evidence</label>' +
-    '<input class="fl-ctrl" type="file" accept="image/*" id="pw-j-photo" ' +
-    'style="padding:10px 12px"></div></div>' +
+    '<label for="pw-j-photo">Photo evidence <span class="fl-u">optional</span></label>' +
+    '<input type="file" accept="image/*" id="pw-j-photo" class="pw-file"></div></div>' +
     '<div class="pw-ph" id="pw-j-phlist"></div></div>';
 
   h += '<div id="pw-j-msg"></div>' +
-    '<button class="fl-submit" onclick="pwSaveJsa()">Save JSA</button>';
+    '<button class="fl-submit" id="pw-j-save" onclick="pwSaveJsa()">' +
+    'Save as Draft</button>';
   box.innerHTML = h;
 
   box.querySelectorAll('#pw-j-ppe .pw-chip').forEach(function(c){
@@ -15107,6 +15150,20 @@ function pwBuildJsaForm(code){
   });
   var pf = pwEl('pw-j-photo');
   if(pf) pf.addEventListener('change', function(){ pwStagePhoto(this); });
+  var ap = pwEl('pw-j-appr');
+  if(ap) ap.addEventListener('input', pwSaveLabel);
+  pwSaveLabel();
+}
+
+/* Naming an approver changes what the button DOES — files a draft, or asserts
+   every control is in place. A button that hides that is a button people press
+   without meaning to. */
+function pwSaveLabel(){
+  var btn = pwEl('pw-j-save'); if(!btn) return;
+  var ap = pwEl('pw-j-appr');
+  var approving = ap && ap.value.trim();
+  btn.textContent = approving ? 'Approve JSA' : 'Save as Draft';
+  btn.classList.toggle('pw-approve', !!approving);
 }
 
 /* The hazard list no longer collapses — retained only so an old inline handler
@@ -15130,33 +15187,47 @@ function pwHzRow(i, step, hz, ctl, std){
       '<input type="hidden" class="pw-hz-step" value="'+pwEsc(step||'')+'">' +
       '<input type="hidden" class="pw-hz-hz" value="'+pwEsc(hz||'')+'">' +
       '<input type="hidden" class="pw-hz-ctl" value="'+pwEsc(ctl||'')+'">' +
-      pwConfirmStrip(longCtl) +
+      pwConfirmStrip(longCtl, i + 1) +
       '</div></div>';
   }
-  return '<div class="pw-hz add">' +
-    '<div class="idx">'+(i+1)+'</div><div class="fields">' +
-    '<div><span class="hzl">Job step</span>' +
-      '<input class="pw-hz-step" placeholder="What is being done"></div>' +
-    '<div><span class="hzl">Potential hazard</span>' +
-      '<input class="pw-hz-hz" placeholder="What could hurt someone"></div>' +
-    '<div><span class="hzl">Control measure</span>' +
-      '<textarea class="pw-hz-ctl" placeholder="What is put in place to prevent it"></textarea></div>' +
-    pwConfirmStrip() +
+  var n = i + 1;
+  return '<div class="pw-hz add pending">' +
+    '<div class="idx">'+n+'</div><div class="fields">' +
+    '<div><span class="hzl" id="pw-hzl-step-'+n+'">Job step</span>' +
+      '<input class="pw-hz-step" placeholder="What is being done" ' +
+      'aria-labelledby="pw-hzl-step-'+n+'"></div>' +
+    '<div><span class="hzl" id="pw-hzl-haz-'+n+'">Potential hazard</span>' +
+      '<input class="pw-hz-hz" placeholder="What could hurt someone" ' +
+      'aria-labelledby="pw-hzl-haz-'+n+'"></div>' +
+    '<div><span class="hzl" id="pw-hzl-ctl-'+n+'">Control measure</span>' +
+      '<textarea class="pw-hz-ctl" placeholder="What is put in place to prevent it" ' +
+      'aria-labelledby="pw-hzl-ctl-'+n+'"></textarea></div>' +
+    pwConfirmStrip(false, n) +
     '</div></div>';
 }
 
 /* The 5th column of the printed form. "Mark status only when in place" — so
    Pending is the default and confirming is a deliberate act, never a default. */
-function pwConfirmStrip(withMore){
-  return '<div class="pw-conf">' +
-    '<button type="button" data-st="In place" onclick="pwSetHz(this)">' +
-      '<span class="mk">✓</span>In place</button>' +
-    '<button type="button" data-st="N/A" onclick="pwSetHz(this)">' +
-      '<span class="mk">–</span>N/A</button>' +
-    '<input class="pw-hz-resp fl-ctrl" placeholder="Responsible person">' +
+/* n is the row number, used to make every control's accessible name unique —
+   "In place" repeated 12 times tells a screen-reader user nothing about which
+   control they are confirming. */
+function pwConfirmStrip(withMore, n){
+  var of = n ? ' for hazard ' + n : '';
+  return '<div class="pw-conf" role="group"' +
+      (n?' aria-label="Hazard '+n+' confirmation"':'') + '>' +
+    '<button type="button" data-st="In place" onclick="pwSetHz(this)" ' +
+      'aria-pressed="false" aria-label="Control in place'+of+'">' +
+      '<span class="mk" aria-hidden="true">✓</span>In place</button>' +
+    '<button type="button" data-st="N/A" onclick="pwSetHz(this)" ' +
+      'aria-pressed="false" aria-label="Not applicable'+of+'">' +
+      '<span class="mk" aria-hidden="true">–</span>N/A</button>' +
+    '<input class="pw-hz-resp fl-ctrl" placeholder="Responsible person" ' +
+      'aria-label="Responsible person'+of+'">' +
     '<span class="pw-hzacts">' +
-      (withMore?'<button type="button" class="more" onclick="pwMoreHz(this)"></button>':'') +
-      '<button type="button" class="pw-hzedit" onclick="pwEditHz(this)">Edit</button>' +
+      (withMore?'<button type="button" class="more" onclick="pwMoreHz(this)" ' +
+        'aria-expanded="false" aria-label="Show full control text'+of+'"></button>':'') +
+      '<button type="button" class="pw-hzedit" onclick="pwEditHz(this)" ' +
+        'aria-label="Edit wording'+of+'">Edit</button>' +
     '</span>' +
     '<input type="hidden" class="pw-hz-status" value="Pending">' +
     '</div>';
@@ -15169,11 +15240,13 @@ function pwSetHz(btn){
   var st = btn.getAttribute('data-st');
   var cur = row.querySelector('.pw-hz-status');
   var already = cur && cur.value === st;
-  row.querySelectorAll('.pw-conf button').forEach(function(b){ b.classList.remove('on'); });
+  row.querySelectorAll('.pw-conf button[data-st]').forEach(function(b){
+    b.classList.remove('on'); b.setAttribute('aria-pressed','false'); });
   if(already){
     if(cur) cur.value = 'Pending';
   } else {
     btn.classList.add('on');
+    btn.setAttribute('aria-pressed','true');
     if(cur) cur.value = st;
     if(st === 'In place'){
       var resp = row.querySelector('.pw-hz-resp');
@@ -15199,7 +15272,12 @@ function pwWalkProgress(){
     if(st && st.value !== 'Pending') done++;
   });
   var bar = pwEl('pw-walk-bar'), txt = pwEl('pw-walk-txt');
-  if(bar) bar.style.transform = 'scaleX(' + (total ? done/total : 0) + ')';
+  if(bar){
+    bar.style.transform = 'scaleX(' + (total ? done/total : 0) + ')';
+    var track = bar.parentElement;
+    if(track){ track.setAttribute('aria-valuenow', done);
+               track.setAttribute('aria-valuemax', total); }
+  }
   if(txt){
     txt.textContent = done+' / '+total+' confirmed';
     txt.classList.toggle('done', total > 0 && done === total);
@@ -15212,7 +15290,9 @@ function pwWalkProgress(){
 /* Swap one standard row from reference text to editable fields, preserving what
    was written so an edit starts from the standard rather than from blank. */
 function pwMoreHz(btn){
-  var row = btn.closest('.pw-hz'); if(row) row.classList.toggle('expand');
+  var row = btn.closest('.pw-hz'); if(!row) return;
+  var open = row.classList.toggle('expand');
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
 }
 
 function pwEditHz(btn){
@@ -15222,14 +15302,18 @@ function pwEditHz(btn){
   var step = get('.pw-hz-step'), hz = get('.pw-hz-hz'), ctl = get('.pw-hz-ctl');
   var resp = get('.pw-hz-resp'), st = get('.pw-hz-status') || 'Pending';
   var f = row.querySelector('.fields');
+  var idx = (row.querySelector('.idx')||{}).textContent || '';
   f.innerHTML =
     '<div><span class="hzl">Job step</span>' +
-      '<input class="pw-hz-step" value="'+pwEsc(step)+'"></div>' +
+      '<input class="pw-hz-step" value="'+pwEsc(step)+'" ' +
+      'aria-label="Job step for hazard '+pwEsc(idx)+'"></div>' +
     '<div><span class="hzl">Potential hazard</span>' +
-      '<input class="pw-hz-hz" value="'+pwEsc(hz)+'"></div>' +
+      '<input class="pw-hz-hz" value="'+pwEsc(hz)+'" ' +
+      'aria-label="Potential hazard '+pwEsc(idx)+'"></div>' +
     '<div><span class="hzl">Control measure</span>' +
-      '<textarea class="pw-hz-ctl">'+pwEsc(ctl)+'</textarea></div>' +
-    pwConfirmStrip();
+      '<textarea class="pw-hz-ctl" aria-label="Control measure for hazard '+
+      pwEsc(idx)+'">'+pwEsc(ctl)+'</textarea></div>' +
+    pwConfirmStrip(false, idx);
   // Carry the confirmation across the swap; editing wording is not un-confirming.
   var sf = f.querySelector('.pw-hz-status'); if(sf) sf.value = st;
   var rf = f.querySelector('.pw-hz-resp');   if(rf) rf.value = resp;
@@ -15310,9 +15394,8 @@ function pwBuildPtwForm(jsaNo){
     '<div class="pw-note"><b>Declaration:</b> I declare that the information provided ' +
     'is accurate and the control measures listed above have been effectively implemented.</div>' +
     '<div class="pw-grid"><div class="pw-f wide">' +
-    '<label for="pw-p-photo">Photo evidence</label>' +
-    '<input class="fl-ctrl" type="file" accept="image/*" id="pw-p-photo" ' +
-    'style="padding:10px 12px"></div></div>' +
+    '<label for="pw-p-photo">Photo evidence <span class="fl-u">optional</span></label>' +
+    '<input type="file" accept="image/*" id="pw-p-photo" class="pw-file"></div></div>' +
     '<div class="pw-ph" id="pw-p-phlist"></div></div>';
 
   h += '<div id="pw-p-msg"></div>' +
@@ -15547,6 +15630,7 @@ function pwVerifyForm(no){
   pane.innerHTML = h;
   pwWireChecks(pane);
   pwCountChecks(pane);
+  pwHeadings(pane);
 }
 
 function pwDoVerify(no){
@@ -15592,6 +15676,7 @@ function pwCloseForm(no){
     '<button class="fl-submit" style="background:var(--flR)" ' +
     'onclick="pwDoClose(\'' + pwEsc(no) + '\')">Close permit</button>';
   pane.innerHTML = h;
+  pwHeadings(pane);
 }
 
 function pwDoClose(no){
