@@ -2818,21 +2818,35 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .pw-hz.add{ background:var(--flpanel2); }
 .pw-hz .idx{ font-family:'PMMono',ui-monospace,monospace; font-size:var(--t-xs);
   color:var(--flfaint); font-weight:700; padding-top:9px; }
-.pw-hz .fields{ min-width:0; display:grid; gap:6px; }
+.pw-hz .fields{ min-width:0; display:grid; gap:7px; }
 .pw-hz textarea,.pw-hz input{ width:100%; box-sizing:border-box;
   background:var(--flfield); border:1px solid var(--fledge2);
   border-radius:var(--r-sm); padding:8px 10px; color:var(--flink);
   font:400 var(--t-sm)/1.45 'Archivo','PMDev',sans-serif; outline:none;
   transition:border-color .16s var(--ease); }
-.pw-hz textarea{ min-height:44px; resize:vertical; }
+/* field-sizing keeps a control measure fully visible as it grows; the min-height
+   floor covers engines without it. Text that is clipped is text nobody checked. */
+.pw-hz textarea{ min-height:44px; resize:vertical; field-sizing:content; }
 .pw-hz textarea:focus,.pw-hz input:focus{ border-color:var(--flacc);
   box-shadow:0 0 0 3px var(--flaccw); }
-.pw-hz .hzl{ font:700 var(--t-xs) 'Archivo',sans-serif; color:var(--fldim);
-  text-transform:uppercase; letter-spacing:.05em; }
-/* The standard rows arrive pre-written from the document set; they read as
-   given text until touched, so the crew edits rather than retypes. */
-.pw-hz.std textarea{ background:var(--flpanel2); border-style:dashed; }
-.pw-hz.std textarea:focus{ background:var(--flfield); border-style:solid; }
+.pw-hz .hzl{ font:700 var(--t-xs) 'Archivo',sans-serif; color:var(--flfaint);
+  text-transform:uppercase; letter-spacing:.06em; display:block; margin-bottom:2px; }
+
+/* A standard row is REFERENCE first: read it, accept it, edit only if the job
+   differs. Rendering 12 of them as 48 empty-looking inputs was the defect —
+   nobody reads a wall of textareas, and reading them is the entire point. */
+.pw-hz .ref{ font-size:var(--t-sm); line-height:1.5; color:var(--flink); }
+.pw-hz .ref .haz{ color:var(--flR); font-weight:600; }
+.pw-hz .ref .ctl{ color:var(--fldim); }
+.pw-hz .ref p{ margin:0 0 5px; }
+.pw-hz .ref p:last-child{ margin-bottom:0; }
+.pw-hz .step{ font-weight:700; font-size:var(--t-sm); color:var(--flink);
+  margin-bottom:4px; }
+.pw-hzedit{ margin-top:7px; font:600 var(--t-xs) 'Archivo',sans-serif;
+  background:none; border:0; color:var(--flacc); cursor:pointer; padding:6px 0;
+  min-height:32px; text-decoration:underline; text-underline-offset:2px; }
+.pw-hz.edited{ background:var(--flaccw); }
+.pw-hz.edited .idx{ color:var(--flacc); }
 
 /* Field grid. 44px controls come from .fl-ctrl; only the layout is here. */
 .pw-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
@@ -14955,9 +14969,10 @@ function pwBuildJsaForm(code){
   h += '<div class="fl-group"><div class="fl-grouphd" style="cursor:pointer" ' +
     'onclick="pwToggleHz()">Hazard &amp; control analysis' +
     '<span class="n" id="pw-hz-n">'+t.hazards.length+' standard</span></div>' +
-    '<div class="pw-note">Standard rows for this trade are pre-written. ' +
-    'Walk the job and edit anything that differs; add rows for what is specific ' +
-    'to this location.</div>' +
+    '<div class="pw-note">These are the standard hazards for this trade, ' +
+    'pre-written from the JSA document. Walk the job with the crew, read each ' +
+    'one, and <b>edit only what differs</b>. Add rows for anything specific to ' +
+    'this location.</div>' +
     '<div id="pw-j-hz" style="display:none">';
   t.hazards.forEach(function(z,i){ h += pwHzRow(i, z.step, z.hazard, z.control, true); });
   h += '</div>' +
@@ -15013,13 +15028,55 @@ function pwToggleHz(){
 }
 
 function pwHzRow(i, step, hz, ctl, std){
-  return '<div class="pw-hz '+(std?'std':'add')+'">' +
+  if(std){
+    /* Read-only until the crew says otherwise. The values ride along in hidden
+       inputs so pwCollectHz keeps working unchanged. */
+    return '<div class="pw-hz std" data-i="'+i+'">' +
+      '<div class="idx">'+(i+1)+'</div><div class="fields">' +
+      '<div class="ref">' +
+        (step?'<div class="step">'+pwEsc(step)+'</div>':'') +
+        '<p><span class="hzl">Hazard</span><span class="haz">'+pwEsc(hz||'')+'</span></p>' +
+        '<p><span class="hzl">Control</span><span class="ctl">'+pwEsc(ctl||'')+'</span></p>' +
+      '</div>' +
+      '<input type="hidden" class="pw-hz-step" value="'+pwEsc(step||'')+'">' +
+      '<input type="hidden" class="pw-hz-hz" value="'+pwEsc(hz||'')+'">' +
+      '<input type="hidden" class="pw-hz-ctl" value="'+pwEsc(ctl||'')+'">' +
+      '<input class="pw-hz-resp" placeholder="Responsibility (optional)">' +
+      '<button type="button" class="pw-hzedit" onclick="pwEditHz(this)">' +
+        'Edit for this job</button>' +
+      '</div></div>';
+  }
+  return '<div class="pw-hz add">' +
     '<div class="idx">'+(i+1)+'</div><div class="fields">' +
-    '<input class="pw-hz-step" placeholder="Job step" value="'+pwEsc(step||'')+'">' +
-    '<input class="pw-hz-hz" placeholder="Potential hazard" value="'+pwEsc(hz||'')+'">' +
-    '<textarea class="pw-hz-ctl" placeholder="Control measure to be put in place">'+pwEsc(ctl||'')+'</textarea>' +
+    '<div><span class="hzl">Job step</span>' +
+      '<input class="pw-hz-step" placeholder="What is being done"></div>' +
+    '<div><span class="hzl">Potential hazard</span>' +
+      '<input class="pw-hz-hz" placeholder="What could hurt someone"></div>' +
+    '<div><span class="hzl">Control measure</span>' +
+      '<textarea class="pw-hz-ctl" placeholder="What is put in place to prevent it"></textarea></div>' +
     '<input class="pw-hz-resp" placeholder="Responsibility">' +
     '</div></div>';
+}
+
+/* Swap one standard row from reference text to editable fields, preserving what
+   was written so an edit starts from the standard rather than from blank. */
+function pwEditHz(btn){
+  var row = btn.closest('.pw-hz');
+  if(!row) return;
+  var get = function(c){ var e=row.querySelector(c); return e?e.value:''; };
+  var step = get('.pw-hz-step'), hz = get('.pw-hz-hz'), ctl = get('.pw-hz-ctl');
+  var resp = get('.pw-hz-resp');
+  var f = row.querySelector('.fields');
+  f.innerHTML =
+    '<div><span class="hzl">Job step</span>' +
+      '<input class="pw-hz-step" value="'+pwEsc(step)+'"></div>' +
+    '<div><span class="hzl">Potential hazard</span>' +
+      '<input class="pw-hz-hz" value="'+pwEsc(hz)+'"></div>' +
+    '<div><span class="hzl">Control measure</span>' +
+      '<textarea class="pw-hz-ctl">'+pwEsc(ctl)+'</textarea></div>' +
+    '<input class="pw-hz-resp" placeholder="Responsibility" value="'+pwEsc(resp)+'">';
+  row.classList.add('edited');
+  var first = f.querySelector('input'); if(first) first.focus();
 }
 
 function pwAddHz(){
