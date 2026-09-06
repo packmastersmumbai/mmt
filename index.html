@@ -2853,13 +2853,17 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 /* The control text is the long part. Clamp it to three lines with the full
    text one tap away — visible by default, never truncated silently. */
 .pw-hz .ctlwrap{ position:relative; }
-.pw-hz .ctlwrap .ctl{ display:-webkit-box; -webkit-line-clamp:1;
-  -webkit-box-orient:vertical; overflow:hidden; }
-.pw-hz.expand .ctlwrap .ctl{ display:block; }
+.pw-hz .ctlwrap p{ display:flex; gap:5px; align-items:baseline; min-width:0; }
+.pw-hz .ctlwrap .ctl{ overflow:hidden; text-overflow:ellipsis;
+  white-space:nowrap; min-width:0; flex:1; }
+.pw-hz.expand .ctlwrap p{ display:block; }
+.pw-hz.expand .ctlwrap .ctl{ white-space:normal; overflow:visible; }
+
 .pw-hz .more{ background:none; border:0; padding:2px 0; cursor:pointer;
   font:700 var(--t-xs) 'Archivo',sans-serif; color:var(--flacc); }
 /* Both secondary affordances share one line under the control text. */
-.pw-hzacts{ display:flex; gap:14px; align-items:center; margin-top:2px; }
+.pw-hzacts{ display:flex; gap:12px; align-items:center; margin-left:auto;
+  padding-left:4px; }
 .pw-hz.expand .more::after{ content:'Less'; }
 .pw-hz:not(.expand) .more::after{ content:'Full control text'; }
 .pw-hz .tag{ display:inline; font:700 var(--t-xs) 'Archivo',sans-serif;
@@ -2883,8 +2887,8 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .pw-conf button .mk{ width:15px; height:15px; border-radius:var(--r-sm);
   border:2px solid var(--fledge2); flex:none; display:grid; place-items:center;
   font-size:var(--t-xs); color:transparent; line-height:1; }
-.pw-conf .pw-hz-resp{ flex:1 1 130px; min-width:0; min-height:44px;
-  display:none; }
+.pw-conf .pw-hz-resp{ flex:1 1 110px; min-width:0; min-height:44px;
+  max-width:none; display:none; }
 .pw-hz.ok .pw-conf .pw-hz-resp{ display:block; }
 .pw-conf button.on[data-st="In place"]{ background:var(--flgoodw);
   border-color:var(--flgood); color:var(--flgood); }
@@ -15108,16 +15112,12 @@ function pwHzRow(i, step, hz, ctl, std){
         '<p><span class="tag h">Hazard</span><span class="haz">'+pwEsc(hz||'')+'</span></p>' +
         '<div class="ctlwrap"><p><span class="tag c">Control</span>' +
           '<span class="ctl">'+pwEsc(ctl||'')+'</span></p>' +
-          '<div class="pw-hzacts">' +
-            (longCtl?'<button type="button" class="more" onclick="pwMoreHz(this)"></button>':'') +
-            '<button type="button" class="pw-hzedit" onclick="pwEditHz(this)">Edit wording</button>' +
-          '</div>' +
         '</div>' +
       '</div>' +
       '<input type="hidden" class="pw-hz-step" value="'+pwEsc(step||'')+'">' +
       '<input type="hidden" class="pw-hz-hz" value="'+pwEsc(hz||'')+'">' +
       '<input type="hidden" class="pw-hz-ctl" value="'+pwEsc(ctl||'')+'">' +
-      pwConfirmStrip() +
+      pwConfirmStrip(longCtl) +
       '</div></div>';
   }
   return '<div class="pw-hz add">' +
@@ -15134,13 +15134,17 @@ function pwHzRow(i, step, hz, ctl, std){
 
 /* The 5th column of the printed form. "Mark status only when in place" — so
    Pending is the default and confirming is a deliberate act, never a default. */
-function pwConfirmStrip(){
+function pwConfirmStrip(withMore){
   return '<div class="pw-conf">' +
     '<button type="button" data-st="In place" onclick="pwSetHz(this)">' +
       '<span class="mk">✓</span>In place</button>' +
     '<button type="button" data-st="N/A" onclick="pwSetHz(this)">' +
       '<span class="mk">–</span>N/A</button>' +
     '<input class="pw-hz-resp fl-ctrl" placeholder="Responsible person">' +
+    '<span class="pw-hzacts">' +
+      (withMore?'<button type="button" class="more" onclick="pwMoreHz(this)"></button>':'') +
+      '<button type="button" class="pw-hzedit" onclick="pwEditHz(this)">Edit</button>' +
+    '</span>' +
     '<input type="hidden" class="pw-hz-status" value="Pending">' +
     '</div>';
 }
