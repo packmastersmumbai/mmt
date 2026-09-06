@@ -15153,6 +15153,7 @@ function pwBuildJsaForm(code){
   var ap = pwEl('pw-j-appr');
   if(ap) ap.addEventListener('input', pwSaveLabel);
   pwSaveLabel();
+  pwHeadings(box);
 }
 
 /* Naming an approver changes what the button DOES — files a draft, or asserts
@@ -15417,6 +15418,7 @@ function pwBuildPtwForm(jsaNo){
   pwWireChecks(box);
   var pf = pwEl('pw-p-photo');
   if(pf) pf.addEventListener('change', function(){ pwStagePhoto(this); });
+  pwHeadings(box);
 }
 
 function pwCheckRow(kind, i, q){
