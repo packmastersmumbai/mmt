@@ -2910,12 +2910,11 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   min-width:0; }
 .pw-hz .ref .haz{ color:var(--flR); }
 .pw-hz .ref .ctl{ color:var(--fldim); line-height:1.5; }
-/* HAZARD / CONTROL tags sit on their own short line rather than inline, so the
-   sentence beneath them starts at the left margin and gets the full measure.
-   Inline, each tag stole ~55px from the first line of a five-line paragraph and
-   pushed a word onto an extra line. */
+/* Tags stay INLINE. Giving them their own line cost a full line per tag — two
+   extra lines on every row, +340px across the walk — to save the ~55px they take
+   from one line. Measured both ways; inline wins. */
 .pw-hz .ctlwrap p, .pw-hz .ref p{ padding-left:0; }
-.pw-hz .tag{ display:block; margin:0 0 1px; font-size:10.5px; }
+.pw-hz .tag{ margin-right:5px; }
 
 /* The full control text is now shown, which costs real height — 241 characters
    at 12.5px is five lines and that is the point of the change. The height is
