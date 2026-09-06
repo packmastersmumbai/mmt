@@ -6675,6 +6675,25 @@ function navigate(hash, machineId, skipPush) {
   } else {
     _sfNavHash = '';
   }
+  /* Housekeeping is 11 activities x up to 53 parameters and the electricity form
+     is 12 fields; both were losing everything typed if someone tapped the bottom
+     nav or went back mid-entry, with no warning. Ask before discarding, and only
+     when there is genuinely something to lose — a prompt on an untouched form
+     trains people to dismiss it. Guarded because _flDirtyView reads state that is
+     declared further down this script block than navigate() is. */
+  if (App.currentHash && App.currentHash !== hash) {
+    var _lose = '';
+    try { _lose = _flDirtyView(App.currentHash); } catch (e) { _lose = ''; }
+    if (_lose && !confirm(_lose + '\n\nLeave this screen and discard it?')) {
+      /* The hash already changed on a back/hashchange, so put it back or the URL
+         and the visible screen disagree from here on. */
+      if (skipPush && location.hash.replace('#','') !== App.currentHash) {
+        history.replaceState(null, '', '#' + App.currentHash);
+      }
+      return;
+    }
+  }
+
   App.currentHash = hash;
 
   // ── Reset scroll position ──
@@ -14672,6 +14691,52 @@ function rdOpen(kind){
   else if(kind==='solar'){ document.getElementById('rd-solar-form').style.display='block'; document.getElementById('sl-time').value=_flNowTime(); slLive(); }
   else { document.getElementById('rd-water-form').style.display='block'; document.getElementById('wt-time').value=_flNowTime(); }
 }
+/* What would be lost by leaving `hash` right now, as a sentence, or '' if nothing.
+   Computed from live state rather than a dirty flag set by each input handler —
+   a flag has to be wired into every control and silently stops protecting the
+   form the day someone adds a field and forgets one.
+   Meter and time are excluded on purpose: both are prefilled, so counting them
+   would make an untouched form look dirty and train people to dismiss the prompt. */
+function _flDirtyView(hash){
+  if (hash === 'readings') {
+    var forms = [
+      { id:'rd-elec-form',  fields:['el-kwh','el-kvar','el-pfp','el-pfm','el-vr','el-vy','el-vb','el-ar','el-ay','el-ab','el-rem'], name:'electricity reading' },
+      { id:'rd-water-form', fields:['wt-read','wt-rem'], name:'water reading' },
+      { id:'rd-solar-form', fields:['sl-gen-in','sl-rem'], name:'solar reading' }
+    ];
+    for (var i = 0; i < forms.length; i++) {
+      var host = document.getElementById(forms[i].id);
+      if (!host || host.style.display === 'none') continue;   // not the open form
+      var n = 0;
+      forms[i].fields.forEach(function(fid){
+        var e = document.getElementById(fid);
+        if (e && String(e.value).trim() !== '') n++;
+      });
+      if (n) return 'You have ' + n + ' unsaved field' + (n === 1 ? '' : 's') +
+                    ' in this ' + forms[i].name + '.';
+    }
+    return '';
+  }
+
+  if (hash === 'hk') {
+    if (typeof FL === 'undefined' || !FL || !FL.hkState) return '';
+    var ticked = 0, noted = 0;
+    Object.keys(FL.hkState).forEach(function(k){
+      var st = FL.hkState[k];
+      if (!st) return;
+      ticked += Object.keys(st.params || {}).length;
+      if (String(st.remarks || '').trim() !== '') noted++;
+    });
+    if (!ticked && !noted) return '';
+    var bits = [];
+    if (ticked) bits.push(ticked + ' checked item' + (ticked === 1 ? '' : 's'));
+    if (noted)  bits.push(noted + ' remark' + (noted === 1 ? '' : 's'));
+    return 'This housekeeping round has ' + bits.join(' and ') + ' not yet submitted.';
+  }
+
+  return '';
+}
+
 function _v(id){ return document.getElementById(id).value; }
 function _n(id){ var x=parseFloat(_v(id)); return isNaN(x)?null:x; }
 
