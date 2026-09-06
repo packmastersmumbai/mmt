@@ -2941,7 +2941,7 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 /* EN and HI ride the same line as a flex pair, so the required marker cannot
    be orphaned onto a third line. Equal weight: same size, same family. */
 .pw-f label .hi{ white-space:nowrap; }
-.pw-f label .pw-req{ margin-left:auto; }
+.pw-f label .pw-req{ margin-left:-2px; }
 .pw-f label .hi{ text-transform:none; letter-spacing:0; color:var(--fldim);
   font-weight:400; }
 .pw-f .fl-ctrl{ max-width:none; }
@@ -15120,9 +15120,9 @@ function pwBuildJsaForm(code){
 
   h += '<div class="fl-group"><div class="fl-grouphd">Sign-off</div>' +
     '<div class="pw-grid">' +
-    pwField('pw-j-prep','Prepared by (Supervisor)','',{req:true}) +
-    pwField('pw-j-rev','Reviewed by (Safety Officer)','',{}) +
-    pwField('pw-j-appr','Approved by (Issuing Authority)','',{}) +
+    pwField('pw-j-prep','Prepared by','सुपरवाइज़र',{req:true}) +
+    pwField('pw-j-rev','Reviewed by','सेफ्टी ऑफिसर',{}) +
+    pwField('pw-j-appr','Approved by','इशूइंग अथॉरिटी',{wide:true}) +
     '</div>' +
     '<div class="pw-note">Named an approver? The JSA saves as <b>Approved</b> and ' +
     'can carry a permit. Left blank it saves as <b>Draft</b>.</div>' +
