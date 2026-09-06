@@ -3150,6 +3150,55 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .fl-glyph svg{ width:17px; height:17px; }
 .fl-sub{ font-size:var(--t-sm); color:var(--fldim); font-variant-numeric:tabular-nums; }
 .fl-sub2{ font-size:var(--t-sm); color:var(--flfaint); }
+/* ── Readings kind tabs ──────────────────────────────────────────────────
+   A tab and its + are one object: the reading you are LOOKING at is the reading
+   you can ADD to, so the two live in the same bordered cell rather than the +
+   floating somewhere else on the page. Wraps rather than scrolls sideways —
+   DESIGN.md bans a horizontal scroller inside a vertically scrolling page. */
+.rd-kinds{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:12px; }
+.rd-kind{ display:flex; align-items:stretch; background:var(--flpanel);
+  border:1px solid var(--fledge2); border-radius:var(--r-md); overflow:hidden;
+  transition:border-color .18s var(--ease), background .18s var(--ease); }
+.rd-kind.active{ border-color:var(--flacc); background:var(--flaccw); }
+.rd-kbtn{ flex:1 1 auto; min-width:0; display:flex; align-items:center; gap:7px;
+  background:transparent; border:0; padding:0 4px 0 9px; min-height:52px;
+  cursor:pointer; color:var(--fldim); font:inherit; text-align:left; }
+.rd-kind.active .rd-kbtn{ color:var(--flink); }
+.rd-kg{ display:flex; flex:none; width:18px; height:18px; align-items:center;
+  justify-content:center; color:var(--flacc); }
+.rd-kg svg{ width:18px; height:18px; }
+.rd-kt{ min-width:0; display:flex; flex-direction:column; line-height:1.15;
+  font:700 var(--t-sm)/1.15 'Archivo',sans-serif;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* Hindi at the same weight class as its English pair, per the bilingual rule —
+   smaller only because it is the second line of one label, not a lesser one. */
+.rd-kt .hi{ font:400 var(--t-xs)/1.3 'PMDev','Noto Sans Devanagari',sans-serif;
+  color:var(--flfaint); }
+.rd-kind.active .rd-kt .hi{ color:var(--fldim); }
+/* 44px wide AND tall — this is the primary write action on the screen and has to
+   survive a gloved thumb. Separated by a rule so it never reads as part of the label. */
+.rd-kadd{ flex:none; width:44px; min-height:52px; border:0; border-left:1px solid var(--fledge2);
+  background:transparent; color:var(--flacc); font:700 19px/1 'Archivo',sans-serif;
+  cursor:pointer; transition:background .18s var(--ease); }
+.rd-kind.active .rd-kadd{ border-left-color:var(--flaccd); }
+.rd-kadd:hover{ background:var(--flaccw); }
+.rd-kadd:active{ background:var(--flaccd); }
+/* Outstanding work is the one thing that should stand out, so "due" carries the
+   attention tint and "done" recedes. A dot as well as a colour — status is never
+   colour-only (DESIGN.md § status), and this prints and photocopies. */
+.rd-kind.is-due{ border-color:var(--flbrand); }
+.rd-kind.is-due .rd-kadd{ color:var(--flbrand); }
+.rd-kind.is-due .rd-kt::after{ content:'● due'; display:block;
+  font:700 var(--t-xs)/1.3 'Archivo',sans-serif; color:var(--flbrand); }
+.rd-kind.is-done .rd-kt::after{ content:'● logged'; display:block;
+  font:700 var(--t-xs)/1.3 'Archivo',sans-serif; color:var(--flG); }
+.rd-kind.is-done .rd-kg{ opacity:.6; }
+
+@media (max-width:420px){
+  .rd-kinds{ grid-template-columns:1fr 1fr; }
+  .rd-kind:last-child{ grid-column:1 / -1; }
+}
+
 .fl-toolbar{ display:flex; gap:9px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
 /* The segmented control inverts on light: the TRACK takes the page tint and the active
    pill becomes white and raised. On dark it was the other way round (dark track, lighter
@@ -4295,36 +4344,12 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
       <div class="fl-sub" id="rd-datesub"></div>
     </div>
 
-    <!-- launcher -->
-    <div id="rd-launch">
-      <div class="fl-launch">
-        <!-- Icon beside the text, and the EN name and its Hindi gloss share one
-             line: they are the same label twice, so stacking them spent a whole
-             row on a translation. Bilingual pairing is preserved. -->
-        <button class="fl-launchbtn elec" onclick="rdOpen('elec')">
-          <span class="fl-lg" data-i="bolt"></span>
-          <span class="fl-ltext">
-            <span class="fl-lnrow"><span class="fl-ln">Electricity</span><span class="fl-lh">बिजली</span></span>
-            <span class="fl-llast" id="rd-elec-last"></span>
-          </span>
-        </button>
-        <button class="fl-launchbtn water" onclick="rdOpen('water')">
-          <span class="fl-lg" data-i="water"></span>
-          <span class="fl-ltext">
-            <span class="fl-lnrow"><span class="fl-ln">Water</span><span class="fl-lh">पानी</span></span>
-            <span class="fl-llast" id="rd-water-last"></span>
-          </span>
-        </button>
-        <button class="fl-launchbtn solar" onclick="rdOpen('solar')">
-          <span class="fl-lg" data-i="sun"></span>
-          <span class="fl-ltext">
-            <span class="fl-lnrow"><span class="fl-ln">Solar</span><span class="fl-lh">सौर ऊर्जा</span></span>
-            <span class="fl-llast" id="rd-solar-last"></span>
-          </span>
-        </button>
-      </div>
-      <button class="fl-linkbtn" onclick="rdReport('elec')"><span data-i="chart" style="display:inline-flex;vertical-align:-4px;margin-right:6px"></span>View monthly report / मासिक रिपोर्ट</button>
-    </div>
+    <!-- The month report IS the landing surface. The old launcher was three
+         buttons that mostly said "No readings yet" over an empty screen: it spent
+         a whole viewport asking which form you wanted instead of showing the data
+         the page exists to hold. Logging a reading is one tap from here — the +
+         sits on the kind tab itself, so choosing WHAT to log and choosing to log
+         are the same gesture. -->
 
     <!-- electricity form -->
     <div id="rd-elec-form" style="display:none">
@@ -4411,14 +4436,37 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
     </div>
 
     <!-- report -->
-    <div id="rd-report" style="display:none">
-      <button class="fl-back" onclick="rdBack()">‹ Back</button>
-      <div class="fl-toolbar">
-        <div class="fl-seg" id="rd-kindseg">
-          <button class="fl-segbtn active" data-rdkind="elec">⚡ Electricity</button>
-          <button class="fl-segbtn" data-rdkind="water">💧 Water</button>
-          <button class="fl-segbtn" data-rdkind="solar">☀ Solar</button>
+    <div id="rd-report">
+      <!-- Emoji were the only ones in the app's chrome and broke the stroke-glyph
+           vocabulary every other tab uses. Each tab now carries its own + so the
+           reading you are looking at is the reading you can add to. -->
+      <div class="rd-kinds" id="rd-kindseg" role="tablist">
+        <div class="rd-kind active" data-rdkind="elec">
+          <button class="rd-kbtn" role="tab" onclick="rdPickKind('elec')">
+            <span class="rd-kg" data-i="bolt" aria-hidden="true"></span>
+            <span class="rd-kt">Electricity<span class="hi">बिजली</span></span>
+          </button>
+          <button class="rd-kadd" onclick="rdOpen('elec')" aria-label="Log an electricity reading"
+            title="Log a reading">+</button>
         </div>
+        <div class="rd-kind" data-rdkind="water">
+          <button class="rd-kbtn" role="tab" onclick="rdPickKind('water')">
+            <span class="rd-kg" data-i="water" aria-hidden="true"></span>
+            <span class="rd-kt">Water<span class="hi">पानी</span></span>
+          </button>
+          <button class="rd-kadd" onclick="rdOpen('water')" aria-label="Log a water reading"
+            title="Log a reading">+</button>
+        </div>
+        <div class="rd-kind" data-rdkind="solar">
+          <button class="rd-kbtn" role="tab" onclick="rdPickKind('solar')">
+            <span class="rd-kg" data-i="sun" aria-hidden="true"></span>
+            <span class="rd-kt">Solar<span class="hi">सौर</span></span>
+          </button>
+          <button class="rd-kadd" onclick="rdOpen('solar')" aria-label="Log a solar reading"
+            title="Log a reading">+</button>
+        </div>
+      </div>
+      <div class="fl-toolbar">
         <select class="fl-ctrl" id="rd-rep-meter"></select>
       </div>
       <div class="fl-monthbar">
@@ -14642,6 +14690,10 @@ function hkDrill(activity,day){
 function rdInit(){
   _flEnsure();
   document.getElementById('rd-datesub').textContent=_flToday();
+  /* Land on the report for the current kind. The page opens showing the data it
+     holds, not a menu asking which form you want. */
+  FL.rdRepKind=FL.rdRepKind||'elec';
+  FL.rdMonth=FL.rdMonth||_flMY(new Date());
   rdBack();
   flLoadPeople(function(){});
 
@@ -14682,47 +14734,44 @@ function rdFillMeters(){
    whether today's reading is still owed — and "due" is the only card that carries
    the warning tint, so the one action outstanding is the one thing that stands out. */
 function rdPaintStatus(t){
-  [['elec','rd-elec-last','kWh'],['water','rd-water-last','m³'],['solar','rd-solar-last','kWh']]
-  .forEach(function(row){
-    var kind=row[0], el=document.getElementById(row[1]), unit=row[2];
-    if(!el) return;
-    var s=t[kind]||{};
-    var btn=el.closest? el.closest('.fl-launchbtn') : null;
-    if(!s.date){
-      el.textContent='No readings yet';
-      if(btn) btn.classList.remove('is-due','is-done');
-      return;
-    }
-    var val=(s.value===''||s.value==null)?'—':String(s.value);
-    if(s.logged){
-      el.innerHTML='<b class="num">'+esc(val)+'</b> '+unit+
-        (s.time?' · <span class="num">'+esc(s.time)+'</span>':'')+
-        ' <span class="rd-state ok">Logged</span>';
-      if(btn){ btn.classList.add('is-done'); btn.classList.remove('is-due'); }
+  ['elec','water','solar'].forEach(function(kind){
+    var cell=document.querySelector('#rd-kindseg .rd-kind[data-rdkind="'+kind+'"]');
+    if(!cell) return;
+    var st=t[kind]||{};
+    cell.classList.remove('is-due','is-done');
+    var add=cell.querySelector('.rd-kadd');
+    if(!st.date){ if(add) add.title='Log a reading'; return; }
+    if(st.logged){
+      cell.classList.add('is-done');
+      if(add) add.title='Logged today at '+(st.time||'')+' — log another';
     } else {
-      el.innerHTML='Last <b class="num">'+esc(val)+'</b> '+unit+' on '+esc(s.date)+
-        ' <span class="rd-state due">Due today</span>';
-      if(btn){ btn.classList.add('is-due'); btn.classList.remove('is-done'); }
+      cell.classList.add('is-due');
+      if(add) add.title='Due today · last reading '+st.value+' on '+st.date;
     }
   });
-  /* Reorder in the DOM — due first, untouched next, logged last — so tab order
-     and screen-reader sequence match what the eye sees. CSS `order` would move
-     only the paint and leave the keyboard walking a completed card ahead of the
-     one still outstanding. Stable within each group, so Electricity/Water/Solar
-     keep their familiar relative order when their states are equal. */
-  var wrap=document.querySelector('#rd-launch .fl-launch');
-  if(wrap){
-    var rank=function(b){ return b.classList.contains('is-due') ? 0
-                             : b.classList.contains('is-done') ? 2 : 1; };
-    [].slice.call(wrap.querySelectorAll('.fl-launchbtn'))
-      .map(function(b,i){ return {b:b, r:rank(b), i:i}; })
-      .sort(function(x,y){ return x.r-y.r || x.i-y.i; })
-      .forEach(function(o){ wrap.appendChild(o.b); });
-  }
 }
-function rdBack(){ ['rd-elec-form','rd-water-form','rd-solar-form','rd-report'].forEach(function(id){var e=document.getElementById(id); if(e) e.style.display='none';}); document.getElementById('rd-launch').style.display='block'; }
+/* Back goes to the report, which is now the home surface of this page. */
+function rdBack(){
+  ['rd-elec-form','rd-water-form','rd-solar-form'].forEach(function(id){
+    var e=document.getElementById(id); if(e) e.style.display='none'; });
+  var rep=document.getElementById('rd-report'); if(rep) rep.style.display='block';
+  rdLoadReport();
+}
+/* Switch which meter kind the report is showing. Separate from rdOpen: picking a
+   tab reads, pressing its + writes. Conflating them is how the old launcher made
+   every visit start with a form nobody asked for. */
+function rdPickKind(kind){
+  FL.rdRepKind=kind;
+  FL.rdMonth=FL.rdMonth||_flMY(new Date());
+  document.querySelectorAll('#rd-kindseg .rd-kind').forEach(function(el){
+    el.classList.toggle('active', el.dataset.rdkind===kind);
+    var b=el.querySelector('.rd-kbtn'); if(b) b.setAttribute('aria-selected', el.dataset.rdkind===kind);
+  });
+  rdFillMeters();
+  rdLoadReport();
+}
 function rdOpen(kind){
-  document.getElementById('rd-launch').style.display='none';
+  var rep=document.getElementById('rd-report'); if(rep) rep.style.display='none';
   if(kind==='elec'){ document.getElementById('rd-elec-form').style.display='block'; document.getElementById('el-time').value=_flNowTime(); }
   else if(kind==='solar'){ document.getElementById('rd-solar-form').style.display='block'; document.getElementById('sl-time').value=_flNowTime(); slLive(); }
   else { document.getElementById('rd-water-form').style.display='block'; document.getElementById('wt-time').value=_flNowTime(); }
@@ -14908,9 +14957,9 @@ function _flReader(){ var el=document.getElementById('hk-by'); return (el&&el.va
 function rdReport(kind){
   FL.rdRepKind=kind||'elec';
   FL.rdMonth=FL.rdMonth||_flMY(new Date());
-  document.getElementById('rd-launch').style.display='none';
   document.getElementById('rd-report').style.display='block';
-  document.querySelectorAll('#rd-kindseg .fl-segbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.rdkind===FL.rdRepKind); });
+  document.querySelectorAll('#rd-kindseg .rd-kind').forEach(function(el){
+    el.classList.toggle('active', el.dataset.rdkind===FL.rdRepKind); });
   rdFillMeters();
   rdLoadReport();
 }
