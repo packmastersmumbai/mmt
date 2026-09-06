@@ -65,7 +65,13 @@ body {
 /* The header height lives in one place. Six fixed offsets (status bar top, content
    margins, min-height calcs, the .fl view) previously hardcoded 56/88/112px, so
    changing the header meant finding all of them and any miss left a visible seam. */
-:root { --hdr-h: 60px; --nav-h: 56px; }
+/* --nav-h MUST equal the rendered height of .nav-global, which is 58px plus the
+   iOS home-indicator inset. It read 56px against a 58px bar, so every scrolling
+   screen hid its last row under the nav — on Housekeeping that permanently
+   swallowed one of the eleven activities. Derive it from the same numbers the
+   bar itself uses so the two cannot drift apart again. */
+:root { --hdr-h: 60px; --nav-bar-h: 58px;
+        --nav-h: calc(var(--nav-bar-h) + env(safe-area-inset-bottom, 0px)); }
 @media (min-width:1101px){ :root { --hdr-h: 64px; } }
 
 /* Global stroke-icon sizing. One rule so an icon can never stretch to fill a
@@ -283,7 +289,7 @@ body {
 /* ── GLOBAL NAV (always visible at bottom) ── */
 .nav-global {
   position: fixed; bottom: 0; left: 0; right: 0;
-  z-index: 200; height: 58px;
+  z-index: 200; height: var(--nav-bar-h);
   background: #fff; border-top: 1px solid #e2e8f0;
   display: flex; align-items: stretch;
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -310,6 +316,16 @@ body {
 }
 .gnav-btn .gn-icon { display:flex; align-items:center; justify-content:center;
   height:20px; }
+/* The rules above were written for SIX tabs and say so; there are now EIGHT, and
+   at 390px every label wider than ~49px was being clipped mid-word — "Housekeeping"
+   needed 60px. Rather than drop below the 11px functional floor, the two longest
+   labels were shortened ("Cleaning", "Permits") with the full name kept on
+   aria-label. This rule is the backstop: a label that still cannot fit ellipsises
+   honestly instead of being sliced at the glyph. */
+.gnav-btn .gn-label {
+  display:block; max-width:100%; overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap;
+}
 .gnav-btn:hover { color: #334155; }
 /* Active state is TEAL, not orange. Orange now belongs solely to the logo mark,
    so the app has one accent (teal) plus one brand colour — the skill's
@@ -4413,29 +4429,29 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 
 <!-- ══════ GLOBAL NAV (always) ══════ -->
 <nav class="nav-global" id="nav-global">
-  <button class="gnav-btn active" data-hash="dashboard" data-btab="">
-    <span class="gn-icon" data-i="dashboard"></span>Dashboard
+  <button class="gnav-btn active" data-hash="dashboard" data-btab="" aria-label="Dashboard">
+    <span class="gn-icon" data-i="dashboard"></span><span class="gn-label">Home</span>
   </button>
-  <button class="gnav-btn" data-hash="board" data-btab="">
-    <span class="gn-icon" data-i="machines"></span>Machines
+  <button class="gnav-btn" data-hash="board" data-btab="" aria-label="Machines">
+    <span class="gn-icon" data-i="machines"></span><span class="gn-label">Assets</span>
   </button>
   <button class="gnav-btn" data-hash="planner" data-btab="">
-    <span class="gn-icon" data-i="clock"></span>Planner
+    <span class="gn-icon" data-i="clock"></span><span class="gn-label">Planner</span>
   </button>
   <button class="gnav-btn" data-hash="hira" data-btab="">
-    <span class="gn-icon" data-i="hira"></span>HIRA
+    <span class="gn-icon" data-i="hira"></span><span class="gn-label">HIRA</span>
   </button>
-  <button class="gnav-btn" data-hash="incidents" data-btab="">
-    <span class="gn-icon" data-i="incidents"></span>Incidents
+  <button class="gnav-btn" data-hash="incidents" data-btab="" aria-label="Incidents">
+    <span class="gn-icon" data-i="incidents"></span><span class="gn-label">Events</span>
   </button>
-  <button class="gnav-btn" data-hash="hk" data-btab="">
-    <span class="gn-icon" data-i="housekeep"></span>Housekeeping
+  <button class="gnav-btn" data-hash="hk" data-btab="" aria-label="Housekeeping">
+    <span class="gn-icon" data-i="housekeep"></span><span class="gn-label">Clean</span>
   </button>
-  <button class="gnav-btn" data-hash="readings" data-btab="">
-    <span class="gn-icon" data-i="readings"></span>Readings
+  <button class="gnav-btn" data-hash="readings" data-btab="" aria-label="Readings">
+    <span class="gn-icon" data-i="readings"></span><span class="gn-label">Meters</span>
   </button>
-  <button class="gnav-btn" data-hash="ptw" data-btab="">
-    <span class="gn-icon" data-i="ptw"></span>PTW / JSA
+  <button class="gnav-btn" data-hash="ptw" data-btab="" aria-label="Permit to Work / JSA">
+    <span class="gn-icon" data-i="ptw"></span><span class="gn-label">Permits</span>
   </button>
 </nav>
 
