@@ -2933,6 +2933,41 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
     line-height:1.3; }
   .pw-hz .step{ display:block; }
 }
+
+/* ── A decided row collapses ───────────────────────────────────────────────
+   The walk is 12 rows x ~220px because every row shows its full hazard and
+   control text — which is right while you are DECIDING it, and pure noise once
+   you have. A row that has been marked In place or N/A folds to a single line:
+   step name, the decision, and who owns it. Tap it to reopen.
+
+   This is what makes the form shrink as the crew works through it rather than
+   staying nine screens long from first tap to last. The text is never destroyed,
+   only folded, so nothing is hidden that has not been explicitly decided. */
+.pw-hz.ok, .pw-hz.skip{ cursor:pointer; }
+.pw-hz.ok:not(.reopen) .ref,
+.pw-hz.ok:not(.reopen) .ctlwrap,
+.pw-hz.skip:not(.reopen) .ref,
+.pw-hz.skip:not(.reopen) .ctlwrap{ display:none; }
+/* Collapsed: the confirm strip becomes a compact status line, not three targets. */
+.pw-hz.ok:not(.reopen) .pw-conf,
+.pw-hz.skip:not(.reopen) .pw-conf{ margin-top:0; gap:5px; }
+.pw-hz.ok:not(.reopen) .pw-conf button:not(.on),
+.pw-hz.skip:not(.reopen) .pw-conf button:not(.on){ display:none; }
+.pw-hz.ok:not(.reopen) .pw-conf button.on,
+.pw-hz.skip:not(.reopen) .pw-conf button.on{ min-height:30px; padding:0 8px;
+  border-width:1px; pointer-events:none; }
+.pw-hz.ok:not(.reopen) .pw-hz-resp,
+.pw-hz.skip:not(.reopen) .pw-hz-resp{ min-height:30px; flex:1 1 90px;
+  border-style:dashed; }
+.pw-hz.ok:not(.reopen) .step,
+.pw-hz.skip:not(.reopen) .step{ margin-bottom:2px; }
+/* "Reopen" replaces "Edit" while folded — the row's own affordance to unfold. */
+.pw-hz.ok:not(.reopen) .pw-hzedit,
+.pw-hz.skip:not(.reopen) .pw-hzedit{ font-size:0; }
+.pw-hz.ok:not(.reopen) .pw-hzedit::after,
+.pw-hz.skip:not(.reopen) .pw-hzedit::after{ content:'Reopen';
+  font:700 var(--t-xs) 'Archivo',sans-serif; }
+.pw-hz.reopen{ box-shadow:inset 0 0 0 1px var(--flaccd); }
 .pw-hz .ref p{ margin:0 0 2px; display:flex; gap:5px; align-items:baseline;
   min-width:0; }
 .pw-hz .ref p .haz{ white-space:normal; min-width:0; flex:1; }
@@ -15956,6 +15991,24 @@ function pwConfirmStrip(withMore, n){
 
 /* Set one row's status. The owner defaults to whoever is preparing the JSA so
    no confirmed control ends up ownerless, and stays editable per row. */
+/* Delegated once on the pane rather than an onclick per row — the walk rebuilds
+   its rows on every trade change and per-row handlers would be re-bound each time. */
+document.addEventListener('click', function(ev){
+  if(!ev.target.closest) return;
+  if(ev.target.closest('#ptw-pane')) pwRowTap(ev);
+}, true);
+
+/* Tap anywhere on a folded row to reopen it. Ignores taps on the controls inside,
+   which have their own jobs. */
+function pwRowTap(ev){
+  var row = ev.target.closest ? ev.target.closest('.pw-hz') : null;
+  if(!row) return;
+  if(!(row.classList.contains('ok')||row.classList.contains('skip'))) return;
+  if(row.classList.contains('reopen')) return;
+  if(ev.target.closest('button,input,textarea,select,a')) return;
+  row.classList.add('reopen');
+}
+
 function pwSetHz(btn){
   var row = btn.closest('.pw-hz'); if(!row) return;
   var st = btn.getAttribute('data-st');
@@ -15981,6 +16034,9 @@ function pwSetHz(btn){
   row.classList.toggle('skip', (cur && cur.value) === 'N/A');
   row.classList.toggle('pending', (cur && cur.value) === 'Pending');
   row.classList.remove('flag');
+  /* Deciding folds the row; taking the decision back unfolds it, so the text is
+     always visible whenever the row is still an open question. */
+  if((cur && cur.value) === 'Pending') row.classList.remove('reopen');
   pwWalkProgress();
 }
 
@@ -16019,6 +16075,14 @@ function pwMoreHz(btn){
 function pwEditHz(btn){
   var row = btn.closest('.pw-hz');
   if(!row) return;
+  /* While folded this button reads "Reopen" and its only job is to unfold. The
+     wording editor is a second tap, so a mis-tap on a decided row cannot silently
+     drop the operator into editing a control they already accepted. */
+  if((row.classList.contains('ok')||row.classList.contains('skip')) &&
+     !row.classList.contains('reopen')){
+    row.classList.add('reopen');
+    return;
+  }
   var get = function(c){ var e=row.querySelector(c); return e?e.value:''; };
   var step = get('.pw-hz-step'), hz = get('.pw-hz-hz'), ctl = get('.pw-hz-ctl');
   var resp = get('.pw-hz-resp'), st = get('.pw-hz-status') || 'Pending';
