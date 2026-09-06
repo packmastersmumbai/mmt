@@ -2938,6 +2938,86 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   .pw-hz .step{ display:block; }
 }
 
+/* The column header only makes sense beside a grid; hidden until the rows
+   become one at 900px. Declared BEFORE the media query so the grid rule wins. */
+.pw-hzhead{ display:none; }
+
+/* ── The JSA as the grid it actually is ────────────────────────────────────
+   `statusCol` in the catalogue IS the paper form's five column headers:
+     Sequence of Basic Job Steps | Potential Hazard | Safeguard / Control
+     Measure | Responsibility | Status
+   The app ignored them and stacked every field vertically, so on a 1280px
+   screen the form sat in a 500px column with 60% of the viewport empty and ran
+   to 3385px. From 900px up the walk becomes that grid: one row per hazard,
+   headers once at the top, the way the printed form reads.
+
+   Below 900px it stays stacked — five columns in 390px would be four columns
+   of two words each, which is how the readings table failed. */
+@media (min-width:900px){
+  #view-ptw .fl-wrap{ max-width:1180px; }
+
+  .pw-hzhead{ display:grid;
+    grid-template-columns:30px minmax(130px,1fr) minmax(150px,1.2fr) minmax(220px,2.3fr) 158px 226px;
+    gap:0 12px; padding:8px 12px; background:var(--flpanel2);
+    border-bottom:1px solid var(--fledge2);
+    font:700 var(--t-xs) 'Archivo',sans-serif; color:var(--fldim);
+    text-transform:uppercase; letter-spacing:.06em;
+    position:sticky; top:0; z-index:2; }
+  .pw-hzhead span:last-child{ text-align:right; }
+
+  .pw-hz{ grid-template-columns:30px minmax(130px,1fr) minmax(150px,1.2fr) minmax(220px,2.3fr) 158px 226px;
+    gap:0 12px; align-items:start; padding:10px 12px; }
+  /* In the stacked layout the Responsibility field appears only once a row is
+     marked In place — sensible there, but in a grid it leaves a permanently
+     empty column and the reader cannot see who owns what until they have
+     already decided. In the grid it is always present. */
+  .pw-hz .pw-conf .pw-hz-resp{ display:block; }
+  .pw-hz .idx{ padding-top:2px; }
+  /* .fields stops being a stacked container and becomes the four data cells.
+     display:contents lifts its children into the row grid so each lands in its
+     own column without changing the markup the JS builds. */
+  .pw-hz .fields{ display:contents; }
+  .pw-hz .ref{ display:contents; }
+  .pw-hz .step{ grid-column:2; margin:0; font-size:var(--t-sm); }
+  .pw-hz .ref > p{ grid-column:3; margin:0; }
+  .pw-hz .ctlwrap{ grid-column:4; }
+  .pw-hz .ctlwrap p{ margin:0; }
+  /* The tags are the column headers now — repeating them in every cell is noise. */
+  .pw-hz .tag{ display:none; }
+  .pw-hz .ctlwrap .ctl, .pw-hz .ref p .haz{ font-size:var(--t-sm); }
+
+  /* Responsibility and Status: the two input columns of the paper form.
+     display:contents on .pw-conf lifts the responsibility input into column 5,
+     but the three remaining controls must share ONE cell — placing each in
+     column 6 separately put them on three implicit grid rows and inflated every
+     row to 240px against a 131px tallest cell. A subgrid-free fix: the buttons
+     are wrapped by .pw-conf's own flex context in column 6. */
+  .pw-hz .pw-conf{ display:contents; }
+  .pw-hz .pw-hz-resp{ grid-column:5; grid-row:1; margin:0; min-height:38px;
+    max-width:none; align-self:start; }
+  .pw-hz .pw-conf button[data-st]{ grid-row:1; align-self:start;
+    min-height:38px; padding:0 9px; }
+  /* "In place" was rendering as "In pla" — the two buttons and Edit were
+     sharing a 176px column. They are laid out left-to-right inside the wider
+     Status column with explicit offsets so none of them truncates. */
+  .pw-hz .pw-conf button[data-st]{ white-space:nowrap; }
+  .pw-hz .pw-conf button[data-st="In place"]{ grid-column:6; justify-self:start; }
+  .pw-hz .pw-conf button[data-st="N/A"]{ grid-column:6; justify-self:start;
+    margin-left:96px; }
+  .pw-hz .pw-hzacts{ grid-column:6; grid-row:1; justify-self:end;
+    align-self:start; margin:0; padding:0; }
+  .pw-hz .idx{ grid-row:1; }
+  .pw-hz .step, .pw-hz .ref > p, .pw-hz .ctlwrap{ grid-row:1; }
+
+  /* Folded rows keep the same columns — the grid must not jump when a row is
+     decided, or the whole table reflows under the reader. */
+  .pw-hz.ok:not(.reopen) .ref > p,
+  .pw-hz.skip:not(.reopen) .ref > p{ display:block; visibility:hidden; }
+  .pw-hz.ok:not(.reopen) .ctlwrap,
+  .pw-hz.skip:not(.reopen) .ctlwrap{ display:block; visibility:hidden; }
+  .pw-hz.ok:not(.reopen) .step,
+  .pw-hz.skip:not(.reopen) .step{ white-space:normal; }
+}
 /* ── A decided row collapses ───────────────────────────────────────────────
    The walk is 12 rows x ~220px because every row shows its full hazard and
    control text — which is right while you are DECIDING it, and pure noise once
@@ -3230,6 +3310,11 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   .fl-wrap > #rd-elec-form,
   .fl-wrap > #rd-water-form,
   .fl-wrap > #rd-solar-form,
+  /* PTW has no sidebar, and the JSA walk is a five-column grid that needs the
+     full 1180px. Sharing the 814px form track clipped the Status column off the
+     right edge. Verified as a direct child of .fl-wrap, unlike the
+     #rd-report-pane selector above that never matched anything. */
+  .fl-wrap > #ptw-pane,
   .fl-wrap > .fl-gridwrap { grid-column:1/-1; }
   .fl-side{ position:sticky; top:16px; display:flex; flex-direction:column; gap:10px; }
 }
@@ -15961,6 +16046,12 @@ function pwBuildJsaForm(code){
     'aria-label="Controls confirmed"><i id="pw-walk-bar"></i></span>' +
     '<span class="txt" id="pw-walk-txt" aria-live="polite">0 / '+
     t.hazards.length+' confirmed</span></div>' +
+    /* Column headers taken from the trade's own statusCol - the paper form's
+       five headings. Rendered once above the rows; CSS hides this until 900px,
+       where the rows actually become a grid. */
+    '<div class="pw-hzhead" aria-hidden="true"><span></span>' +
+      (t.statusCol||[]).slice(0,4).map(function(c){ return '<span>'+pwEsc(c)+'</span>'; }).join('') +
+      '<span>'+pwEsc((t.statusCol||[])[4]||'Status')+'</span></div>' +
     '<div id="pw-j-hz">';
   t.hazards.forEach(function(z,i){ h += pwHzRow(i, z.step, z.hazard, z.control, true); });
   h += '</div>' +
