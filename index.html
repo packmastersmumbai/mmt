@@ -3764,6 +3764,58 @@ select.fl-ctrl{ font-weight:600; cursor:pointer;
 .fl-gridwrap{ overflow-x:auto; border:1px solid var(--fledge); border-radius:12px;
   -webkit-overflow-scrolling:touch; background:var(--flpanel); }
 
+/* ── Housekeeping month ────────────────────────────────────────────────────
+   One row per activity, one small square per day, all 31 on screen. The month's
+   shape — which activities lapse, which days the plant missed — is the whole
+   point of this view and a 4-of-31 window could not show it. */
+.hk-month{ background:var(--flpanel); border:1px solid var(--fledge);
+  border-radius:var(--r-md); padding:10px 12px 4px; }
+.hk-legend{ display:flex; flex-wrap:wrap; gap:12px; padding-bottom:9px;
+  margin-bottom:9px; border-bottom:1px solid var(--fledge);
+  font:600 var(--t-xs) 'Archivo',sans-serif; color:var(--flfaint); }
+.hk-legend span{ display:inline-flex; align-items:center; gap:5px; }
+.hk-legend .sw{ width:11px; height:11px; border-radius:3px; display:inline-block;
+  border:1px solid var(--fledge2); }
+.hk-legend .sw.full{ background:var(--flgood); border-color:var(--flgood); }
+.hk-legend .sw.part{ background:var(--flYw); border-color:var(--flwarn); }
+.hk-legend .sw.none{ background:var(--flpanel2); }
+
+.hk-mrow{ padding:7px 0; border-bottom:1px solid var(--fledge); }
+.hk-mrow:last-child{ border-bottom:0; }
+.hk-mname{ display:flex; align-items:baseline; gap:8px; margin-bottom:5px;
+  font:700 var(--t-sm) 'Archivo',sans-serif; color:var(--flink); }
+.hk-mcount{ margin-left:auto; flex:none; font-family:'PMMono',ui-monospace,monospace;
+  font-size:var(--t-xs); color:var(--flfaint); font-variant-numeric:tabular-nums; }
+/* auto-fill rather than a fixed 31 columns: the squares stay legible and simply
+   wrap to a second line on the narrowest phones instead of shrinking to dots. */
+.hk-mdays{ display:grid; grid-template-columns:repeat(auto-fill,minmax(19px,1fr));
+  gap:3px; }
+.hk-d{ aspect-ratio:1; min-width:0; padding:0; border-radius:3px; cursor:pointer;
+  border:1px solid var(--fledge2); background:var(--flpanel2);
+  font:700 9px/1 'Archivo',sans-serif; color:var(--flfaint);
+  display:grid; place-items:center; transition:transform .12s var(--ease); }
+.hk-d.full{ background:var(--flgood); border-color:var(--flgood); color:var(--flon); }
+.hk-d.part{ background:var(--flYw); border-color:var(--flwarn); color:var(--flwarn); }
+.hk-d.none{ color:var(--fledge3); }
+.hk-d:active{ transform:scale(.9); }
+.hk-d:focus-visible{ outline:2px solid var(--flacc); outline-offset:1px; }
+
+/* Day-detail sheet. Reuses the .ple-* sheet the PDF export already uses so the
+   module has one modal language rather than a native alert in one place. */
+.hk-drillsheet{ max-height:80vh; overflow-y:auto; }
+.hk-drilllist{ list-style:none; margin:10px 0 0; padding:0; }
+.hk-drilllist li{ display:flex; align-items:flex-start; gap:9px; padding:7px 0;
+  border-bottom:1px solid var(--fledge); font-size:var(--t-sm);
+  color:var(--flink); line-height:1.4; }
+.hk-drilllist li:last-child{ border-bottom:0; }
+.hk-drilllist i{ flex:none; width:18px; height:18px; border-radius:var(--r-sm);
+  display:grid; place-items:center; font-style:normal; font-weight:700;
+  font-size:11px; margin-top:1px; }
+.hk-drilllist li.ok  i{ background:var(--flgoodw); color:var(--flgood); }
+.hk-drilllist li.bad i{ background:var(--flRw); color:var(--flR); }
+.hk-drilllist li.na  i{ background:var(--flpanel2); color:var(--flfaint); }
+.hk-drilllist li.bad{ color:var(--flR); font-weight:600; }
+
 /* ── Readings table → stacked records on a phone ────────────────────────────
    The electricity report is 8 columns. On a 390px screen that meant a sideways
    scroller inside a vertically scrolling page — the affordance DESIGN.md bans
@@ -14938,28 +14990,63 @@ function hkLoadMonth(){
   google.script.run.withSuccessHandler(function(r){
     if(!r||!r.success){ document.getElementById('hk-grid').innerHTML='<div class="fl-loading">'+esc((r&&r.error)||'?')+'</div>'; return; }
     var days=r.days||31;
-    var h='<table class="fl-tbl"><thead><tr><th>Activity</th>';
-    for(var d=1;d<=days;d++) h+='<th>'+d+'</th>'; h+='</tr></thead><tbody>';
+    /* A 32-column table on a 390px phone showed FOUR of the month's days; the
+       other 27 sat behind a horizontal scroller nothing announces, and the
+       activity-name column - text that repeats down every row - took 55% of the
+       width to do it. The month is now a strip of day squares per activity, so
+       every day is on screen at once and the shape of the month is what you see. */
+    var h='<div class="hk-month">';
+    h+='<div class="hk-legend">'+
+       '<span><i class="sw full"></i>All checked</span>'+
+       '<span><i class="sw part"></i>Partly</span>'+
+       '<span><i class="sw none"></i>Not logged</span></div>';
     r.grid.forEach(function(g){
-      h+='<tr><td>'+esc(g.activity)+'</td>';
+      var done=g.cells.filter(function(c){return c.done;}).length;
+      var part=g.cells.filter(function(c){return c.partial;}).length;
+      h+='<div class="hk-mrow"><div class="hk-mname">'+esc(g.activity)+
+         '<span class="hk-mcount">'+done+(part?'+'+part:'')+'/'+days+'</span></div>'+
+         '<div class="hk-mdays">';
       g.cells.forEach(function(c){
-        var cls=c.done?'fl-cellfull':(c.partial?'fl-cellpart':'');
-        var m=c.done?'✓':(c.partial?'◐':'');
-        h+='<td>'+(m?'<span class="cell '+cls+'" role="button" tabindex="0" onclick="hkDrill(\''+g.activity.replace(/'/g,"\\'")+'\','+c.day+')">'+m+'</span>':'')+'</td>';
+        var cls=c.done?'full':(c.partial?'part':'none');
+        var lbl=(c.done?'All checked':c.partial?'Partly checked':'Not logged')+' on day '+c.day;
+        h+='<button type="button" class="hk-d '+cls+'" title="'+esc(lbl)+'" '+
+           'aria-label="'+esc(g.activity)+' - '+esc(lbl)+'" '+
+           'onclick="hkDrill(&quot;'+esc(g.activity)+'&quot;,'+c.day+')">'+
+           '<span>'+c.day+'</span></button>';
       });
-      h+='</tr>';
+      h+='</div></div>';
     });
-    h+='</tbody></table>';
+    h+='</div>';
     document.getElementById('hk-grid').innerHTML=h;
   }).withFailureHandler(function(e){ document.getElementById('hk-grid').innerHTML='<div class="fl-loading">Failed: '+esc(e.message)+'</div>'; }).getHkMonth(FL.hkMonth);
 }
+/* A day's detail was a native alert() carrying emoji - the only alert on these
+   screens and the only emoji in app chrome. It is an in-page sheet now, using the
+   same panel vocabulary as the rest of the module, with the pass/fail glyphs the
+   log itself uses. */
 function hkDrill(activity,day){
   google.script.run.withSuccessHandler(function(r){
     if(!r||!r.success){ showStatus((r&&r.error)||'No record','info',3000); return; }
-    var lines=r.params.map(function(p){ var ic=p.result==='Y'?'✅':p.result==='NA'?'➖':'❌'; return ic+' '+p.parameter; }).join('\n');
-    alert(activity+'  ·  Day '+day+'\nBy: '+r.by+(r.supervisor?'  Verified: '+r.supervisor:'')+'  '+r.time+'\n'+(r.remarks?'Remarks: '+r.remarks+'\n':'')+'\n'+lines);
+    var rows=(r.params||[]).map(function(p){
+      var cls=p.result==='Y'?'ok':p.result==='NA'?'na':'bad';
+      var mk =p.result==='Y'?'\u2713':p.result==='NA'?'\u2013':'\u2717';
+      return '<li class="'+cls+'"><i>'+mk+'</i>'+esc(p.parameter)+'</li>';
+    }).join('');
+    var meta='By '+esc(r.by||'\u2014')+(r.supervisor?' \u00b7 verified '+esc(r.supervisor):'')+
+             (r.time?' \u00b7 '+esc(r.time):'');
+    var host=document.getElementById('hk-drill');
+    if(!host){ host=document.createElement('div'); host.id='hk-drill'; document.body.appendChild(host); }
+    host.innerHTML='<div class="ple-back" onclick="if(event.target===this)hkDrillClose()">'+
+      '<div class="ple-sheet hk-drillsheet" role="dialog" aria-modal="true" aria-label="Day detail">'+
+        '<div class="ple-hd">'+esc(activity)+'</div>'+
+        '<div class="ple-sub">Day '+day+' \u00b7 '+meta+'</div>'+
+        (r.remarks?'<div class="pw-note">'+esc(r.remarks)+'</div>':'')+
+        '<ul class="hk-drilllist">'+rows+'</ul>'+
+        '<div class="ple-act"><button class="ple-no" onclick="hkDrillClose()">Close</button></div>'+
+      '</div></div>';
   }).getHkRecordDetail(FL.hkMonth,activity,day);
 }
+function hkDrillClose(){ var h=document.getElementById('hk-drill'); if(h) h.innerHTML=''; }
 
 // ── READINGS ──
 function rdInit(){
