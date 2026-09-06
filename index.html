@@ -4337,7 +4337,7 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
       <div class="fl-chips" id="el-chips"></div>
       <div class="fl-seclbl">Remarks</div>
       <textarea class="fl-ctrl fl-rem" id="el-rem" placeholder="Anomalies, meter reset…"></textarea>
-      <button class="fl-submit" onclick="elSubmit()">Submit Electricity / जमा करें</button>
+      <button class="fl-submit" id="el-submit" onclick="elSubmit()">Submit Electricity / जमा करें</button>
     </div>
 
     <!-- water form -->
@@ -4355,7 +4355,7 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
       <div class="fl-chips" id="wt-chips"></div>
       <div class="fl-seclbl">Remarks</div>
       <textarea class="fl-ctrl fl-rem" id="wt-rem" placeholder="Leak, meter reset…"></textarea>
-      <button class="fl-submit" onclick="wtSubmit()">Submit Water / जमा करें</button>
+      <button class="fl-submit" id="wt-submit" onclick="wtSubmit()">Submit Water / जमा करें</button>
     </div>
 
     <!-- solar form -->
@@ -4386,7 +4386,7 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
       <div class="fl-chips" id="sl-chips"></div>
       <div class="fl-seclbl">Remarks</div>
       <textarea class="fl-ctrl fl-rem" id="sl-rem" placeholder="Cleaning, cloud cover, string fault…"></textarea>
-      <button class="fl-submit" onclick="slSubmit()">Submit Solar / जमा करें</button>
+      <button class="fl-submit" id="sl-submit" onclick="slSubmit()">Submit Solar / जमा करें</button>
     </div>
 
     <!-- report -->
@@ -14502,7 +14502,12 @@ function hkSubmit(){
 }
 function hkSend(by,sup,activities,force){
   showStatus('Submitting…','info',0);
+  /* Released on EVERY branch below, including the duplicate prompt — that branch
+     either recurses (which re-locks) or abandons the submit, and a button left
+     disabled there would strand the operator with a full form they cannot send. */
+  var unlock=_flLock('hk-submit');
   google.script.run.withSuccessHandler(function(r){
+    unlock();
     if(r&&r.success){
       var msg='Logged ✓  Audit '+r.auditScore+'%  ·  covered '+r.checked+'/'+r.configured;
       if(r.failed) msg+='  ·  '+r.failed+' failed';
@@ -14514,7 +14519,7 @@ function hkSend(by,sup,activities,force){
       if(confirm(r.error+'\n\nAdd this as a SECOND round for today?')) hkSend(by,sup,activities,true);
       else showStatus('Not submitted','info',3000);
     } else showStatus('Failed: '+((r&&r.error)||'?'),'error',5000);
-  }).withFailureHandler(function(e){ showStatus('Failed: '+(e&&e.message||e),'error',5000); })
+  }).withFailureHandler(function(e){ unlock(); showStatus('Failed: '+(e&&e.message||e),'error',5000); })
     .submitHkLog({ by:by, supervisor:sup, date:_flToday(), time:_flNowTime(), activities:activities, force:!!force });
 }
 // Warn BEFORE 53 chips get filled, not after.
@@ -14664,6 +14669,20 @@ function rdOpen(kind){
 }
 function _v(id){ return document.getElementById(id).value; }
 function _n(id){ var x=parseFloat(_v(id)); return isNaN(x)?null:x; }
+
+/* Hold a submit button down for the length of the round trip. GAS round trips
+   on this app run into seconds, which is long enough for an operator on a phone
+   to conclude the tap missed and tap again — and a second tap on a reading or a
+   housekeeping round writes a duplicate row into a record an auditor reads.
+   BD/PM/CLIT already guard this way; Readings and Housekeeping did not. */
+function _flLock(id, label){
+  var b = document.getElementById(id);
+  if (!b) return function(){};
+  var old = b.textContent;
+  b.disabled = true; b.textContent = label || 'Saving…';
+  var done = false;
+  return function(){ if (done) return; done = true; b.disabled = false; b.textContent = old; };
+}
 // live warnings (client mirror of server _elecWarnings; server re-validates)
 function elWarn(){
   var w=[], nv=230, lo=nv*0.94, hi=nv*1.06;
@@ -14683,13 +14702,14 @@ function elLive(){
 function elSubmit(){
   var meter=_v('el-meter'); if(!meter){ showStatus('No meter','error',3000); return; }
   if(_n('el-kwh')===null){ showStatus('Enter kWh','error',3000); return; }
-  var by=document.getElementById('hk-by')? '': '';
   showStatus('Submitting…','info',0);
+  var unlock=_flLock('el-submit');
   google.script.run.withSuccessHandler(function(r){
+    unlock();
     if(r&&r.success){ var u=(r.kWhUsed!==''&&r.kWhUsed!=null)?'  used '+r.kWhUsed+' kWh':''; showStatus('Saved ✓'+u+(r.warnings&&r.warnings.length?'  ⚠ '+r.warnings.length:''),'success',4000);
       ['el-kwh','el-kvar','el-pfp','el-pfm','el-vr','el-vy','el-vb','el-ar','el-ay','el-ab','el-rem'].forEach(function(i){document.getElementById(i).value='';}); elLive(); rdBack(); }
     else showStatus('Failed: '+((r&&r.error)||'?'),'error',5000);
-  }).withFailureHandler(function(e){ showStatus('Failed: '+(e&&e.message||e),'error',5000); })
+  }).withFailureHandler(function(e){ unlock(); showStatus('Failed: '+(e&&e.message||e),'error',5000); })
     .submitElecReading({ meterNo:meter, date:_flToday(), time:_v('el-time'),
       kWh:_n('el-kwh'), kVAr:_n('el-kvar'), pfPanel:_n('el-pfp'), pfMeter:_n('el-pfm'),
       vR:_n('el-vr'), vY:_n('el-vy'), vB:_n('el-vb'), aR:_n('el-ar'), aY:_n('el-ay'), aB:_n('el-ab'),
@@ -14704,11 +14724,13 @@ function wtSubmit(){
   var meter=_v('wt-meter'); if(!meter){ showStatus('No meter','error',3000); return; }
   if(_n('wt-read')===null){ showStatus('Enter reading','error',3000); return; }
   showStatus('Submitting…','info',0);
+  var unlock=_flLock('wt-submit');
   google.script.run.withSuccessHandler(function(r){
+    unlock();
     if(r&&r.success){ var u=(r.used!==''&&r.used!=null)?'  used '+r.used:''; showStatus('Saved ✓'+u,'success',4000);
       ['wt-read','wt-rem'].forEach(function(i){document.getElementById(i).value='';}); document.getElementById('wt-used').textContent='—'; rdBack(); }
     else showStatus('Failed: '+((r&&r.error)||'?'),'error',5000);
-  }).withFailureHandler(function(e){ showStatus('Failed: '+(e&&e.message||e),'error',5000); })
+  }).withFailureHandler(function(e){ unlock(); showStatus('Failed: '+(e&&e.message||e),'error',5000); })
     .submitWaterReading({ meterNo:meter, date:_flToday(), time:_v('wt-time'), reading:_n('wt-read'), remarks:_v('wt-rem'), by:_flReader() });
 }
 // ── SOLAR ──
@@ -14752,7 +14774,9 @@ function slSubmit(){
   // failing before the round-trip tells the operator immediately.
   if(gen<0){ showStatus('Generation cannot be negative','error',3000); return; }
   showStatus('Submitting…','info',0);
+  var unlock=_flLock('sl-submit');
   google.script.run.withSuccessHandler(function(r){
+    unlock();
     if(r&&r.success){
       showStatus('Saved ✓  '+r.generated+' kWh  ·  '+r.percent+'% of expected'+
         (r.warnings&&r.warnings.length?'  ⚠ '+r.warnings.length:''),'success',5000);
@@ -14768,7 +14792,7 @@ function slSubmit(){
       if(r&&r.duplicate) showStatus(err,'error',8000);
       else showStatus('Failed: '+err,'error',5000);
     }
-  }).withFailureHandler(function(e){ showStatus('Failed: '+(e&&e.message||e),'error',5000); })
+  }).withFailureHandler(function(e){ unlock(); showStatus('Failed: '+(e&&e.message||e),'error',5000); })
     .submitSolarReading({ meterNo:meter, date:_flToday(), time:_v('sl-time'),
       generated:gen, remarks:_v('sl-rem'), by:_flReader() });
 }
@@ -15019,8 +15043,34 @@ function lsSave(key){
    view mirrors it so the floor sees WHY something is refused rather
    than a bare error.
    ═══════════════════════════════════════════════════════════════ */
-var PW = { data:null, tab:'permits', cat:null, sel:null, busy:false, photos:[],
+var PW = { data:null, tab:'permits', cat:null, sel:null, photos:[],
            filter:'', step:1 };
+
+/* PW.busy already blocked a second save re-entrantly, but the button stayed
+   live-looking, so a slow GAS round trip read as a missed tap. Making busy a
+   property lets the four save/verify/close paths keep their existing
+   `PW.busy = true/false` lines and get the visual state for free — one place,
+   rather than four hand-edited handlers that can drift apart. */
+(function(){
+  var _busy = false;
+  Object.defineProperty(PW, 'busy', {
+    get: function(){ return _busy; },
+    set: function(v){
+      _busy = !!v;
+      var btns = document.querySelectorAll('#view-ptw button.fl-submit');
+      for (var i = 0; i < btns.length; i++) {
+        var b = btns[i];
+        if (_busy) {
+          if (!b.hasAttribute('data-pw-label')) b.setAttribute('data-pw-label', b.textContent);
+          b.disabled = true; b.textContent = 'Saving…';
+        } else if (b.hasAttribute('data-pw-label')) {
+          b.disabled = false; b.textContent = b.getAttribute('data-pw-label');
+          b.removeAttribute('data-pw-label');
+        }
+      }
+    }
+  });
+})();
 
 function pwEsc(v){
   return String(v==null?'':v).replace(/[&<>"']/g,function(c){
