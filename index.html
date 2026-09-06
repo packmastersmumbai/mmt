@@ -2811,8 +2811,8 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 
 /* Hazard row — a ruled register line inside .fl-group, never a nested card.
    Grid so step / hazard / control align down the page like a printed JSA. */
-.pw-hz{ display:grid; grid-template-columns:20px 1fr; gap:0 9px;
-  padding:9px 12px; border-bottom:1px solid var(--fledge); align-items:start;
+.pw-hz{ display:grid; grid-template-columns:18px 1fr; gap:0 8px;
+  padding:8px 12px; border-bottom:1px solid var(--fledge); align-items:start;
   position:relative; }
 /* State reads from the left edge at a glance: amber = still to walk,
    green = confirmed in place, slate = ruled out. Colour is never the only
@@ -2826,7 +2826,7 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .pw-hz.add{ background:var(--flpanel2); }
 .pw-hz .idx{ font-family:'PMMono',ui-monospace,monospace; font-size:var(--t-xs);
   color:var(--flfaint); font-weight:700; padding-top:9px; }
-.pw-hz .fields{ min-width:0; display:grid; gap:7px; }
+.pw-hz .fields{ min-width:0; display:grid; gap:5px; }
 .pw-hz textarea,.pw-hz input{ width:100%; box-sizing:border-box;
   background:var(--flfield); border:1px solid var(--fledge2);
   border-radius:var(--r-sm); padding:8px 10px; color:var(--flink);
@@ -2849,11 +2849,11 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .pw-hz .ref p{ margin:0 0 3px; }
 .pw-hz .ref p:last-child{ margin-bottom:0; }
 .pw-hz .step{ font-weight:700; font-size:var(--t-sm); color:var(--flink);
-  margin-bottom:3px; line-height:1.35; }
+  margin-bottom:2px; line-height:1.3; }
 /* The control text is the long part. Clamp it to three lines with the full
    text one tap away — visible by default, never truncated silently. */
 .pw-hz .ctlwrap{ position:relative; }
-.pw-hz .ctlwrap .ctl{ display:-webkit-box; -webkit-line-clamp:3;
+.pw-hz .ctlwrap .ctl{ display:-webkit-box; -webkit-line-clamp:1;
   -webkit-box-orient:vertical; overflow:hidden; }
 .pw-hz.expand .ctlwrap .ctl{ display:block; }
 .pw-hz .more{ background:none; border:0; padding:2px 0; cursor:pointer;
@@ -2862,8 +2862,8 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .pw-hzacts{ display:flex; gap:14px; align-items:center; margin-top:2px; }
 .pw-hz.expand .more::after{ content:'Less'; }
 .pw-hz:not(.expand) .more::after{ content:'Full control text'; }
-.pw-hz .tag{ display:inline-block; font:700 var(--t-xs) 'Archivo',sans-serif;
-  text-transform:uppercase; letter-spacing:.06em; margin-right:6px; }
+.pw-hz .tag{ display:inline; font:700 var(--t-xs) 'Archivo',sans-serif;
+  text-transform:uppercase; letter-spacing:.06em; margin-right:5px; }
 .pw-hz .tag.h{ color:var(--flR); } .pw-hz .tag.c{ color:var(--flfaint); }
 .pw-hzedit{ font:700 var(--t-xs) 'Archivo',sans-serif;
   background:none; border:0; color:var(--flfaint); cursor:pointer; padding:2px 0; }
@@ -2874,7 +2874,7 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 /* One row: two state buttons + the owner. No section label — the buttons say
    what they do, and a label per row × 12 rows is 12 lines of nothing. */
 .pw-conf{ display:flex; gap:6px; align-items:center; flex-wrap:wrap;
-  margin-top:7px; }
+  margin-top:5px; }
 .pw-conf button{ min-height:44px; padding:0 11px; border-radius:var(--r-sm);
   border:1.5px solid var(--fledge2); background:var(--flpanel);
   color:var(--fldim); cursor:pointer; font:700 var(--t-xs) 'Archivo',sans-serif;
@@ -2883,7 +2883,9 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .pw-conf button .mk{ width:15px; height:15px; border-radius:var(--r-sm);
   border:2px solid var(--fledge2); flex:none; display:grid; place-items:center;
   font-size:var(--t-xs); color:transparent; line-height:1; }
-.pw-conf .pw-hz-resp{ flex:1 1 130px; min-width:0; min-height:44px; }
+.pw-conf .pw-hz-resp{ flex:1 1 130px; min-width:0; min-height:44px;
+  display:none; }
+.pw-hz.ok .pw-conf .pw-hz-resp{ display:block; }
 .pw-conf button.on[data-st="In place"]{ background:var(--flgoodw);
   border-color:var(--flgood); color:var(--flgood); }
 .pw-conf button.on[data-st="In place"] .mk{ background:var(--flgood);
@@ -15098,7 +15100,7 @@ function pwHzRow(i, step, hz, ctl, std){
   if(std){
     /* Read-only until the crew says otherwise. The values ride along in hidden
        inputs so pwCollectHz keeps working unchanged. */
-    var longCtl = String(ctl||'').length > 150;
+    var longCtl = String(ctl||'').length > 60;
     return '<div class="pw-hz std pending" data-i="'+i+'">' +
       '<div class="idx">'+(i+1)+'</div><div class="fields">' +
       '<div class="ref">' +
