@@ -3150,6 +3150,22 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .fl-glyph svg{ width:17px; height:17px; }
 .fl-sub{ font-size:var(--t-sm); color:var(--fldim); font-variant-numeric:tabular-nums; }
 .fl-sub2{ font-size:var(--t-sm); color:var(--flfaint); }
+/* A secondary route out of the page. Sits with the subtitle, keeps a 44px target
+   for a gloved tap, but carries none of a button's visual weight. */
+.fl-headlink{ background:none; border:0; padding:0; min-height:44px;
+  font:700 var(--t-sm) 'Archivo',sans-serif; color:var(--flacc); cursor:pointer;
+  text-align:left; }
+.fl-headlink:hover{ text-decoration:underline; }
+
+/* The three fl-* screens gave the header a third of a phone viewport before any
+   content. Tighter title, tighter gap — the page name is orientation, not the
+   subject of the screen. */
+@media (max-width:520px){
+  .fl-head{ margin-bottom:10px; gap:4px; }
+  .fl-title{ font-size:var(--t-lg); gap:8px; }
+  .fl-glyph{ width:28px; height:28px; }
+  .fl-glyph svg{ width:15px; height:15px; }
+}
 /* ── Readings kind tabs ──────────────────────────────────────────────────
    A tab and its + are one object: the reading you are LOOKING at is the reading
    you can ADD to, so the two live in the same bordered cell rather than the +
@@ -3432,6 +3448,20 @@ select.fl-ctrl{ font-weight:600; cursor:pointer;
 .fl-actname small{ display:block; font-weight:400; font-size:var(--t-sm);
   color:var(--fldim); margin-top:2px;
   font-family:'PMDev','Archivo',sans-serif; }
+
+/* Eleven activities at ~106px each is nine screens of scrolling to run one round.
+   The names wrap to two lines because the row is fighting a 44px "All" button, a
+   badge and a dot strip for width. On a phone the dots move under the name — they
+   carry real per-parameter state, so they stay — and the row loses its slack.
+   The 44px targets on the button and badge are untouched. */
+@media (max-width:520px){
+  .fl-acthd{ gap:8px; padding:8px 11px; min-height:56px; flex-wrap:wrap; }
+  .fl-actname{ flex:1 1 auto; font-size:var(--t-sm); }
+  .fl-actname small{ margin-top:1px; }
+  /* Dots drop to their own full-width line under the name rather than squeezing
+     the name into two lines. Order keeps them below the label they describe. */
+  .fl-acthd .fl-dots{ order:5; flex-basis:100%; margin:0 0 0 20px; }
+}
 /* Status badge. The 7px coloured box-shadows on the LEDs were outer glows —
    replaced with a solid dot plus a tinted background on the badge itself. */
 .fl-badge{ font:700 var(--t-xs) 'Archivo',sans-serif; padding:0 9px; min-height:26px;
@@ -4370,9 +4400,11 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
       <div class="fl-title"><span class="fl-glyph" aria-hidden="true"><svg viewBox="0 0 16 16"
         fill="currentColor"><path d="M6 1h4a1 1 0 0 1 1 1v1H5V2a1 1 0 0 1 1-1z"/><path d="M4 3H2.6A.6.6 0 0 0 2 3.6v11.8a.6.6 0 0 0 .6.6h10.8a.6.6 0 0 0 .6-.6V3.6a.6.6 0 0 0-.6-.6H12v1.6H4V3z"/><path d="M5.6 9.4 7 10.8l3-3.4" stroke="#0b3b36" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         Permit to Work <span class="hi">/ कार्य अनुमति</span></div>
+      <!-- Settings is a quiet link on the subtitle line, not a button sitting at
+           title weight. It was reading as the second most important thing on a
+           permit screen, which it is not. -->
       <div class="fl-sub" id="ptw-datesub"></div>
-      <button class="pw-btn" style="margin-top:8px"
-        onclick="navigate('lists')">Manage people &amp; lists</button>
+      <button class="fl-headlink" onclick="navigate('lists')">People &amp; lists ›</button>
     </div>
     <div class="fl-toolbar">
       <div class="fl-seg" id="ptw-seg">
