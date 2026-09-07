@@ -853,6 +853,53 @@ body {
 }
 .dash-sec-hd { font-size:11px; font-weight:800; color:#475569; text-transform:uppercase;
   letter-spacing:.5px; margin:18px 0 8px; }
+
+/* ── Attention strip ──────────────────────────────────────────────
+   The one block that is read before anything else, so it sits above the KPI
+   row and is the only element on the dashboard with a coloured left edge —
+   the rule is "a bar on the left means someone has to do something". Rows are
+   a list, not tiles: each is a full sentence with its own destination, and a
+   grid would set them all at the same visual weight as the numbers above.
+   Each row is a link target, so the whole row is the hit area (44px), not the
+   small "→" at its end. */
+.dash-att { border-left:3px solid #dc2626; background:#fef2f2; border-radius:0 7px 7px 0;
+  padding:4px 0; margin:0 0 12px; }
+.dash-att ul { list-style:none; margin:0; padding:0; }
+.dash-att li { display:flex; align-items:center; gap:8px; min-height:34px;
+  padding:5px 11px; font-size:12.5px; color:#334155; cursor:pointer;
+  border-bottom:1px solid rgba(220,38,38,.10); }
+.dash-att li:last-child { border-bottom:0; }
+.dash-att li:hover, .dash-att li:focus-visible { background:rgba(220,38,38,.06); outline:none; }
+.dash-att li:focus-visible { box-shadow:inset 0 0 0 2px #dc2626; }
+.dash-att b { font-size:14px; font-weight:800; color:#b91c1c; font-variant-numeric:tabular-nums; }
+.dash-att .att-go { margin-left:auto; font-size:11px; font-weight:700; color:#b91c1c;
+  white-space:nowrap; }
+/* Nothing outstanding is a result worth stating, not an empty box. */
+.dash-att.att-ok { border-left-color:#16a34a; background:#f0fdf4; }
+.dash-att.att-ok li { color:#166534; border-bottom:0; }
+
+/* ── PM plan: 12 stacked month bars ───────────────────────────────
+   Stacked (done over missed) rather than a letter grid: the question is "how
+   much of what was owed got done", which is a part-to-whole per month, and a
+   grid of A/M letters made the reader count characters to answer it.
+   Fixed 74px track so all twelve columns share one baseline; months with
+   nothing due render an empty track rather than vanishing, because a gap in
+   the FY is itself the finding. */
+.pm-mrow { display:flex; gap:3px; align-items:flex-end; }
+.pm-mcol { flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; }
+.pm-mtrack { width:100%; height:74px; display:flex; flex-direction:column;
+  justify-content:flex-end; background:#f1f5f9; border-radius:3px; overflow:hidden; }
+.pm-mmiss { background:#dc2626; }
+.pm-mdone { background:#15803d; }
+.pm-mx { font-size:11px; color:#64748b; margin-top:4px; font-weight:600;
+  letter-spacing:.2px; }
+/* The elapsed months are the only ones carrying a judgement; the rest of the FY
+   is plan, so its labels step back rather than reading as equally settled. */
+.pm-mcol.pm-future .pm-mx { color:#cbd5e1; }
+.dc-body-pad { padding:4px 2px 2px; }
+.pm-leg { display:flex; gap:12px; margin-top:8px; font-size:11px; color:#475569; }
+.pm-leg i { display:inline-block; width:9px; height:9px; border-radius:2px;
+  margin-right:4px; vertical-align:-1px; }
 /* Four across at every width, including 412px — this is a ROW of readings, and
    breaking it to 2x2 on a phone turns it back into the block it was meant to replace.
    At 412px each cell is ~95px, which fits a 4-char reading ("827h") and a short label;
@@ -6024,6 +6071,11 @@ var _dashStale = 0;
    further down this file and would clobber an early seed. */
 var _dashSfCharts = null;
 var _dashSfHeat = null;
+/* Operational summaries (PM plan, equipment, permits, housekeeping) that ride
+   along on the same bootstrap call. Each key is null until it lands, and each
+   may be null on its own if that register failed server-side — the tiles render
+   an em dash rather than a 0, because "0 overdue" is a claim. */
+var _dashOps = null;
 
 function loadDashboard() {
   var ready = _boardData && _boardData.success && _dashMetrics && _boardRecordsCache.bd;
@@ -6054,6 +6106,7 @@ function loadDashboard() {
     if (c.safety)  _dashSafety  = c.safety;
     if (c.safetyCharts) _dashSfCharts = c.safetyCharts;
     if (c.safetyHeat)   _dashSfHeat   = c.safetyHeat;
+    if (c.ops)          _dashOps      = c.ops;
     _dashStale = cached.age;
     renderDashboard();
   }
@@ -6063,7 +6116,8 @@ function loadDashboard() {
     function done(d) {
       if (d) {
         PMC.put('dash', {kanban:d.kanban, metrics:d.metrics, safety:d.safety,
-                         safetyCharts:d.safetyCharts, safetyHeat:d.safetyHeat});
+                         safetyCharts:d.safetyCharts, safetyHeat:d.safetyHeat,
+                         ops:d.ops});
         _dashStale = 0;
         if (d.kanban && d.kanban.success) _boardData = d.kanban;
         if (d.metrics) _dashMetrics = d.metrics;
@@ -6081,6 +6135,7 @@ function loadDashboard() {
         if (d.safety) _dashSafety = d.safety;
         if (d.safetyCharts) _dashSfCharts = d.safetyCharts;
         if (d.safetyHeat)   _dashSfHeat   = d.safetyHeat;
+        if (d.ops)          _dashOps      = d.ops;
       }
       if (!_boardData)  _boardData  = {success:false};
       if (!_dashMetrics) _dashMetrics = {};
@@ -6267,6 +6322,86 @@ function renderDashboard() {
     return '<div class="dk-cell"'+interactive+'><div class="dk-num" style="color:'+color+'">'+v+'</div>'+
       '<div class="dk-lbl">'+lbl+'</div><div class="dk-sub">'+sub+'</div></div>';
   }
+  /* ---- ops summaries (PM plan, equipment, permits, housekeeping) ----
+     Each may be null on its own if that register failed server-side. */
+  var ops  = _dashOps || {};
+  var opm  = ops.pm || null;
+  var oeq  = ops.equipment || null;
+  var optw = ops.ptw || null;
+  var ohk  = ops.hk || null;
+
+  /* The attention strip: only conditions that are TRUE right now, each with the
+     screen that acts on it. Nothing is listed speculatively — a row appears
+     because its register says so, which is why the strip is empty-able and has
+     an explicit all-clear state rather than a permanent list of headings. */
+  function _attention() {
+    var rows = [];
+    function row(n, txt, go, cta) {
+      rows.push('<li data-go="'+go+'" tabindex="0" role="link">' +
+        (n !== null ? '<b>'+n+'</b> ' : '') + esc(txt) +
+        '<span class="att-go">'+esc(cta)+' &rarr;</span></li>');
+    }
+    if (opm && opm.missed > 0)
+      row(opm.missed, 'PM visits missed this FY', 'planner', 'PM plan');
+    if (sfk.overdueActions > 0)
+      row(sfk.overdueActions, 'HIRA actions overdue', 'hira', 'Actions');
+    if (oeq && oeq.checkOverdue > 0)
+      row(oeq.checkOverdue, 'equipment checks overdue', 'lists', 'Equipment');
+    if (oeq && oeq.overdue > 0)
+      row(oeq.overdue, 'calibrations overdue', 'lists', 'Calibration');
+    if (optw && optw.expired > 0)
+      row(optw.expired, 'permits expired but not closed', 'ptw', 'Permits');
+    /* Housekeeping is the one row driven by an ABSENCE. It is only raised once
+       the register has actually answered (ohk non-null): before that, "not
+       logged today" would be a claim about data we do not have yet. */
+    if (ohk && !ohk.logged)
+      row(null, 'Housekeeping not logged today', 'hk', 'Log now');
+
+    /* An all-clear is a CLAIM, and it must not be made from absent data. Until
+       the ops summary has actually landed there is nothing to be clear about,
+       so the strip renders nothing at all rather than a green "all current"
+       that a cold load would show for several seconds before the real overdue
+       rows replaced it. Same rule as the em-dash safety tiles above. */
+    if (!rows.length) {
+      if (!_dashOps) return '';
+      return '<div class="dash-att att-ok"><ul><li>' +
+        'Nothing overdue — PM plan, HIRA actions, equipment and permits are all current.' +
+        '</li></ul></div>';
+    }
+    return '<div class="dash-att" role="region" aria-label="Needs attention">' +
+      '<ul>'+rows.join('')+'</ul></div>';
+  }
+
+  /* Twelve stacked month bars. Heights are computed from the data, never
+     eyeballed: every column is scaled against the busiest month so the tallest
+     bar is exactly full-track and the rest are true proportions of it. */
+  function _pmMonths(by, elapsed) {
+    var max = 0;
+    by.forEach(function(b){ if (b.due > max) max = b.due; });
+    if (!max) return '<div class="dc-empty">No PM plan for this FY</div>';
+    var H = 74;
+    return '<div class="pm-mrow">' + by.map(function(b, i){
+      var dh = Math.round((b.done   / max) * H);
+      var mh = Math.round((b.missed / max) * H);
+      /* A non-zero count must never round away to an invisible 0px sliver. */
+      if (b.done   > 0 && dh < 2) dh = 2;
+      if (b.missed > 0 && mh < 2) mh = 2;
+      return '<div class="pm-mcol'+(i >= elapsed ? ' pm-future' : '')+'"' +
+          ' title="'+esc(b.m)+': '+b.due+' due, '+b.done+' done, '+b.missed+' missed">' +
+        /* The track is column-flex with justify-content:flex-end, so the LAST
+           child sits on the baseline: done at the bottom, missed stacked above
+           it. Green therefore grows from the same floor in every column, which
+           is what makes the twelve months comparable at a glance. Do not swap
+           these two lines without also changing the flex direction. */
+        '<div class="pm-mtrack">' +
+          (mh ? '<div class="pm-mmiss" style="height:'+mh+'px"></div>' : '') +
+          (dh ? '<div class="pm-mdone" style="height:'+dh+'px"></div>' : '') +
+        '</div><div class="pm-mx">'+esc(b.m.charAt(0))+'</div></div>';
+    }).join('') + '</div>' +
+    '<div class="pm-leg"><span><i style="background:#15803d"></i>Done</span>' +
+    '<span><i style="background:#dc2626"></i>Missed</span></div>';
+  }
+
   /* Safety values are absent until the bootstrap lands. Render an em dash rather
      than 0 — "0 overdue actions" is a safety claim, and showing it before the
      data arrives would be asserting something unverified. */
@@ -6400,6 +6535,10 @@ function renderDashboard() {
       (_dashStale ? '<span class="dash-stale">'+_ageStr(_dashStale)+' old · refreshing</span>' : dateStr)+
     '</span></div>' +
 
+    /* Anything overdue goes ABOVE the KPI row: the numbers below are a status
+       report, this is the part that asks for an action today. */
+    _attention() +
+
     /* ── ROW 1 — 6 KPI cells, ONE scrolling row (was a 3x2 grid) ── */
     '<div class="dk-grid dk-row">' +
       kpi(total,'Machines','in use','#0f172a',"navigate('board')") +
@@ -6448,6 +6587,33 @@ function renderDashboard() {
       relTile(bdClosed,'BD Closed','resolved to date','#16a34a') +
       relTile(bdTotal,'BD Total','all records','#475569') +
     '</div>' +
+
+    /* ── PM plan ──
+       Adherence is the headline the plant is judged on and it has no home in the
+       reliability row above (MTBF/MTTR are outcomes; this is compliance), so it
+       gets its own section with the twelve-month shape beside it. Rendered only
+       when the register answered — an adherence tile reading 0% because a fetch
+       failed is worse than no tile. */
+    (opm ?
+      '<div class="dash-sec-hd">PM plan &middot; FY '+esc(opm.fy)+'</div>' +
+      '<div class="dk-grid dk-grid-4 dash-rel-row dk-row">' +
+        relTile((opm.adherence == null ? '—' : opm.adherence+'%'), 'Adherence',
+          opm.done+' of '+opm.planned+' due',
+          (opm.adherence == null ? '#475569'
+            : opm.adherence >= 80 ? '#16a34a'
+            : opm.adherence >= 50 ? '#eab308' : '#dc2626'),
+          "navigate('planner')") +
+        relTile(opm.missed, 'Missed', 'visits this FY',
+          (opm.missed > 0 ? '#dc2626' : '#16a34a'), "navigate('planner')") +
+        relTile(opm.done, 'Completed', 'visits this FY', '#16a34a', "navigate('planner')") +
+        relTile(opm.elapsed, 'Months', 'elapsed of 12', '#475569', "navigate('planner')") +
+      '</div>' +
+      '<div class="dash-pairrow">' +
+        fold('PM adherence by month',
+          opm.missed + ' missed of ' + opm.planned,
+          '<div class="dc-body-pad">'+_pmMonths(opm.byMonth || [], opm.elapsed || 0)+'</div>') +
+      '</div>'
+    : '') +
 
     /* ── Safety · ONE row of 6 ──
        The Safety nav button was replaced by HIRA and Incidents, so the OHS
@@ -6510,6 +6676,31 @@ function renderDashboard() {
         sfold('Risk Heatmap',        _peekHeat(),                 '<div id="dsf-heat"></div>', 'heat') +
         sfold('Risk Classification', _peekChart('classification'), '<div class="dc-cv"><canvas id="dsf-class"></canvas></div>', 'class') +
       '</div>' : '') +
+
+    /* ── Equipment, permits & upkeep ──
+       Three registers that are all "is the plant ready", each too small for its
+       own section but jointly the answer to an audit question. Only the ones
+       that actually answered are rendered.
+       SOP approval is deliberately not here: SopStore exposes per-machine reads
+       only, so there is no count to show without inventing one. */
+    ((oeq || optw || ohk) ?
+      '<div class="dash-sec-hd">Readiness &amp; upkeep</div>' +
+      '<div class="dk-grid dk-grid-4 dash-rel-row dk-row">' +
+        (oeq ? relTile(oeq.checkOverdue, 'Checks', 'overdue',
+                 (oeq.checkOverdue > 0 ? '#dc2626' : '#16a34a'), "navigate('lists')") +
+               relTile(oeq.overdue, 'Calibration', 'overdue',
+                 (oeq.overdue > 0 ? '#dc2626' : '#16a34a'), "navigate('lists')") +
+               relTile(oeq.dueSoon, 'Due soon', 'within 30 days',
+                 (oeq.dueSoon > 0 ? '#ea580c' : '#16a34a'), "navigate('lists')")
+             : '') +
+        (optw ? relTile(optw.active, 'Permits', 'active now',
+                  (optw.expired > 0 ? '#dc2626' : '#0f766e'), "navigate('ptw')")
+              : '') +
+        (ohk ? relTile((ohk.logged ? 'Yes' : 'No'), 'Housekeeping', 'logged today',
+                 (ohk.logged ? '#16a34a' : '#dc2626'), "navigate('hk')")
+             : '') +
+      '</div>'
+    : '') +
 
     /* The fleet strip that used to sit here is gone — the "Machines" KPI at the top
        already carries the count and opens the same board, so the strip repeated a
@@ -9068,6 +9259,33 @@ function clImgTap(thumb) {
 }
 /* Tap on the pinned preview itself dismisses it. The thumbnail's own onclick
    calls event.stopPropagation(), so the opening tap never reaches here. */
+/* data-go routing for the dashboard's attention strip.
+   ONE delegated listener on the container rather than an inline onclick per row:
+   the strip is rebuilt by innerHTML on every render, and delegation survives that
+   without rebinding. Bound to the dashboard body, not the document, so it cannot
+   intercept a data-go added elsewhere later.
+   Enter/Space are handled too — the rows are role="link" with tabindex, so a
+   keyboard user must be able to activate them; click alone would make the strip
+   mouse-only. */
+(function () {
+  var host = document.getElementById('dash-body');
+  if (!host) return;
+  function go(e) {
+    var el = e.target.closest && e.target.closest('[data-go]');
+    if (!el || !host.contains(el)) return;
+    var hash = el.getAttribute('data-go');
+    if (VALID_HASHES.indexOf(hash) === -1) return;   // never route to a dead hash
+    e.preventDefault();
+    navigate(hash);
+  }
+  host.addEventListener('click', go);
+  host.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+    if (!(e.target.closest && e.target.closest('[data-go]'))) return;
+    go(e);
+  });
+})();
+
 document.addEventListener('click', function(e) {
   var wrap = document.getElementById('cl-hoverWrap');
   if (wrap && wrap.getAttribute('data-pinned') &&
