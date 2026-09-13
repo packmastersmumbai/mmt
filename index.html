@@ -219,6 +219,15 @@ body {
   display: none;
   transition: background 0.2s;
 }
+/* Inherits the bar's colour so it reads as part of the message in all three
+   variants, underlined so it is not a colour-only affordance. 44px tall for a
+   gloved tap; the negative margin keeps the bar its original height. */
+.status-copy {
+  background:none; border:0; padding:0 4px; margin:-14px 0;
+  min-height:44px; font:inherit; font-size:11px; color:inherit;
+  opacity:.75; text-decoration:underline; cursor:pointer;
+}
+.status-copy:hover, .status-copy:focus-visible { opacity:1; }
 .status-bar.info    { display:block; background:#dbeafe; color:#1d4ed8; }
 .status-bar.success { display:block; background:#dcfce7; color:#166534; }
 .status-bar.error   { display:block; background:#fee2e2; color:#991b1b; }
@@ -376,7 +385,11 @@ body {
 .mnav-btn:last-child { border-right: none; }
 .mnav-btn .mn-icon { font-size: 16px; line-height: 1; }
 .mnav-btn:active { background: rgba(255,255,255,0.1); }
-.mnav-btn.active { color: #fb923c; }
+/* Colour alone fails in direct sunlight and for red-green deficiency, and
+   PRODUCT.md forbids colour-only status. Weight plus a top rule carry the same
+   signal; the rule replaces a transparent border already in .mnav-btn, so the
+   row does not reflow when a tab becomes active. */
+.mnav-btn.active { color: #fb923c; font-weight: 800; box-shadow: inset 0 2px 0 #fb923c; }
 
 /* ── BOARD ── */
 .filter-chip {
@@ -1990,17 +2003,28 @@ select.eq-in { cursor:pointer; }
   display:flex; justify-content:space-between; align-items:center;
 }
 .form-sheet-hdr h2 { font-size:15px; font-weight:700; }
+/* The visible disc stays 28px so the header does not change; the TAP TARGET is
+   44px via padding and a negative margin. Shrinking the hit area to the graphic
+   is the usual reason a close button "does not work" with a gloved thumb. */
 .form-close-btn {
   background:rgba(255,255,255,0.15); border:none; color:white;
   width:28px; height:28px; border-radius:50%; font-size:16px;
   cursor:pointer; display:flex; align-items:center; justify-content:center;
+  box-sizing:content-box; padding:8px; margin:-8px;
+  background-clip:content-box;
 }
 .form-body { padding:16px; }
 .form-row { margin-bottom:14px; }
 .form-row label { display:block; font-size:11px; font-weight:600; color:#475569; margin-bottom:4px; text-transform:uppercase; letter-spacing:.3px; }
+/* min-height 44px: measured at 390px these rendered 34-40px (date 37, select 36,
+   text 40) against the 44px floor PRODUCT.md calls non-negotiable for gloved
+   hands. Padding alone could not reach it because the fields set font-size:13px.
+   16px on the font stops iOS Safari zooming the page on focus, which on a phone
+   held one-handed leaves the operator scrolled somewhere they did not ask to be. */
 .form-row input, .form-row select, .form-row textarea {
-  width:100%; padding:9px 10px; border:1px solid #cbd5e1; border-radius:7px;
-  font-size:13px; color:#0f172a; font-family:inherit;
+  width:100%; padding:11px 10px; min-height:44px;
+  border:1px solid #cbd5e1; border-radius:7px;
+  font-size:16px; color:#0f172a; font-family:inherit;
   background:white;
 }
 .form-row textarea { resize:vertical; min-height:60px; }
@@ -2008,7 +2032,9 @@ select.eq-in { cursor:pointer; }
 .form-submit-btn {
   /* white on #f97316 was 2.8:1, the worst button pair in the app. Hue kept,
      foreground darkened to #1a0d00 (6.8:1). */
-  width:100%; padding:12px; background:#f97316; color:#1a0d00; border:none;
+  /* min-height, not more padding: 12px + 14px line-height measured 43px — one
+     pixel under the floor, which no amount of eyeballing would have caught. */
+  width:100%; padding:12px; min-height:44px; background:#f97316; color:#1a0d00; border:none;
   border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; margin-top:4px;
 }
 .form-submit-btn:disabled { background:#94a3b8; }
@@ -4137,7 +4163,12 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 </header>
 
 <!-- ══════ STATUS BAR ══════ -->
-<div class="status-bar" id="status-bar"></div>
+<!-- The app's only feedback channel for Safety and Facility Logs writes. Without
+     a live region a screen-reader user submits an incident and hears nothing —
+     success and failure are indistinguishable. polite, not assertive: these
+     announce after the current utterance rather than interrupting mid-word.
+     showStatus() raises role to "alert" for errors, which does interrupt. -->
+<div class="status-bar" id="status-bar" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <!-- ══════ CONTENT AREA ══════ -->
 <!-- <main> not <div>: there was no main landmark, so a screen-reader user had
@@ -4688,11 +4719,17 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
 </div>
 
 <!-- ══════ INLINE FORM MODAL ══════ -->
-<div class="form-modal" id="form-modal">
+<!-- role/aria-modal so a screen reader announces this as a dialog and stops
+     reading the page behind it; labelled by the heading that already names the
+     record type ("Close BD — SLIP-123"). Focus is moved in and restored by
+     openFormModal_/closeFormModal. -->
+<div class="form-modal" id="form-modal" role="dialog" aria-modal="true"
+     aria-labelledby="form-modal-title">
   <div class="form-sheet">
     <div class="form-sheet-hdr">
-      <h2 id="form-modal-title">New Record</h2>
-      <button class="form-close-btn" onclick="closeFormModal()">&#x2715;</button>
+      <h2 id="form-modal-title" tabindex="-1">New Record</h2>
+      <button class="form-close-btn" onclick="closeFormModal()"
+              aria-label="Close form">&#x2715;</button>
     </div>
     <div class="form-body" id="form-modal-body"></div>
   </div>
@@ -7604,7 +7641,11 @@ function buildNav(hash) {
   mnav.innerHTML = MNAV.map(function(item) {
     var isActive = item.action === hash ||
       (hash === 'ref' && refActions.indexOf(item.action) !== -1 && item.action === _refType);
-    return '<button class="mnav-btn' + (isActive ? ' active' : '') + '" data-maction="' + item.action + '">'
+    /* aria-current makes the active view announceable — the .active class alone
+       was a colour change, which says nothing to a screen reader and fails for
+       red-green deficiency in direct sunlight. */
+    return '<button class="mnav-btn' + (isActive ? ' active' : '') + '" data-maction="' + item.action + '"'
+      + (isActive ? ' aria-current="page"' : '') + '>'
       + '<span class="mn-icon">' + item.icon + '</span>'
       + item.label + '</button>';
   }).join('');
@@ -7626,8 +7667,16 @@ function showStatus(msg, type, durationMs, detail) {
   var bar = document.getElementById('status-bar');
   var content = document.getElementById('app-content');
   bar.className = 'status-bar ' + (type || 'info');
+  /* An error interrupts; everything else waits its turn. Without this an error
+     queued behind a success toast is read second, or not at all. */
+  bar.setAttribute('role', type === 'error' ? 'alert' : 'status');
+  bar.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
   if (detail) {
-    bar.innerHTML = esc(msg) + ' <span style="opacity:0.7;font-size:11px;cursor:pointer" title="Tap to copy details" onclick="(function(){try{navigator.clipboard.writeText(' + JSON.stringify(detail) + ');}catch(e){}})()">📋 copy details</span>';
+    // "copy details" is a control, so it needs a real name and a 44px target —
+    // and no emoji: Product Principle 4 keeps dingbats to WhatsApp payloads.
+    bar.innerHTML = esc(msg) + ' <button type="button" class="status-copy" ' +
+      'aria-label="Copy error details to clipboard" ' +
+      'onclick="(function(){try{navigator.clipboard.writeText(' + JSON.stringify(detail) + ');}catch(e){}})()">copy details</button>';
   } else {
     bar.textContent = msg;
   }
@@ -7947,7 +7996,7 @@ function showAddMachineForm() {
     '<div style="font-size:11px;color:#64748b;padding:4px 0 8px">Machine ID is auto-generated (e.g. PM/FFS/030)</div>'+
     '<button class="form-submit-btn" id="f-submit" style="background:#f97316" onclick="submitAddMachine()">&#x2713; Add Machine</button>'+
     '<div class="form-msg" id="f-msg"></div>';
-  document.getElementById('form-modal').classList.add('open');
+  openFormModal_();
 }
 
 function submitAddMachine() {
@@ -7993,7 +8042,7 @@ function showEditMachineForm(machineId, name, category, location) {
     _machineFormHtml({name:name,category:category,location:location})+
     '<button class="form-submit-btn" id="f-submit" style="background:#0284c7" onclick="submitEditMachine(\''+esc(machineId)+'\')">&#x2713; Save Changes</button>'+
     '<div class="form-msg" id="f-msg"></div>';
-  document.getElementById('form-modal').classList.add('open');
+  openFormModal_();
 }
 
 function submitEditMachine(machineId) {
@@ -11452,6 +11501,48 @@ function _nowTimeStr() {
   var d = new Date(); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
 }
 
+/* ── Modal focus management ──────────────────────────────────────────────────
+   The modal opened with a bare classList.add('open'): focus stayed on the page
+   behind it, Tab walked the background, and Escape did nothing. Centralised here
+   so the seven open sites share one behaviour and a new one inherits it.
+
+   Focus goes to the TITLE, not the first field: the heading names the record
+   ("Close BD — SLIP-123"), so a screen reader announces what this form is before
+   the user starts filling it. tabindex="-1" makes it focusable without adding it
+   to the tab order. */
+var _fmLastFocus = null;
+
+function openFormModal_() {
+  var m = document.getElementById('form-modal');
+  if (!m) return;
+  _fmLastFocus = document.activeElement;
+  m.classList.add('open');
+  var t = document.getElementById('form-modal-title');
+  if (t) { try { t.focus({ preventScroll: true }); } catch (e) { t.focus(); } }
+}
+
+/* Keep Tab inside the dialog while it is open, and let Escape close it through
+   the same guarded path as the X button — so a half-filled form still prompts. */
+document.addEventListener('keydown', function (ev) {
+  var m = document.getElementById('form-modal');
+  if (!m || !m.classList.contains('open')) return;
+
+  if (ev.key === 'Escape') { ev.preventDefault(); closeFormModal(); return; }
+  if (ev.key !== 'Tab') return;
+
+  var f = m.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+  var list = [];
+  for (var i = 0; i < f.length; i++) {
+    var el = f[i];
+    if (el.disabled || el.offsetParent === null) continue;   // hidden or disabled
+    list.push(el);
+  }
+  if (!list.length) return;
+  var first = list[0], last = list[list.length - 1];
+  if (ev.shiftKey && document.activeElement === first) { ev.preventDefault(); last.focus(); }
+  else if (!ev.shiftKey && document.activeElement === last) { ev.preventDefault(); first.focus(); }
+});
+
 /* Ask before discarding a part-filled BD/PM/CLIT/checklist form.
    `force` is for the submit paths, which close the modal after a successful
    write — there is nothing to lose at that point and prompting would be absurd.
@@ -11464,6 +11555,12 @@ function closeFormModal(force) {
     if (lose && !confirm(lose + '\n\nClose this form and discard it?')) return;
   }
   document.getElementById('form-modal').classList.remove('open');
+  /* Put focus back where it was, or a keyboard user lands at the top of the page
+     and has to tab all the way to the machine they were working on. */
+  if (_fmLastFocus && document.contains(_fmLastFocus)) {
+    try { _fmLastFocus.focus({ preventScroll: true }); } catch (e) {}
+  }
+  _fmLastFocus = null;
 }
 
 // Cache machine form data (loaded once per machine)
@@ -11619,7 +11716,7 @@ function showBDForm(machineId) {
   document.getElementById('form-modal-title').textContent = 'Log Breakdown — ' + machineId;
   var bodyEl = document.getElementById('form-modal-body');
   bodyEl.innerHTML = '<div style="text-align:center;padding:20px;color:#64748b">Loading machine data…</div>';
-  document.getElementById('form-modal').classList.add('open');
+  openFormModal_();
 
   loadMachineFormData(machineId, function(fd) {
     var td = _todayStr(); var tn = _nowTimeStr();
@@ -11643,7 +11740,7 @@ function showBDForm(machineId) {
         '<div class="form-row"><label for="f-shift">Shift *</label><select id="f-shift"><option value="">Select…</option>'+shOpts+'</select></div>' +
         '<div class="form-row"><label for="f-rc">Root Cause <span style="font-weight:400;color:#64748b">(best guess)</span></label><select id="f-rc"><option value="">Unknown / पता नहीं</option>'+rcOpts+'</select></div>' +
       '</div>' +
-      '<div class="form-row"><label>Problem Description * <span style="color:#64748b;font-weight:400">(समस्या विवरण)</span></label>' +
+      '<div class="form-row"><label for="f-desc">Problem Description * <span style="color:#64748b;font-weight:400">(समस्या विवरण)</span></label>' +
         '<textarea id="f-desc" rows="3" placeholder="Describe the breakdown… / खराबी का विवरण दें…"></textarea></div>' +
       '<div class="form-row"><label for="f-rmk">Remarks <span style="color:#64748b;font-weight:400">(टिप्पणी)</span></label><input id="f-rmk" placeholder="Optional"></div>' +
       '<button class="form-submit-btn" id="f-submit" style="background:#b71c1c" onclick="submitBDForm(\''+esc(machineId)+'\')">&#x1F534; Report Breakdown</button>' +
@@ -11701,7 +11798,7 @@ function showBDCloseForm(machineId, slipNo, rowNum) {
   document.getElementById('form-modal-title').textContent = 'Close BD — ' + slipNo;
   var bodyEl = document.getElementById('form-modal-body');
   bodyEl.innerHTML = '<div style="text-align:center;padding:20px;color:#64748b">Loading…</div>';
-  document.getElementById('form-modal').classList.add('open');
+  openFormModal_();
 
   loadMachineFormData(machineId, function(fd) {
     var td = _todayStr(); var tn = _nowTimeStr();
@@ -11872,7 +11969,7 @@ function showPMForm(machineId) {
   var bodyEl = document.getElementById('form-modal-body');
   bodyEl.innerHTML = '<div style="text-align:center;padding:20px;color:#64748b">' +
     'Loading PM tasks&hellip;<div id="pm-slow" style="margin-top:8px;font-size:11px;opacity:0.8"></div></div>';
-  document.getElementById('form-modal').classList.add('open');
+  openFormModal_();
 
   /* A cold GAS container takes 20s+ here and the old static "Loading PM tasks…"
      never changed, so a wait that was working was indistinguishable from a freeze
@@ -11959,7 +12056,7 @@ function showPMForm(machineId) {
         '<div class="form-row"><label for="f-ed">End Date *</label><input type="date" id="f-ed" value="'+td+'"></div>' +
         '<div class="form-row"><label for="f-et">End Time *</label><input type="time" id="f-et"></div>' +
       '</div>' +
-      '<div class="form-row"><label>Technician * <span style="color:#64748b;font-weight:400">(तकनीशियन)</span></label>' +
+      '<div class="form-row"><label for="f-tech">Technician * <span style="color:#64748b;font-weight:400">(तकनीशियन)</span></label>' +
         '<select id="f-tech"><option value="">Select…</option>' + personnel + '</select></div>' +
       '<div class="form-row"><label style="color:#1b5e20">PM Checklist — ' + esc((fd&&fd.category)||'') + ' (' + pmItems.length + ' items)</label>' +
         '<div id="f-pm-tasks" style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;max-height:250px;overflow-y:auto" data-items="' + esc(tasksJson) + '">' +
@@ -11973,7 +12070,7 @@ function showPMForm(machineId) {
         '</button>' +
         '<div class="clit-photo-hint">Tap each item to set <b>&#9675; not done</b> &rarr; <b>&#10003; done</b> &rarr; <b>! issue</b>. Then open a photo and use <b>+ Point</b> to pin any marked item onto it — the pin carries the status you already set. Tap a pin&rsquo;s &#10005; to remove it.</div>' +
       '</div>' +
-      '<div class="form-row"><label>Remarks <span style="color:#64748b;font-weight:400">(टिप्पणी)</span></label>' +
+      '<div class="form-row"><label for="f-rmk">Remarks <span style="color:#64748b;font-weight:400">(टिप्पणी)</span></label>' +
         '<textarea id="f-rmk" placeholder="Parts replaced, observations…"></textarea></div>' +
       '<button class="form-submit-btn" id="f-submit" style="background:#1b5e20" onclick="submitPMForm(\''+esc(machineId)+'\')">&#x1F7E2; Submit PM</button>' +
       '<div class="form-msg" id="f-msg"></div>';
@@ -12180,7 +12277,7 @@ function showCLITForm(machineId) {
   });
   function _clitClearSlow() { _clitSlowTimers.forEach(clearTimeout); }
   document.getElementById('form-modal-title').textContent = 'CLIT — ' + machineId;
-  document.getElementById('form-modal').classList.add('open');
+  openFormModal_();
 
   // A lost callback used to leave "Loading CLIT data…" on screen forever, with no
   // Add Photo button and no way forward. Render once, whichever arrives first:
@@ -12332,7 +12429,7 @@ function showCLITForm(machineId) {
         '<div class="clit-unplaced" id="clit-unplaced" style="display:none"></div>'+
         '<div class="clit-photo-hint">Tap each item to set <b>&#9675; not done</b> &rarr; <b>&#10003; done</b> &rarr; <b>! issue</b>. Then open a photo and use <b>+ Point</b> to pin any marked item onto it — the pin carries the status you already set. Tap a pin&rsquo;s &#10005; to remove it.</div>'+
       '</div>'+
-      '<div class="form-row"><label>Remarks / Observations</label>'+
+      '<div class="form-row"><label for="f-rmk">Remarks / Observations</label>'+
         '<textarea id="f-rmk" rows="3" placeholder="Consumables used, oil type, parts replaced, observations…&#10;उपयोग किए गए सामान, टिप्पणियाँ…"></textarea>'+
       '</div>'+
       '<button class="form-submit-btn" id="f-submit" style="background:'+mColor+'" onclick="submitCLITForm(\''+esc(machineId)+'\')">&#x2713; Submit CLIT Record</button>'+
@@ -14985,7 +15082,7 @@ function sfSaveIncident(sr){
 function sfModal(title, bodyHtml){
   document.getElementById('form-modal-title').textContent=title;
   document.getElementById('form-modal-body').innerHTML=bodyHtml;
-  document.getElementById('form-modal').classList.add('open');
+  openFormModal_();
 }
 function sfCloseModal(){
   var m=document.getElementById('form-modal');
