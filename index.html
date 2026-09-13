@@ -1489,9 +1489,9 @@ select.eq-in { cursor:pointer; }
 .view-cl .task-row  { padding:8px 10px; display:flex; gap:8px; align-items:center; }
 .view-cl .task-num  { background:#1565c0; color:white; min-width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:10px; flex-shrink:0; }
 .view-cl .task-info { flex:1; min-width:0; }
-.view-cl .task-en   { font-weight:600; font-size:12px; color:#222; line-height:1.2; }
-.view-cl .task-hi   { font-size:11px; color:#777; line-height:1.2; margin-top:1px; }
-.view-cl .task-meta { font-size:10px; color:#aaa; margin-top:2px; }
+.view-cl .task-en   { font-weight:600; font-size:12.5px; color:var(--flink); line-height:1.25; }
+.view-cl .task-hi   { font-size:12px; color:var(--fldim); line-height:1.25; margin-top:1px; }
+.view-cl .task-meta { font-size:11px; color:var(--flfaint); margin-top:2px; }
 /* gap 18px, was 5px: the smallest control is 22px wide, so a full 44px hit
    area needs at least 22px of separation between centres to avoid neighbouring
    targets overlapping. 18px is the first value where all three clear. */
@@ -1517,7 +1517,7 @@ select.eq-in { cursor:pointer; }
 .view-cl .btn-active { background:#ff9800; color:white; }
 .view-cl .btn-photo  { width:28px; height:28px; background:#fff3e0; border:1px solid #ff9800; border-radius:4px; cursor:pointer; font-size:14px; display:none; padding:0; flex-shrink:0; }
 .view-cl .btn-photo.show { display:flex; align-items:center; justify-content:center; }
-.view-cl .result { min-width:52px; text-align:center; font-size:10px; font-weight:bold; padding:2px 4px; border-radius:3px; display:none; white-space:nowrap; }
+.view-cl .result { min-width:52px; text-align:center; font-size:11px; font-weight:bold; padding:2px 4px; border-radius:3px; display:none; white-space:nowrap; }
 .view-cl .r-green  { background:#c8e6c9; color:#1b5e20; display:block!important; }
 .view-cl .r-yellow { background:#fff9c4; color:#f57f17; display:block!important; }
 .view-cl .r-red    { background:#ffcdd2; color:#c62828; display:block!important; }
@@ -1527,7 +1527,7 @@ select.eq-in { cursor:pointer; }
 .view-cl .task-desc-hi { color:#666; line-height:1.5; }
 .view-cl .task-after { display:none; padding:6px 10px 8px; background:#fafafa; border-left:3px solid #2196f3; }
 .view-cl .task-after.show { display:block; }
-.view-cl .remarks-label { font-size:10px; font-weight:bold; color:#1976d2; margin-bottom:3px; }
+.view-cl .remarks-label { font-size:11px; font-weight:bold; color:#1976d2; margin-bottom:3px; }
 .view-cl .remarks-input { width:100%; padding:5px 7px; border:1px solid #ddd; border-radius:3px; font-size:11px; font-family:inherit; }
 .view-cl .photo-area    { margin-top:6px; display:flex; align-items:center; gap:8px; }
 .view-cl .photo-status  { font-size:11px; color:#888; }
@@ -1580,7 +1580,7 @@ select.eq-in { cursor:pointer; }
   background:#f8fafc; border-bottom:1px solid #e2e8f0; }
 .clit-grp-l { width:18px; height:18px; border-radius:4px; color:#fff; font-size:10px;
   font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.clit-grp-t { flex:1; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
+.clit-grp-t { flex:1; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
 .clit-grp-n { font-size:10px; font-weight:700; color:#94a3b8; }
 
 /* The rows are <label>s inside a .form-row, where the generic
@@ -1618,24 +1618,47 @@ select.eq-in { cursor:pointer; }
 #f-clit-tasks .clit-state.s0, #f-pm-tasks .clit-state.s0 { background:#f1f5f9; border:1.5px solid #cbd5e1; color:#94a3b8; }
 #f-clit-tasks .clit-state.s1, #f-pm-tasks .clit-state.s1 { background:#15803d; border:1.5px solid #15803d; color:#fff; }
 #f-clit-tasks .clit-state.s2, #f-pm-tasks .clit-state.s2 { background:#dc2626; border:1.5px solid #dc2626; color:#fff; }
-/* The point chip is the same number the pin and the legend show. */
-.clit-pt { width:19px; height:19px; border-radius:5px; color:#fff; font-size:10px;
+/* The point chip is the same number the pin and the legend show.
+   It is a real control — it calls clitJumpToPoint() — so it gets the same
+   invisible ::after hit area as .clit-state above, for the same reason: the
+   coloured chip must stay 19px to read as a compact index column, but a 19px
+   tap target on a gloved hand is a miss. 40px here rather than 44: the row is
+   44px tall and three of these sit in it, so a full 44px circle would overlap
+   its neighbours' areas and a tap between two could hit the wrong one. */
+.clit-pt { position:relative; width:19px; height:19px; border-radius:5px; color:#fff; font-size:10px;
   font-weight:800; display:flex; align-items:center; justify-content:center;
   flex-shrink:0; cursor:pointer; }
+.clit-pt::after { content:''; position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%); width:40px; height:40px; border-radius:8px; }
 /* No vertical padding: min-height on the row already sets the touch height, and
    padding here was stacking on top of it. */
 #f-clit-tasks .clit-en, #f-pm-tasks .clit-en { flex:1; min-width:0; font-size:12.5px; font-weight:600;
   color:#0f172a; line-height:1.3; padding:6px 0; }
-.clit-pinned { font-size:10px; font-weight:700; color:#94a3b8; }
+.clit-pinned { font-size:11px; font-weight:700; color:#94a3b8; }
 .clit-pinned.on { color:#2563eb; }
 .clit-freq { width:17px; height:17px; border-radius:4px; background:#f1f5f9; color:#5b6a80;
   font-size:9px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.clit-more { width:22px; height:22px; display:flex; align-items:center; justify-content:center;
+/* Same hit-area treatment as .clit-state and .clit-pt — this expands the detail
+   panel and was a 22px target. It sits at the row's right edge, so 44px wide is
+   safe here; height stays 40px to avoid overlapping the rows above and below. */
+.clit-more { position:relative; width:22px; height:22px; display:flex; align-items:center; justify-content:center;
   color:#94a3b8; font-size:13px; flex-shrink:0; cursor:pointer; }
+.clit-more::after { content:''; position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%); width:44px; height:40px; border-radius:8px; }
+/* 45px indent aligns the detail text with .clit-en above it: 26px state + 10px
+   gap + 19px chip, minus the row's own 10px padding. Recorded because the number
+   is derived, not arbitrary — if any of those three widths changes, this follows. */
 .clit-detail { display:none; width:100%; padding:0 0 8px 45px; }
 .clit-row.open .clit-detail { display:block; }
 .clit-hi { display:block; font-size:11.5px; color:#475569; }
-.clit-tool { display:block; font-size:10px; color:#64748b; margin-top:2px; }
+.clit-tool { display:block; font-size:11px; color:#64748b; margin-top:2px; }
+
+/* Machine header on the CLIT/PM form. The ID is mono because it is an identifier
+   and reads down a column of records; the name is the 16px title step. */
+.clit-mhead { color:#fff; padding:12px 16px; margin-bottom:12px; }
+.clit-mhead-id { font-family:'PMMono',ui-monospace,monospace; font-size:11px;
+  font-weight:700; opacity:.85; margin-bottom:2px; letter-spacing:.3px; }
+.clit-mhead-nm { font-size:16px; font-weight:800; line-height:1.2; }
 
 /* ── CLIT FORM PHOTOS ── */
 .clit-photos { display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 0; }
@@ -1643,13 +1666,13 @@ select.eq-in { cursor:pointer; }
   border-radius:9px; overflow:hidden; background:#f8fafc; cursor:pointer; }
 .clit-ph img { width:100%; height:100%; object-fit:cover; display:block; }
 .clit-ph-meta { position:absolute; left:0; right:0; bottom:0; display:flex; align-items:center;
-  gap:4px; padding:2px 4px; background:rgba(15,23,42,0.78); color:#fff; font-size:9px; font-weight:700; }
+  gap:4px; padding:2px 4px; background:rgba(15,23,42,0.78); color:#fff; font-size:10.5px; font-weight:700; }
 .clit-ph-meta i { font-style:normal; }
 .clit-ph-meta .ok  { color:#4ade80; }
 .clit-ph-meta .bad { color:#f87171; }
 .clit-addphoto { margin-top:8px; min-height:42px; width:100%; border:1px dashed #94a3b8;
   border-radius:9px; background:#f8fafc; color:#334155; font-size:13px; font-weight:700; cursor:pointer; }
-.clit-photo-hint { margin-top:6px; font-size:10px; color:#64748b; line-height:1.5; }
+.clit-photo-hint { margin-top:6px; font-size:11px; color:#64748b; line-height:1.5; }
 .clit-unplaced { margin-top:8px; padding:7px 10px; border-radius:8px; background:#eff6ff;
   border:1px solid #bfdbfe; color:#1d4ed8; font-size:11px; font-weight:600; }
 
@@ -12576,9 +12599,12 @@ function showCLITForm(machineId) {
     _clPhotos['clit'] = [];
 
     bodyEl.innerHTML =
-      '<div style="background:'+mColor+';color:white;padding:12px 16px;margin:-0px;border-radius:0;margin-bottom:12px">'+
-        '<div style="font-size:11px;opacity:0.8;margin-bottom:2px">'+esc(machineId)+'</div>'+
-        '<div style="font-size:16px;font-weight:700">'+esc(machineName)+'</div>'+
+      /* Only the category colour stays inline — it is per-machine data. Geometry
+         and type move to .clit-mhead (the old inline block carried a `margin:-0px`
+         typo and hardcoded sizes that matched no scale). */
+      '<div class="clit-mhead" style="background:'+mColor+'">'+
+        '<div class="clit-mhead-id">'+esc(machineId)+'</div>'+
+        '<div class="clit-mhead-nm">'+esc(machineName)+'</div>'+
       '</div>'+
       '<div class="form-row-2">'+
         '<div class="form-row"><label for="f-dt">Date *</label><input type="date" id="f-dt" value="'+td+'"></div>'+
