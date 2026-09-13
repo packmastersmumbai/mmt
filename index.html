@@ -1543,16 +1543,33 @@ select.eq-in { cursor:pointer; }
    child vertically — a 38px row rendered at 97px. Scoping to the container
    raises specificity above it without touching the shared rule. */
 #f-clit-tasks label.clit-row, #f-pm-tasks label.clit-row { display:flex; align-items:center; gap:8px;
-  padding:0 10px; min-height:38px; cursor:pointer; border-top:1px solid #f1f5f9;
+  /* 44px, not 38: the tri-state button's hit area is 44px tall (see
+     .clit-state::after). A 38px row would let adjacent rows' hit areas overlap
+     vertically, so a tap near a row edge could toggle the wrong PM item. */
+  padding:0 10px; min-height:44px; cursor:pointer; border-top:1px solid #f1f5f9;
   flex-wrap:wrap; margin:0; text-transform:none; font-size:inherit; color:inherit; }
 #f-clit-tasks label.clit-row:first-of-type,
 #f-pm-tasks   label.clit-row:first-of-type { border-top:none; }
 .clit-row input[type=checkbox] { width:18px; height:18px; flex-shrink:0; margin:0; }
-/* Tri-state control: one tap cycles not done → done → issue. A real touch target,
-   since it is now the primary action on every row. */
-#f-clit-tasks .clit-state, #f-pm-tasks .clit-state { width:26px; height:26px; flex-shrink:0; padding:0;
+/* Tri-state control: one tap cycles not done → done → issue.
+   The row is a <label>, but this button calls event.preventDefault(), so the
+   label does NOT forward taps — only the button itself toggles. At 26px that
+   made the most-repeated action in a PM (12+ taps, gloved) the smallest target
+   on the form. The COLOURED DISC stays 26px so the row still reads as a tidy
+   status column; the hit area is widened to the 44px floor with padding and a
+   negative margin, which costs no layout. */
+#f-clit-tasks .clit-state, #f-pm-tasks .clit-state { position:relative; width:26px; height:26px; flex-shrink:0; padding:0;
   border-radius:7px; font-size:13px; font-weight:800; line-height:1; cursor:pointer;
   display:flex; align-items:center; justify-content:center; transition:background .12s; }
+/* The DISC stays 26px so the column still reads at a glance; the TAP AREA is an
+   invisible ::after stretched to the 44px floor. Padding would have worked too,
+   but .s0/.s1/.s2 each set background AND border, so a padded box paints the
+   status colour across the whole 44px and the row turns into coloured slabs.
+   A pseudo-element carries no paint, so it cannot be overridden by those rules.
+   Ends up 44x44 centred on a 26px disc = 9px of reach on every side. */
+#f-clit-tasks .clit-state::after, #f-pm-tasks .clit-state::after {
+  content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  width:44px; height:44px; border-radius:9px; }
 #f-clit-tasks .clit-state.s0, #f-pm-tasks .clit-state.s0 { background:#f1f5f9; border:1.5px solid #cbd5e1; color:#94a3b8; }
 #f-clit-tasks .clit-state.s1, #f-pm-tasks .clit-state.s1 { background:#15803d; border:1.5px solid #15803d; color:#fff; }
 #f-clit-tasks .clit-state.s2, #f-pm-tasks .clit-state.s2 { background:#dc2626; border:1.5px solid #dc2626; color:#fff; }
@@ -1599,7 +1616,12 @@ select.eq-in { cursor:pointer; }
 .ann-modal.show { display:flex; }
 .ann-bar { display:flex; align-items:center; gap:10px; padding:10px 12px; color:#e2e8f0; font-size:13px; font-weight:700; flex-shrink:0; }
 .ann-bar span { flex:1; }
-.ann-x, .ann-del { width:34px; height:34px; border:none; border-radius:8px; background:rgba(255,255,255,0.08); color:#e2e8f0; font-size:16px; cursor:pointer; }
+/* 44px, not 34: Back and Delete are the annotator's two bar controls, and
+   Delete is destructive — a 34px target for "discard this proof photo" on a
+   gloved hand is how the wrong one gets hit. Measured 34px on every device
+   tested (320px through tablet). The glyph stays its original size; only the
+   hit area grows. */
+.ann-x, .ann-del { width:44px; height:44px; border:none; border-radius:8px; background:rgba(255,255,255,0.08); color:#e2e8f0; font-size:16px; cursor:pointer; }
 /* The frame shrink-wraps the letterboxed photo so pin percentages are relative
    to the IMAGE, not the stage. Positioning against the stage would drift a pin
    into the black bars on any aspect ratio that does not match the viewport. */
@@ -1823,7 +1845,10 @@ select.eq-in { cursor:pointer; }
 .ann-tallyrow { display:flex; align-items:center; gap:10px; }
 .ann-tally { flex:1; display:flex; gap:10px; font-size:11px; font-weight:700; }
 .ann-tally .t-d { color:#4ade80; } .ann-tally .t-p { color:#f87171; } .ann-tally .t-n { color:#94a3b8; }
-.ann-addpt { min-height:38px; padding:0 16px; border:none; border-radius:9px; background:#2563eb; color:#fff;
+/* 44px, not 38: these are the two primary annotator actions ("+ Point" /
+   "Tap photo to pin", and "Draw") and they are used in a plant with gloves on.
+   Measured at 38px on every device from a 320px Galaxy A10 up to a tablet. */
+.ann-addpt { min-height:44px; padding:0 16px; border:none; border-radius:9px; background:#2563eb; color:#fff;
   font-size:13px; font-weight:700; cursor:pointer; }
 
 /* Single-line drag hint — chrome-free so nothing competes while positioning. */
