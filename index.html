@@ -7975,12 +7975,12 @@ function submitAddMachine() {
         msg.className='form-msg ok';
         msg.textContent='Machine '+r.machineId+' added!';
         _boardData = null; // invalidate cache to reload
-        setTimeout(function(){ closeFormModal(); loadBoard(); }, 1500);
+        setTimeout(function(){ closeFormModal(true); loadBoard(); }, 1500);
       } else { msg.className='form-msg err'; msg.textContent=(r&&r.message)||'Failed.'; }
     })
     .withFailureHandler(function(e) {
       btn.disabled=false; btn.textContent='✓ Add Machine';
-      msg.className='form-msg err'; msg.textContent='Error: '+esc((e&&e.message)||'unknown');
+      msg.className='form-msg err'; msg.textContent='Error: '+((e&&e.message)||'unknown');
     })
     .spaAddMachine(data);
 }
@@ -8018,12 +8018,12 @@ function submitEditMachine(machineId) {
       if (r && r.success) {
         msg.className='form-msg ok'; msg.textContent='Saved!';
         _boardData = null;
-        setTimeout(function(){ closeFormModal(); loadBoard(); }, 1200);
+        setTimeout(function(){ closeFormModal(true); loadBoard(); }, 1200);
       } else { msg.className='form-msg err'; msg.textContent=(r&&r.message)||'Failed.'; }
     })
     .withFailureHandler(function(e) {
       btn.disabled=false; btn.textContent='✓ Save Changes';
-      msg.className='form-msg err'; msg.textContent='Error: '+esc((e&&e.message)||'unknown');
+      msg.className='form-msg err'; msg.textContent='Error: '+((e&&e.message)||'unknown');
     })
     .spaUpdateMachine(machineId, data);
 }
@@ -11452,7 +11452,17 @@ function _nowTimeStr() {
   var d = new Date(); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
 }
 
-function closeFormModal() {
+/* Ask before discarding a part-filled BD/PM/CLIT/checklist form.
+   `force` is for the submit paths, which close the modal after a successful
+   write — there is nothing to lose at that point and prompting would be absurd.
+   Guarded in try/catch on the same principle as navigate(): a fault in the
+   dirty check must never trap the operator inside a modal they cannot close. */
+function closeFormModal(force) {
+  if (force !== true) {
+    var lose = '';
+    try { lose = _flDirtyView('form-modal'); } catch (e) { lose = ''; }
+    if (lose && !confirm(lose + '\n\nClose this form and discard it?')) return;
+  }
   document.getElementById('form-modal').classList.remove('open');
 }
 
@@ -11569,7 +11579,8 @@ function _buildSuccessPanel(type, r, snap) {
   }
 
   // ── Action buttons ──
-  var html = '<div style="padding:16px">';
+  // .form-success marks the record as written — see closeFormModal / _flDirtyView.
+  var html = '<div class="form-success" style="padding:16px">';
   html += '<div style="text-align:center;margin-bottom:12px">';
   html += '<div style="font-size:36px">' + emoji + '</div>';
   html += '<div style="font-size:16px;font-weight:800;color:' + color + ';margin:6px 0 2px">' + label + '!</div>';
@@ -11584,7 +11595,7 @@ function _buildSuccessPanel(type, r, snap) {
     html += '<a href="' + esc(pdfUrl) + '" target="_blank" style="display:block;padding:12px;background:#1e3a5f;color:white;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;text-align:center">View PDF Slip</a>';
   }
   html += '<button onclick="_printRecord()" style="padding:12px;background:#334155;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">Print / Save as PDF</button>';
-  html += '<button onclick="closeFormModal()" style="padding:12px;background:#f1f5f9;color:#0f172a;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">&#x2713; Done</button>';
+  html += '<button onclick="closeFormModal(true)" style="padding:12px;background:#f1f5f9;color:#0f172a;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">&#x2713; Done</button>';
   html += '</div></div>';
   return html;
 }
@@ -11673,7 +11684,7 @@ function submitBDForm(machineId) {
     })
     .withFailureHandler(function(e) {
       btn.disabled = false; btn.textContent = 'Report Breakdown';
-      msg.className = 'form-msg err'; msg.textContent = 'Error: ' + esc((e && e.message) || 'unknown');
+      msg.className = 'form-msg err'; msg.textContent = 'Error: ' + ((e && e.message) || 'unknown');
     })
     .submitBDPhase1({
       machineId:    machineId,
@@ -11746,11 +11757,17 @@ function submitBDCloseForm(machineId, slipNo, rowNum) {
   function _doSubmit(imageUrl) {
     google.script.run
       .withSuccessHandler(function(r) {
-        btn.disabled = false; btn.textContent = '&#x2713; Close Breakdown';
+        /* textContent does NOT decode entities — '&#x2713;' here printed the
+           literal escape on the button after every failed close. The button is
+           first rendered via innerHTML (see the markup above), which is why it
+           looked right until the first failure. */
+        btn.disabled = false; btn.textContent = '✓ Close Breakdown';
         if (r && r.success) {
           var bodyEl = document.getElementById('form-modal-body');
           bodyEl.innerHTML =
-            '<div style="padding:20px;text-align:center">' +
+            /* .form-success tells the unsaved-work guard the write landed, so
+               closing this panel does not prompt "discard?" over a saved record. */
+            '<div class="form-success" style="padding:20px;text-align:center">' +
             '<div style="font-size:40px">&#x2705;</div>' +
             '<div style="font-size:16px;font-weight:800;color:#16a34a;margin:8px 0">Breakdown Closed!</div>' +
             '<div style="font-family:monospace;font-size:14px;background:#f8fafc;padding:4px 12px;border-radius:6px;display:inline-block;margin:4px 0">' + esc(slipNo) + '</div>' +
@@ -11767,8 +11784,10 @@ function submitBDCloseForm(machineId, slipNo, rowNum) {
         }
       })
       .withFailureHandler(function(e) {
-        btn.disabled = false; btn.textContent = '&#x2713; Close Breakdown';
-        msg.className = 'form-msg err'; msg.textContent = 'Error: ' + esc((e && e.message) || 'unknown');
+        btn.disabled = false; btn.textContent = '✓ Close Breakdown';
+        /* esc() into textContent double-escapes: an apostrophe in a server error
+           reached the operator as &#39;. textContent needs no escaping at all. */
+        msg.className = 'form-msg err'; msg.textContent = 'Error: ' + ((e && e.message) || 'unknown');
       })
       .closeBDRecord({
         rowNum:      rowNum,
@@ -12126,7 +12145,7 @@ function submitPMForm(machineId) {
     })
     .withFailureHandler(function(e) {
       btn.disabled=false; btn.textContent='Submit PM';
-      msg.className='form-msg err'; msg.textContent='Error: '+esc((e&&e.message)||'unknown');
+      msg.className='form-msg err'; msg.textContent='Error: '+((e&&e.message)||'unknown');
     })
     .submitPMRecord({ machineId:machineId, technician:tech,
       startDate:sd, startTime:st, endDate:ed, endTime:et,
@@ -12549,7 +12568,7 @@ function submitCLITForm(machineId) {
     .withFailureHandler(function(e) {
       btn.disabled = false; btn.textContent = '✓ Submit CLIT Record';
       msg.className = 'form-msg err';
-      msg.textContent = 'Error: ' + esc((e && e.message) || 'unknown');
+      msg.textContent = 'Error: ' + ((e && e.message) || 'unknown');
     })
     .submitCLITRecord({
       machineId: machineId,
@@ -14971,7 +14990,7 @@ function sfModal(title, bodyHtml){
 function sfCloseModal(){
   var m=document.getElementById('form-modal');
   if(m) m.classList.remove('open');
-  if(typeof closeFormModal==='function'){ try{closeFormModal();}catch(e){} }
+  if(typeof closeFormModal==='function'){ try{closeFormModal(true);}catch(e){} }
 }
 
 /* Distinct values for a field, taken from the register that is already loaded. The
@@ -15666,6 +15685,49 @@ function _flDirtyView(hash){
     return '';
   }
 
+  /* The BD/PM/CLIT/checklist forms live in #form-modal, which does NOT change the
+     hash — so the navigate() guard above never saw them and the highest-stakes
+     form in the app (BD close: 8 fields plus a camera capture, filled one-handed
+     beside a machine that is down) had no protection at all.
+
+     Scanned generically rather than by a field-id list: the modal renders four
+     different forms and a success panel, and an id list would silently stop
+     protecting whichever form gained a field. Same reasoning as the comment at
+     the top of this function, applied to a container instead of a hash.
+
+     Deliberately NOT counted: prefilled date/time (an untouched form must never
+     look dirty, or people learn to dismiss the prompt), hidden inputs, submit
+     buttons, and anything inside the post-submit success panel — at that point
+     the record is saved and there is nothing to lose. */
+  if (hash === 'form-modal') {
+    var modal = document.getElementById('form-modal');
+    if (!modal || !modal.classList.contains('open')) return '';
+    // The success panel replaces the form; its presence means the write landed.
+    if (modal.querySelector('.form-success, [data-saved="1"]')) return '';
+
+    var typed = 0, picked = 0;
+    var els = modal.querySelectorAll('input, select, textarea');
+    for (var q = 0; q < els.length; q++) {
+      var el = els[q], t = (el.type || '').toLowerCase();
+      if (t === 'hidden' || t === 'submit' || t === 'button') continue;
+      if (el.disabled || el.readOnly) continue;
+      if (el.dataset && el.dataset.prefilled === '1') continue;
+      if (t === 'date' || t === 'time') continue;      // prefilled by _todayStr/_nowTimeStr
+      if (t === 'checkbox' || t === 'radio') { if (el.checked) picked++; continue; }
+      if (t === 'file') { if (el.files && el.files.length) picked++; continue; }
+      // A select that still sits on its first option has not been answered.
+      if (el.tagName === 'SELECT') { if (el.selectedIndex > 0) picked++; continue; }
+      if (String(el.value || '').trim() !== '') typed++;
+    }
+    if (!typed && !picked) return '';
+    var what = [];
+    if (typed)  what.push(typed + ' filled field' + (typed === 1 ? '' : 's'));
+    if (picked) what.push(picked + ' selection' + (picked === 1 ? '' : 's'));
+    var title = document.getElementById('form-modal-title');
+    var name = title && title.textContent ? title.textContent.trim() : 'this form';
+    return name + ' has ' + what.join(' and ') + ' not yet submitted.';
+  }
+
   if (hash === 'hk') {
     if (typeof FL === 'undefined' || !FL || !FL.hkState) return '';
     var ticked = 0, noted = 0;
@@ -15684,6 +15746,25 @@ function _flDirtyView(hash){
 
   return '';
 }
+
+/* Last line of defence: a browser back-swipe, tab close or reload reaches neither
+   navigate() (no hash change) nor closeFormModal(). Covers every guarded surface
+   through the same _flDirtyView, so a form protected in-app is protected here too.
+
+   The browser shows its own generic wording and ignores ours — that is deliberate
+   on their part and fine; the point is that the dialog appears at all. Fires only
+   when something would genuinely be lost, so it cannot become the prompt people
+   learn to click through. */
+window.addEventListener('beforeunload', function(ev){
+  var lose = '';
+  try {
+    lose = _flDirtyView('form-modal') || _flDirtyView(App && App.currentHash);
+  } catch (e) { lose = ''; }
+  if (!lose) return;
+  ev.preventDefault();
+  ev.returnValue = lose;          // legacy browsers read the string
+  return lose;
+});
 
 function _v(id){ return document.getElementById(id).value; }
 function _n(id){ var x=parseFloat(_v(id)); return isNaN(x)?null:x; }
