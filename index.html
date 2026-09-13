@@ -5967,6 +5967,38 @@ function mbPickCat(cat) {
   _updateActionBar();
   _renderRecList();
 }
+/* Warm the BD/PM/CLIT payload while the operator is still choosing.
+   Selecting a machine is the first reliable signal they are about to open one of
+   its forms, and the gap between that tap and the action tap is dead time the
+   server is otherwise idle for. getFullMachineFormData serves all three forms, so
+   one warm covers whichever they pick.
+
+   Fire-and-forget by contract: loadMachineFormData populates _mfdCache and PMC on
+   success, so the form later opens from cache; a failure costs only the old speed.
+   Never awaited, never blocks the tile render, and never shows an error — the
+   operator did not ask for this call. Guarded so re-tapping a tile cannot queue a
+   second fetch, and skipped entirely when the answer is already in hand. */
+var _mfdWarming = {};
+function _warmMachineForm(mid) {
+  if (!mid || mid === 'all') return;
+  if (_mfdCache[mid] || _mfdWarming[mid]) return;
+  _mfdWarming[mid] = true;
+  try {
+    /* The guard must be released by the LIVE result, not the first callback:
+       loadMachineFormData fires cb immediately when a stale PMC entry exists and
+       again when the network copy lands. Releasing on the first would let a second
+       tap queue a duplicate fetch while the first is still in flight. _mfdCache is
+       only set on a live success, so it is the honest signal that we are done. */
+    loadMachineFormData(mid, function () {
+      if (_mfdCache[mid]) delete _mfdWarming[mid];
+    });
+  } catch (e) { delete _mfdWarming[mid]; }
+  /* A failed warm leaves the flag set, which would block retries for the life of
+     the page. Release it after the transport's own retry budget so a later tap can
+     try again — the form's live call is unaffected either way. */
+  setTimeout(function () { if (!_mfdCache[mid]) delete _mfdWarming[mid]; }, 120000);
+}
+
 function mbPickMachine(mid) {
   // tapping the selected tile again = deselect
   if (mid === _mbMachine) mid = 'all';
@@ -5974,6 +6006,7 @@ function mbPickMachine(mid) {
   _renderMacTiles(_boardData);
   _updateActionBar();
   _renderRecList();
+  _warmMachineForm(mid);
 }
 
 function mbOnSearch() {
