@@ -10886,14 +10886,42 @@ function loadPlanner(){
   var el=document.getElementById('planner-body');
   if(!el) return;
   if(PL.data){ plRender(); return; }
-  el.innerHTML='<div class="pl-wrap"><div class="loading-spinner" style="padding:40px">'+
-    '<div class="spinner-ring"></div>Loading plan&hellip;</div></div>';
+
+  /* Paint the last known grid immediately, then refresh. The planner is a
+     read-only overview, so a few-minutes-old grid is a fair thing to show while
+     the live one loads — and it turns a 20s cold start into an instant screen.
+     A recorded PM drops the server cache, so the refresh brings it in. */
+  var _plServed=false;
+  var _plKey='plan:'+plFy();
+  var _plc=(typeof PMC!=='undefined'&&PMC.enabled)?PMC.get(_plKey):null;
+  if(_plc&&_plc.data){ PL.data=_plc.data; plRender(); _plServed=true; }
+
+  if(!_plServed){
+    el.innerHTML='<div class="pl-wrap"><div class="loading-spinner" style="padding:40px">'+
+      '<div class="spinner-ring"></div>Loading plan&hellip;<div id="pl-slow" '+
+      'style="margin-top:8px;font-size:11px;opacity:0.8"></div></div></div>';
+  }
+  // Same escalation as the PM/CLIT forms — a silent spinner on a cold container
+  // is indistinguishable from a hang.
+  var _plSlow=[[6000,'Still loading — the server is waking up.'],
+               [20000,'Taking longer than usual. Still trying…'],
+               [45000,'Slow connection — retrying in the background.']]
+    .map(function(m){ return setTimeout(function(){
+      var s=document.getElementById('pl-slow'); if(s) s.textContent=m[1]; }, m[0]); });
+
   google.script.run
     .withSuccessHandler(function(d){
-      if(!d||!d.success){ plErr((d&&d.error)||''); return; }
-      PL.data=d; plRender();
+      _plSlow.forEach(clearTimeout);
+      if(!d||!d.success){ if(!_plServed) plErr((d&&d.error)||''); return; }
+      PL.data=d;
+      try{ PMC.put(_plKey,d); }catch(e){}
+      plRender();
     })
-    .withFailureHandler(function(e){ plErr((e&&e.message)||e); })
+    .withFailureHandler(function(e){
+      _plSlow.forEach(clearTimeout);
+      if(_plServed) return;   // keep the stale grid rather than replacing it with an error
+      plErr((e&&e.message)||e);
+    })
     .getPmPlanGrid(plFy(), 'ALL');
 }
 
@@ -11398,14 +11426,36 @@ function closeFormModal() {
 // Cache machine form data (loaded once per machine)
 var _mfdCache = {}; // machineId → {name,category,location,pmFreq,personnel,pmItems,clitItems}
 
+/* Stale-while-revalidate for the form payload.
+   _mfdCache alone is per-page-load, and on mobile a page load is constant — every
+   tab restore paid a full cold round trip (measured 2.6-23.1s against this
+   deployment). PMC persists it across reloads for 6h, so a repeat open paints
+   immediately while the live copy refreshes behind it.
+
+   Safe to serve stale here: this payload is the PM/CLIT task LIST and the machine's
+   details, not a record anyone acts on as current. An edited list appears on the
+   next open. cb may therefore be called TWICE — once cached, once live — so every
+   caller must be able to re-render. */
 function loadMachineFormData(machineId, cb) {
   if (_mfdCache[machineId]) { cb(_mfdCache[machineId]); return; }
+
+  var served = false;
+  var pc = (typeof PMC !== 'undefined' && PMC.enabled) ? PMC.get('mfd:' + machineId) : null;
+  if (pc && pc.data) { served = true; cb(pc.data); }
+
   google.script.run
     .withSuccessHandler(function(d) {
-      if (d && d.success) _mfdCache[machineId] = d;
+      if (d && d.success) {
+        _mfdCache[machineId] = d;
+        try { PMC.put('mfd:' + machineId, d); } catch (e) {}
+      }
+      /* Already painted from cache and the refresh failed: keep what is on screen
+         rather than blanking a working form. */
+      if (served && !(d && d.success)) return;
       cb(d && d.success ? d : null);
     })
     .withFailureHandler(function(e) {
+      if (served) return;   // stale content is better than an error over nothing
       showStatus('⚠ Could not load machine form data: ' + ((e&&e.message)||'server error'), 'error', 6000);
       cb(null);
     })
@@ -11768,10 +11818,27 @@ function shareBDWhatsApp(slipNo, machineId) {
 function showPMForm(machineId) {
   document.getElementById('form-modal-title').textContent = 'Do PM — ' + machineId;
   var bodyEl = document.getElementById('form-modal-body');
-  bodyEl.innerHTML = '<div style="text-align:center;padding:20px;color:#64748b">Loading PM tasks…</div>';
+  bodyEl.innerHTML = '<div style="text-align:center;padding:20px;color:#64748b">' +
+    'Loading PM tasks&hellip;<div id="pm-slow" style="margin-top:8px;font-size:11px;opacity:0.8"></div></div>';
   document.getElementById('form-modal').classList.add('open');
 
+  /* A cold GAS container takes 20s+ here and the old static "Loading PM tasks…"
+     never changed, so a wait that was working was indistinguishable from a freeze
+     and operators force-closed the form. Mirrors showCLITForm's ladder. */
+  var _pmSlowTimers = [
+    [6000,  'Still loading — the server is waking up.'],
+    [20000, 'Taking longer than usual. Still trying…'],
+    [45000, 'Slow connection — retrying in the background.']
+  ].map(function(m) {
+    return setTimeout(function() {
+      var s = document.getElementById('pm-slow');
+      if (s) s.textContent = m[1];
+    }, m[0]);
+  });
+
   loadMachineFormData(machineId, function(fd) {
+    // Cleared on the FIRST paint — which may be the cached one.
+    _pmSlowTimers.forEach(clearTimeout);
     var td = _todayStr(); var tn = _nowTimeStr();
     var personnel = ((fd && fd.personnel) || App.personnelList || []).map(function(p){return '<option>'+esc(p)+'</option>';}).join('');
     var pmItems = (fd && fd.pmItems) || [];
