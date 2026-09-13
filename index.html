@@ -2039,7 +2039,7 @@ select.eq-in { cursor:pointer; }
    rendered. Explicit rule restores it — the element stays in the DOM only so
    sfGoTab() and the drill-throughs can keep syncing '.sf-tab' active state. */
 .sf-tabs[hidden] { display:none; }
-.sf-tabs { display:flex; gap:4px; padding:8px 10px; background:#fff; border-bottom:1px solid var(--fledge);
+.sf-tabs { display:flex; gap:4px; padding:8px 10px; background:var(--flpanel); border-bottom:1px solid var(--fledge);
   overflow-x:auto; position:sticky; top:0; z-index:5; }
 /* min-height 44px, was ~28px (7px padding + 12px text). These are the Safety
    module's primary navigation and were the one genuinely undersized target
@@ -2047,14 +2047,14 @@ select.eq-in { cursor:pointer; }
    grows rather than needing a pseudo-element. */
 .sf-tab { flex:0 0 auto; padding:7px 14px; min-height:44px; border:none;
   background:#f1f5f9; border-radius:8px; display:inline-flex; align-items:center;
-  font-size:12px; font-weight:700; color:#475569; cursor:pointer; white-space:nowrap; }
-.sf-tab.active { background:var(--flacc); color:#fff; }
+  font-size:12px; font-weight:700; color:var(--fldim); cursor:pointer; white-space:nowrap; }
+.sf-tab.active { background:var(--flacc); color:var(--flpanel); }
 .sf-wrap { padding:12px; }
-.sf-banner { font-size:11px; color:#64748b; padding:2px 2px 10px; }
+.sf-banner { font-size:11px; color:var(--flfaint); padding:2px 2px 10px; }
 /* KPI hero tiles */
 .sf-kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
 @media (max-width:560px){ .sf-kpis { grid-template-columns:repeat(2,1fr); } }
-.sf-kpi { background:#fff; border-radius:10px; padding:12px 10px; border-left:4px solid var(--fledge3);
+.sf-kpi { background:var(--flpanel); border-radius:10px; padding:12px 10px; border-left:4px solid var(--fledge3);
   cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.05); transition:transform .1s; }
 .sf-kpi:active { transform:scale(.97); }
 /* Tabular numerals + tight tracking: these are figures, and proportional
@@ -2066,7 +2066,7 @@ select.eq-in { cursor:pointer; }
 .sf-kpi.green { border-left-color:#16a34a; } .sf-kpi.amber { border-left-color:#d97706; }
 .sf-kpi.red { border-left-color:#dc2626; } .sf-kpi.teal { border-left-color:var(--flacc); }
 /* chart cards */
-.sf-card { background:#fff; border-radius:10px; padding:12px; margin-top:12px;
+.sf-card { background:var(--flpanel); border-radius:10px; padding:12px; margin-top:12px;
   box-shadow:0 1px 2px rgba(0,0,0,.05); }
 /* 700, not 800, at a slightly larger size: a card title is a label, not a
    headline. At 800 it competed with the KPI numerals for first read.
@@ -2115,7 +2115,7 @@ select.eq-in { cursor:pointer; }
   animation:sfkhi 2.4s ease-out forwards; }
 @keyframes sfkhi { 0%,60%{ outline-color:#0f766e; } 100%{ outline-color:transparent; } }
 @media (prefers-reduced-motion:reduce){
-  .sf-kcol-hi { animation:none; outline-color:#0f766e; }
+  .sf-kcol-hi { animation:none; outline-color:var(--flacc); }
 }
 /* heatmap */
 /* A 5x5 matrix of two-digit counts is a fixed-size object, not a fluid one.
@@ -2142,7 +2142,7 @@ select.eq-in { cursor:pointer; }
    A visible tint plus a dashed border says "this cell exists and is empty",
    which is a different statement from "this cell is a low risk band". Ink at
    #64748b on #eef2f7 clears 4.5:1, so the 0 is legible. */
-.sf-heat .hc.z { color:#64748b !important; background:#eef2f7 !important;
+.sf-heat .hc.z { color:var(--flfaint) !important; background:#eef2f7 !important;
   box-shadow:inset 0 0 0 1px #dbe3ec; font-weight:700; }
 @media (prefers-reduced-motion:reduce){ .sf-heat .hc { transition:none; }
   .sf-heat .hc:hover, .sf-heat .hc:focus-visible { transform:none; } }
@@ -2162,15 +2162,15 @@ select.eq-in { cursor:pointer; }
   min-height:112px; max-width:340px; }
 .sf-heatinfo .ri-band { font-size:14px; font-weight:800; color:var(--rc,#334155);
   display:flex; align-items:baseline; gap:8px; }
-.sf-heatinfo .ri-score { font-size:11px; font-weight:700; color:#64748b;
+.sf-heatinfo .ri-score { font-size:11px; font-weight:700; color:var(--flfaint);
   font-variant-numeric:tabular-nums; }
 .sf-heatinfo .ri-lc { font-size:11.5px; color:var(--fldim); margin-top:6px; line-height:1.5; }
 .sf-heatinfo .ri-lc b { color:var(--flink); font-weight:700; }
 .sf-heatinfo .ri-guide { font-size:11.5px; color:#334155; margin-top:8px;
   line-height:1.5; }
 .sf-heatinfo .ri-count { font-size:11.5px; font-weight:700; margin-top:8px;
-  color:#0f766e; }
-.sf-heatinfo .ri-idle { font-size:11.5px; color:#64748b; line-height:1.5; }
+  color:var(--flacc); }
+.sf-heatinfo .ri-idle { font-size:11.5px; color:var(--flfaint); line-height:1.5; }
 /* Below the matrix on phones, beside it on desktop. */
 @media (max-width:1024px){ .sf-heatinfo { margin-top:12px; max-width:none; } }
 /* ═══ SAFETY REGISTERS — dense-data system ═══════════════════════════════
@@ -2181,7 +2181,7 @@ select.eq-in { cursor:pointer; }
 .sf-filterbar { display:flex; gap:6px; padding:8px 0; align-items:center;
   flex-wrap:wrap; }
 .sf-filterbar select, .sf-filterbar input { font-size:13px; padding:9px 10px;
-  border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#0f172a;
+  border:1px solid var(--fledge2); border-radius:8px; background:var(--flpanel); color:var(--flink);
   min-height:44px; font-family:inherit; }
 /* min-width, not just a flex basis. `flex:1 1 120px` is only a STARTING size —
    with the 230px view switcher, "Filters" and the gear all inflexible on the
@@ -2197,11 +2197,11 @@ select.eq-in { cursor:pointer; }
 @media (max-width:700px){
   .sf-filterbar { flex-wrap:nowrap; }
   .sf-filterbar select { display:none; }
-  .sf-fmore { display:inline-flex; align-items:center; gap:6px; background:#fff;
-    border:1px solid #cbd5e1; border-radius:8px; min-height:44px; padding:0 11px;
+  .sf-fmore { display:inline-flex; align-items:center; gap:6px; background:var(--flpanel);
+    border:1px solid var(--fledge2); border-radius:8px; min-height:44px; padding:0 11px;
     font:inherit; font-size:13px; font-weight:600; color:#334155; cursor:pointer;
     white-space:nowrap; flex:none; }
-  .sf-fmore .n { background:#0f766e; color:#fff; border-radius:20px;
+  .sf-fmore .n { background:var(--flacc); color:var(--flpanel); border-radius:20px;
     padding:0 6px; font-size:11px; font-weight:800; }
   .sf-fpanel.open { display:grid; grid-template-columns:1fr 1fr; gap:7px;
     padding:0 0 10px; }
@@ -2214,7 +2214,7 @@ select.eq-in { cursor:pointer; }
 /* Sectioned list: NEEDS ACTION above, archive collapsed below. */
 .sf-sect { display:flex; align-items:center; gap:8px; margin:14px 0 0;
   font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
-  color:#475569; }
+  color:var(--fldim); }
 .sf-sect .n { background:var(--fledge); color:#334155; border-radius:20px;
   padding:1px 8px; font-size:11px; }
 .sf-sect.urgent { color:#b91c1c; }
@@ -2251,19 +2251,19 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .app-header :where(button,a,[tabindex]):focus-visible { outline-color:#5eead4; }
 
 .sf-list { border-top:1px solid var(--fledge); margin-top:6px; }
-.sf-row { position:relative; background:#fff; padding:11px 12px 11px 16px;
-  border-bottom:1px solid #e2e8f0; cursor:pointer; min-height:44px;
+.sf-row { position:relative; background:var(--flpanel); padding:11px 12px 11px 16px;
+  border-bottom:1px solid var(--fledge); cursor:pointer; min-height:44px;
   transition:background .15s ease; }
 .sf-row:hover { background:var(--flpanel2); }
 .sf-row:active { background:#f1f5f9; }
 .sf-row:focus-visible { outline:2px solid var(--flacc); outline-offset:-2px; }
 /* Left rule carries the band colour; set per-row via --bar. */
 .sf-row::before { content:''; position:absolute; left:0; top:0; bottom:0;
-  width:4px; background:var(--bar,#94a3b8); }
+  width:4px; background:var(--bar,var(--fledge3)); }
 /* Harm-bearing records (Accident / First Aid) get a heavier double rule. */
 .sf-row.harm { padding-left:19px; }
 .sf-row.harm::before { width:7px;
-  background:linear-gradient(90deg,var(--bar) 0 4px,#fff 4px 5px,var(--bar) 5px 7px); }
+  background:linear-gradient(90deg,var(--bar) 0 4px,var(--flpanel) 4px 5px,var(--bar) 5px 7px); }
 
 .sf-row .top { display:flex; align-items:baseline; gap:8px; }
 /* The score/ID is the scan anchor — largest thing in the row. */
@@ -2276,7 +2276,7 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   overflow:hidden; }
 .sf-row .meta { font-size:13px; color:var(--fldim); margin-top:6px; display:flex;
   gap:6px 12px; flex-wrap:wrap; align-items:center; }
-.sf-row .meta .sr { color:#64748b; font-size:12px; font-variant-numeric:tabular-nums; }
+.sf-row .meta .sr { color:var(--flfaint); font-size:12px; font-variant-numeric:tabular-nums; }
 
 /* Status chip: tinted bg + glyph + label. */
 .sf-st { display:inline-flex; align-items:center; gap:5px; font-size:11px;
@@ -2285,15 +2285,15 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .sf-st .g { font-size:11px; line-height:1; }
 /* Owner initials — avoids the "generic avatar" tell while staying legible. */
 .sf-av { display:inline-flex; align-items:center; justify-content:center;
-  width:22px; height:22px; border-radius:50%; background:#0f766e; color:#fff;
+  width:22px; height:22px; border-radius:50%; background:var(--flacc); color:var(--flpanel);
   font-size:10px; font-weight:800; letter-spacing:.02em; flex:none; }
 .sf-own { display:inline-flex; align-items:center; gap:6px; }
 .sf-type { display:inline-flex; align-items:center; gap:5px; font-size:11px;
-  font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:#475569; }
+  font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:var(--fldim); }
 .sf-type svg { width:13px; height:13px; flex:none; }
 
 .sf-pill { font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; }
-.sf-pill.risk { color:#fff; }
+.sf-pill.risk { color:var(--flpanel); }
 .sf-badge-ovd { background:#fee2e2; color:#b91c1c; font-size:12px; font-weight:800;
   padding:2px 7px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;
   white-space:nowrap; }
@@ -2310,7 +2310,7 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   animation:sfsh 1.3s ease-in-out infinite; }
 .sf-skel i + i { margin-top:7px; }
 @keyframes sfsh { 0%,100%{opacity:1} 50%{opacity:.45} }
-.sf-empty { text-align:center; padding:34px 20px; color:#64748b; font-size:13px;
+.sf-empty { text-align:center; padding:34px 20px; color:var(--flfaint); font-size:13px;
   line-height:1.6; }
 .sf-empty b { display:block; font-size:15px; color:#334155; margin-bottom:4px; }
 
@@ -2329,11 +2329,11 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   .sf-wrap { max-width:1400px; margin:0 auto; }
   /* The real register runs to ~150 rows, so the header must stay put. */
   .sf-thead { display:grid; grid-template-columns:56px 1fr 92px 132px 128px 96px 62px;
-    gap:12px; padding:8px 12px; font-size:11px; font-weight:800; color:#64748b;
-    letter-spacing:.06em; text-transform:uppercase; border-bottom:2px solid #cbd5e1;
-    position:sticky; top:0; background:#f8fafc; z-index:5; }
+    gap:12px; padding:8px 12px; font-size:11px; font-weight:800; color:var(--flfaint);
+    letter-spacing:.06em; text-transform:uppercase; border-bottom:2px solid var(--fledge2);
+    position:sticky; top:0; background:var(--flpanel2); z-index:5; }
   .sf-thead span { cursor:pointer; user-select:none; }
-  .sf-thead span:hover { color:#0f172a; }
+  .sf-thead span:hover { color:var(--flink); }
   /* The incident header's first span only reserves the empty .score track — it names
      nothing, so it must not look or behave like a sortable column heading. */
   .sf-thead span:empty { cursor:default; pointer-events:none; }
@@ -2355,7 +2355,7 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
      column came out empty. Verified live: header "Shift" at x=818 against its cell
      at x=31. nth-of-type counts .cell elements only (.top/.haz/.meta are divs, the
      cells are spans), so this holds for both row shapes. */
-  .sf-row .cell { font-size:13px; color:#475569; grid-row:1/span 2;
+  .sf-row .cell { font-size:13px; color:var(--fldim); grid-row:1/span 2;
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   /* Counted from the END, not the start. Both row shapes finish with exactly five
      .cell spans, but a HIRA row ALSO opens with <span class="score"> while an
@@ -2385,11 +2385,11 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .sf-bhead { display:flex; align-items:center; gap:7px; padding:9px 11px;
   font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase;
   color:#334155; }
-.sf-bhead .n { margin-left:auto; background:#fff; color:#334155; border-radius:20px;
+.sf-bhead .n { margin-left:auto; background:var(--flpanel); color:#334155; border-radius:20px;
   padding:1px 8px; font-size:12px; font-variant-numeric:tabular-nums; }
 .sf-bbody { padding:0 7px 7px; display:flex; flex-direction:column; gap:7px; }
-.sf-kc { background:#fff; border-radius:8px; padding:9px 10px; cursor:pointer;
-  border-left:3px solid var(--bar,#94a3b8); transition:background .15s ease; }
+.sf-kc { background:var(--flpanel); border-radius:8px; padding:9px 10px; cursor:pointer;
+  border-left:3px solid var(--bar,var(--fledge3)); transition:background .15s ease; }
 .sf-kc:hover { background:var(--flpanel2); }
 .sf-kc .t { font-size:14px; font-weight:600; color:var(--flink); line-height:1.3; }
 .sf-kc .m { font-size:12px; color:var(--fldim); margin-top:5px; display:flex;
@@ -2402,60 +2402,60 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 /* View switch (list / board). */
 .sf-vsw { display:inline-flex; border:1px solid var(--fledge2); border-radius:8px;
   overflow:hidden; margin-left:auto; flex:none; }
-.sf-vsw button { background:#fff; border:none; padding:0 11px; min-height:44px;
-  min-width:44px; font:inherit; font-size:12px; font-weight:700; color:#64748b;
+.sf-vsw button { background:var(--flpanel); border:none; padding:0 11px; min-height:44px;
+  min-width:44px; font:inherit; font-size:12px; font-weight:700; color:var(--flfaint);
   cursor:pointer; display:inline-flex; align-items:center; gap:5px;
   transition:background .15s ease,color .15s ease; }
 .sf-vsw button + button { border-left:1px solid var(--fledge2); }
-.sf-vsw button.on { background:var(--flacc); color:#fff; }
+.sf-vsw button.on { background:var(--flacc); color:var(--flpanel); }
 .sf-vsw svg { width:15px; height:15px; }
 
 /* Active-filter chips: state visible, not hidden inside a <select>. */
 .sf-chips { display:flex; flex-wrap:wrap; gap:6px; padding:0 0 8px; }
 .sf-fchip { display:inline-flex; align-items:center; gap:6px; background:#e6f2f1;
-  color:#0f766e; border:1px solid #b9dedb; border-radius:20px; padding:5px 6px 5px 11px;
+  color:var(--flacc); border:1px solid #b9dedb; border-radius:20px; padding:5px 6px 5px 11px;
   font-size:12px; font-weight:600; }
 .sf-fchip button { background:none; border:none; color:var(--flacc); cursor:pointer;
   font-size:14px; line-height:1; padding:3px 5px; border-radius:50%; min-width:26px;
   min-height:26px; }
 .sf-fchip button:hover { background:#cfe8e6; }
-.sf-clr { background:none; border:none; color:#64748b; font:inherit; font-size:12px;
+.sf-clr { background:none; border:none; color:var(--flfaint); font:inherit; font-size:12px;
   text-decoration:underline; cursor:pointer; padding:6px 4px; min-height:34px; }
 /* Settings entry point — a dot appears when live data has drifted from config. */
-.sf-gear { position:relative; background:#fff; border:1px solid var(--fledge2);
-  border-radius:8px; min-height:44px; min-width:44px; cursor:pointer; color:#475569;
+.sf-gear { position:relative; background:var(--flpanel); border:1px solid var(--fledge2);
+  border-radius:8px; min-height:44px; min-width:44px; cursor:pointer; color:var(--fldim);
   display:inline-flex; align-items:center; justify-content:center; flex:none;
   transition:background .15s ease; }
 .sf-gear:hover { background:#f1f5f9; }
 .sf-gear .dot { position:absolute; top:6px; right:6px; width:8px; height:8px;
-  border-radius:50%; background:#ea580c; border:1.5px solid #fff; }
+  border-radius:50%; background:#ea580c; border:1.5px solid var(--flpanel); }
 .sf-gear svg { width:17px; height:17px; flex:none; }
 /* Settings panel */
 .sf-prefs { font-size:13px; color:#334155; }
-.sf-pnote { font-size:12px; color:#64748b; line-height:1.5; margin:0 0 12px; }
+.sf-pnote { font-size:12px; color:var(--flfaint); line-height:1.5; margin:0 0 12px; }
 .sf-prow { display:flex; align-items:center; gap:12px; padding:11px 0;
-  border-bottom:1px solid #e2e8f0; }
+  border-bottom:1px solid var(--fledge); }
 .sf-prow > div:first-child { flex:1; min-width:0; }
 .sf-prow b { display:block; font-size:13px; color:var(--flink); font-weight:600; }
-.sf-prow span { display:block; font-size:12px; color:#64748b; margin-top:2px;
+.sf-prow span { display:block; font-size:12px; color:var(--flfaint); margin-top:2px;
   line-height:1.4; }
 .sf-segrow { display:inline-flex; border:1px solid var(--fledge2); border-radius:8px;
   overflow:hidden; flex:none; }
-.sf-segb { background:#fff; border:none; font:inherit; font-size:12px; font-weight:600;
-  color:#64748b; padding:0 12px; min-height:44px; min-width:48px; cursor:pointer;
+.sf-segb { background:var(--flpanel); border:none; font:inherit; font-size:12px; font-weight:600;
+  color:var(--flfaint); padding:0 12px; min-height:44px; min-width:48px; cursor:pointer;
   transition:background .15s ease,color .15s ease; }
 .sf-segb + .sf-segb { border-left:1px solid var(--fledge2); }
-.sf-segb.on { background:var(--flacc); color:#fff; }
+.sf-segb.on { background:var(--flacc); color:var(--flpanel); }
 .sf-vocab { border-top:1px solid var(--fledge); }
 .sf-vrow { display:flex; gap:12px; padding:9px 0; border-bottom:1px solid #f1f5f9;
   align-items:flex-start; }
 .sf-vrow .k { flex:0 0 40%; font-size:12px; font-weight:600; color:#334155; }
-.sf-vrow .k code { display:block; font-size:10px; color:#64748b; font-weight:400;
+.sf-vrow .k code { display:block; font-size:10px; color:var(--flfaint); font-weight:400;
   margin-top:2px; }
 .sf-vrow .v { flex:1; display:flex; flex-wrap:wrap; gap:4px; }
 .sf-vrow .v span { background:#f1f5f9; border-radius:5px; padding:2px 7px;
-  font-size:11px; color:#475569; }
-.sf-vrow .v i { font-size:11px; color:#64748b; }
+  font-size:11px; color:var(--fldim); }
+.sf-vrow .v i { font-size:11px; color:var(--flfaint); }
 .sf-health { background:#fffbeb; border:1px solid #fde68a; border-radius:8px;
   padding:11px 13px; font-size:12px; color:#78350f; line-height:1.5; }
 .sf-health.ok { background:#f0fdf4; border-color:#bbf7d0; color:#14532d; }
@@ -2468,7 +2468,7 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
   .sf-skel i { animation:none; }
 }
 .sf-fab { position:fixed; right:16px; bottom:82px; width:52px; height:52px;
-  border-radius:50%; background:#0f766e; color:#fff; font-size:26px; border:none;
+  border-radius:50%; background:var(--flacc); color:var(--flpanel); font-size:26px; border:none;
   box-shadow:0 4px 12px rgba(15,118,110,.32); cursor:pointer; z-index:20;
   line-height:1; }
 /* Keep the last row clear of the floating button. */
@@ -2481,7 +2481,7 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .sf-form { display:flex; flex-direction:column; gap:4px; font-size:12px; }
 .sf-form label { font-weight:700; color:var(--fldim); margin-top:6px; font-size:11px; }
 .sf-form input, .sf-form select, .sf-form textarea { font-size:12px; padding:7px 8px;
-  border:1px solid #cbd5e1; border-radius:7px; width:100%; font-family:inherit; }
+  border:1px solid var(--fledge2); border-radius:7px; width:100%; font-family:inherit; }
 /* Incident detail — read-only facts panel above the editable fields. */
 .if-facts { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;
   padding:9px 10px; margin-bottom:4px; }
@@ -2505,12 +2505,12 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .sf-form .if-dates label { margin-top:0; }
 @media (max-width:460px){ .sf-form .if-dates { grid-template-columns:1fr; } }
 /* Explains the auto-stamp so an empty date field does not read as a missing value. */
-.sf-form .if-hint { font-size:10.5px; color:#64748b; line-height:1.4; margin-top:6px; }
+.sf-form .if-hint { font-size:10.5px; color:var(--flfaint); line-height:1.4; margin-top:6px; }
 .sf-form .hf-3 { display:grid; grid-template-columns:1fr 1fr auto; gap:8px; align-items:end; }
 .hf-risk { font-size:18px; font-weight:800; color:#fff; background:#15803d;
   border-radius:7px; padding:6px 14px; text-align:center; min-width:48px; }
 .hf-classline { font-size:11px; color:#475569; margin-top:4px; }
-.sf-btn-primary { background:var(--flacc); color:#fff; border:none; padding:10px;
+.sf-btn-primary { background:var(--flacc); color:var(--flpanel); border:none; padding:10px;
   border-radius:8px; font-weight:700; margin-top:12px; font-size:13px; cursor:pointer; }
 /* segmented click controls */
 .hf-seg { display:flex; flex-wrap:wrap; gap:6px; }
@@ -2683,8 +2683,8 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
    stretch to full width by default and width:auto alone changed nothing. */
 .hf-coc-add { display:inline-flex; align-items:center; justify-content:center;
   align-self:flex-start; gap:5px; width:auto; min-height:40px; padding:8px 14px;
-  border:1.5px dashed #94a3b8;
-  background:#f8fafc; color:#475569; border-radius:9px; font-size:12px;
+  border:1.5px dashed var(--fledge3);
+  background:var(--flpanel2); color:var(--fldim); border-radius:9px; font-size:12px;
   font-weight:700; cursor:pointer; }
 .hf-coc-add:hover { background:#f1f5f9; }
 .hf-coc-hint { font-size:10px; color:#64748b; margin:2px 0 6px; }
@@ -2701,22 +2701,22 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
    measure and tapping one chip, not filling in fields. */
 .sf-rvq { display:flex; flex-direction:column; gap:6px; }
 .sf-rvq-head { font-size:11.5px; line-height:1.45; color:var(--fldim); background:var(--flpanel2);
-  border:1px solid #e2e8f0; border-radius:9px; padding:9px 11px; margin-bottom:2px; }
+  border:1px solid var(--fledge); border-radius:9px; padding:9px 11px; margin-bottom:2px; }
 .sf-rvq-head b { color:var(--flink); }
 .sf-rvq-head em { color:#9a3412; font-style:normal; font-weight:700; }
 /* Hazard header: the context a measure is being judged against. Sticky so the
    hazard stays visible while working down its measures. */
 .sf-rvq-hz { display:flex; align-items:center; gap:7px; flex-wrap:wrap;
   padding:7px 2px 3px; margin-top:6px; position:sticky; top:0; z-index:2;
-  background:linear-gradient(#fff 70%, rgba(255,255,255,0)); }
+  background:linear-gradient(var(--flpanel) 70%, rgba(255,255,255,0)); }
 .sf-rvq-risk { font-size:10px; font-weight:800; padding:2px 7px; border-radius:4px;
-  color:#fff; background:#64748b; white-space:nowrap; }
+  color:var(--flpanel); background:#64748b; white-space:nowrap; }
 .sf-rvq-intolerable { background:#dc2626; } .sf-rvq-substantial { background:#ea580c; }
 .sf-rvq-tolerable  { background:#ca8a04; } .sf-rvq-negligible  { background:#16a34a; }
 .sf-rvq-sr { font-size:10.5px; font-weight:800; color:var(--fldim); }
 .sf-rvq-hazard { font-size:11.5px; font-weight:700; color:var(--flink); flex:1; min-width:0; }
 .sf-rvq-row { border:1.5px solid var(--fledge); border-radius:9px; padding:7px 8px;
-  background:#fff; display:flex; flex-direction:column; gap:5px; }
+  background:var(--flpanel); display:flex; flex-direction:column; gap:5px; }
 .sf-rvq-text { font-size:12px; line-height:1.35; color:var(--flink); }
 .sf-rvq-why { font-size:10.5px; line-height:1.3; color:var(--fldim); }
 .sf-rvq-why b { color:var(--flink); }
@@ -2730,7 +2730,7 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .sf-rvq-row.saving { opacity:.55; pointer-events:none; }
 .sf-rvq-row.done { border-color:#bbf7d0; background:#f0fdf4; }
 .sf-vsw-n { display:inline-block; margin-left:5px; font-size:10px; font-weight:800;
-  background:#ea580c; color:#fff; border-radius:9px; padding:1px 6px; }
+  background:#ea580c; color:var(--flpanel); border-radius:9px; padding:1px 6px; }
 /* kanban */
 .sf-kanban { display:grid; grid-template-columns:repeat(4,minmax(180px,1fr));
   gap:8px; overflow-x:auto; }
@@ -2739,27 +2739,27 @@ input:focus-visible { outline:2px solid #0f766e; outline-offset:0; }
 .sf-kcol-h { font-size:11px; font-weight:800; letter-spacing:.4px; text-transform:uppercase;
   padding:8px 9px 6px; display:flex; gap:6px; align-items:baseline; }
 .sf-kempty { font-size:11px; color:var(--fledge3); padding:6px 9px 10px; }
-.sf-kcard { background:#fff; border:1px solid var(--fledge); border-radius:7px; padding:7px 9px;
+.sf-kcard { background:var(--flpanel); border:1px solid var(--fledge); border-radius:7px; padding:7px 9px;
   margin:0 7px 6px; cursor:pointer; }
 .sf-kcard.od { border-color:#fecaca; background:#fff7f7; }
 .sf-kcard-t { font-size:12px; font-weight:700; color:var(--flink); line-height:1.25; }
 .sf-kcard-m { display:flex; gap:8px; flex-wrap:wrap; margin-top:3px;
-  font-size:10px; color:#64748b; font-weight:600; }
+  font-size:10px; color:var(--flfaint); font-weight:600; }
 .sf-kcard-m .od { color:#b91c1c; }
 .sf-kcol { background:#f1f5f9; border-radius:10px; min-height:120px; display:flex;
   flex-direction:column; }
-.sf-khead { color:#fff; font-size:12px; font-weight:800; padding:8px 10px;
+.sf-khead { color:var(--flpanel); font-size:12px; font-weight:800; padding:8px 10px;
   border-radius:10px 10px 0 0; }
 .sf-kcount { background:rgba(255,255,255,.3); border-radius:9px; padding:1px 7px;
   font-size:11px; margin-left:4px; }
 .sf-klist { padding:7px; display:flex; flex-direction:column; gap:7px; min-height:60px; }
-.sf-kcard { background:#fff; border-radius:8px; padding:9px; border-left:4px solid var(--fledge3);
+.sf-kcard { background:var(--flpanel); border-radius:8px; padding:9px; border-left:4px solid var(--fledge3);
   box-shadow:0 1px 3px rgba(0,0,0,.08); cursor:pointer; }
 .sf-kcard.ovd { background:#fef2f2; }
 .sf-kc-top { font-size:11px; font-weight:800; color:var(--flink); display:flex;
   justify-content:space-between; align-items:center; }
 .sf-kc-act { font-size:11px; color:#334155; margin:4px 0; line-height:1.3; }
-.sf-kc-meta { font-size:10px; color:#64748b; }
+.sf-kc-meta { font-size:10px; color:var(--flfaint); }
 
 /* ══════ FACILITY LOGS — light instrument panel ══════════════════════════════
    Density 7 (operational cockpit, not a marketing page): 1px dividers instead of
