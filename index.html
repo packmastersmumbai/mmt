@@ -12729,7 +12729,13 @@ function sfRiskInk(score){
   if(score>=9) return '#3b1206'; return '#ffffff';
 }
 function sfDestroyCharts(){ SF.chartObjs.forEach(function(c){try{c.destroy();}catch(e){}}); SF.chartObjs=[]; }
-function sfEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+/* Escapes quotes as well as angle brackets, matching esc() and pwEsc().
+   Audited 2026-09-13: all 92 call sites emit into element TEXT, where quotes are
+   harmless — so this was not a live vulnerability. It was a latent one: the
+   function is safe only for as long as nobody uses it in an attribute, and
+   nothing enforced that. Escaping quotes costs nothing in a text node and closes
+   the trap. See docs/incident-upgrade/xss-audit-2026-09-13.md. */
+function sfEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 /** Entry point — called by navigate('safety'). */
 function loadSafety(){
