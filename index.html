@@ -8355,8 +8355,16 @@ function clAnnRender() {
   var cur = _clAnnCur();
   if (!cur) { clCloseAnnotator(); return; }
 
+  /* Legend mode serves BOTH CLIT and PM (see pmOpenPhoto / clitOpenPhoto), so a
+     hardcoded 'CLIT' labelled every PM proof photo as CLIT evidence. On an ISO
+     record the caption is part of the evidence, and an operator mid-PM sees a
+     full-screen overlay naming a different module — which reads as the app
+     having navigated somewhere else. Name the module from _clAnnTask. */
+  var _annLbl = { pm: 'PM', clit: 'CLIT', hira: 'HIRA', incident: 'Incident' };
   document.getElementById('cl-annTitle').textContent =
-    _clAnnMode === 'legend' ? 'CLIT — Photo ' + (_clAnnPhoto + 1) : 'Task ' + _clAnnTask;
+    _clAnnMode === 'legend'
+      ? (_annLbl[_clAnnTask] || String(_clAnnTask).toUpperCase()) + ' — Photo ' + (_clAnnPhoto + 1)
+      : 'Task ' + _clAnnTask;
   document.getElementById('cl-annImg').src = cur.url;
 
   // Page dots — only meaningful with more than one shot.
