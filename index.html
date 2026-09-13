@@ -2016,6 +2016,15 @@ select.eq-in { cursor:pointer; }
 .form-body { padding:16px; }
 .form-row { margin-bottom:14px; }
 .form-row label { display:block; font-size:11px; font-weight:600; color:#475569; margin-bottom:4px; text-transform:uppercase; letter-spacing:.3px; }
+/* Hindi at EQUAL weight — PRODUCT.md Design Principle 3. It inherits size, weight
+   and colour from the label rather than setting its own, so the two can never
+   drift apart the way the old inline `color:#64748b;font-weight:400` gloss did.
+   Own line, and text-transform cleared: uppercasing is meaningless in Devanagari. */
+.form-row label .bi-hi {
+  display:block; font-family:'PMDev', 'Noto Sans Devanagari', sans-serif;
+  font-size:inherit; font-weight:inherit; color:inherit;
+  text-transform:none; letter-spacing:normal; margin-top:2px;
+}
 /* min-height 44px: measured at 390px these rendered 34-40px (date 37, select 36,
    text 40) against the 44px floor PRODUCT.md calls non-negotiable for gloved
    hands. Padding alone could not reach it because the fields set font-size:13px.
@@ -5730,7 +5739,7 @@ function eqSave(inp) {
       if (!res || !res.success) {
         inp._last = prev;              // let the user retry the same value
         inp.classList.add('bad');
-        alert('Not saved: ' + ((res && res.error) || 'unknown'));
+        showStatus('Not saved: ' + ((res && res.error) || 'unknown'), 'error', 8000);
         return;
       }
       inp._last = val;                 // only now is it really sent
@@ -5746,7 +5755,7 @@ function eqSave(inp) {
       inp._last = prev;                // as above: a failure must stay retryable
       inp.classList.remove('saving');
       inp.classList.add('bad');
-      alert('Not saved: ' + ((e && e.message) || 'unknown'));
+      showStatus('Not saved: ' + ((e && e.message) || 'unknown'), 'error', 8000);
     })
     .updateEquipmentField({ id:id, field:field, value:val });
 }
@@ -5756,37 +5765,94 @@ function eqAdd() {
   if (!id) return;
   var type = (prompt('Type — EXTINGUISHER, SCALE or INSTRUMENT:', 'INSTRUMENT') || '').trim().toUpperCase();
   if (['EXTINGUISHER','SCALE','INSTRUMENT'].indexOf(type) === -1) {
-    alert('Type must be EXTINGUISHER, SCALE or INSTRUMENT.');
+    showStatus('Type must be EXTINGUISHER, SCALE or INSTRUMENT.', 'error', 6000);
     return;
   }
   var name = (prompt('Name:') || '').trim();
   google.script.run
     .withSuccessHandler(function(res) {
-      if (!res || !res.success) { alert('Not added: ' + ((res && res.error) || 'unknown')); return; }
+      if (!res || !res.success) { showStatus('Not added: ' + ((res && res.error) || 'unknown'), 'error', 8000); return; }
       _eqData = null; loadEquipment();
     })
-    .withFailureHandler(function(e){ alert('Not added: ' + ((e && e.message) || 'unknown')); })
+    .withFailureHandler(function(e){ showStatus('Not added: ' + ((e && e.message) || 'unknown'), 'error', 8000); })
     .addEquipment({ id:id, type:type, name:name });
+}
+
+/* ── Bilingual label helper ──────────────────────────────────────────────────
+   PRODUCT.md Design Principle 3: "English and Hindi labels carry the same visual
+   weight. Neither is a footnote." The app had been rendering Hindi as a
+   parenthetical gloss at a lighter weight and dimmer colour — the exact thing the
+   principle forbids — on the minority of labels that carried it at all.
+
+   bi() emits both at identical size and weight, Hindi on its own line in PMDev.
+   Use it for operator-facing form labels; it returns a string for the existing
+   concatenation style rather than a node, so it drops into current markup. */
+function bi(en, hi) {
+  var e = esc(en);
+  if (!hi) return e;
+  return e + '<span class="bi-hi">' + esc(hi) + '</span>';
+}
+
+/* ── Equipment monthly-check sheet ───────────────────────────────────────────
+   Replaces confirm() + 2x prompt(). Both outcomes are named buttons so that
+   dismissing records nothing, rather than the old flow where Cancel recorded a
+   problem and a dismissal lost it. */
+function eqOpenCheckSheet_(id) {
+  var host = document.getElementById('form-modal-body');
+  var title = document.getElementById('form-modal-title');
+  if (!host || !title) return;
+  title.textContent = 'Monthly check — ' + id;
+  host.innerHTML =
+    '<div class="form-row"><label for="eq-by">' + bi('Your name', 'आपका नाम') + ' *</label>' +
+      '<input id="eq-by" autocomplete="name" placeholder="Recorded against this check"></div>' +
+    '<div class="form-row"><label for="eq-rmk">' + bi('What is wrong?', 'क्या समस्या है?') + '</label>' +
+      '<textarea id="eq-rmk" rows="3" placeholder="Required only if you report a problem"></textarea></div>' +
+    '<div id="eq-msg" class="form-msg"></div>' +
+    '<div style="display:flex;gap:8px;margin-top:4px">' +
+      '<button type="button" class="form-submit-btn" style="background:#15803d;color:#fff" ' +
+        'onclick="eqCheckDecide_(\'' + esc(id) + '\',true)">' + bi('Pass', 'ठीक है') + '</button>' +
+      '<button type="button" class="form-submit-btn" style="background:#c62828;color:#fff" ' +
+        'onclick="eqCheckDecide_(\'' + esc(id) + '\',false)">' + bi('Report a problem', 'समस्या दर्ज करें') + '</button>' +
+    '</div>';
+  openFormModal_();
+}
+
+function eqCheckDecide_(id, ok) {
+  var by  = (document.getElementById('eq-by').value || '').trim();
+  var rmk = (document.getElementById('eq-rmk').value || '').trim();
+  var msg = document.getElementById('eq-msg');
+  /* Both rules stated at the point of failure rather than after the fact, and
+     the backend refuses a NOT_OK without remarks — so this is the same rule
+     enforced early, not extra politeness. */
+  if (!by)         { msg.className = 'form-msg err'; msg.textContent = 'A check needs a name.'; return; }
+  if (!ok && !rmk) { msg.className = 'form-msg err'; msg.textContent = 'A problem needs remarks.'; return; }
+  closeFormModal(true);
+  eqSubmitCheck_(id, ok, rmk, by);
 }
 
 /* Monthly check. The backend refuses a NOT_OK without remarks, so the prompt
    for them is not optional politeness — it is the same rule, stated early. */
+/* Rewritten 2026-09-13. It was:
+     confirm('Monthly check for X\n\nOK = pass, Cancel = record a problem.')
+   Cancel meaning "record a problem" inverts what Cancel means everywhere else,
+   so the safe reflex — dismiss the dialog — silently DISCARDED a real safety
+   finding. Two prompt() calls followed, which on Android are unstyled, ignore
+   every token, and put their buttons nowhere near the thumb.
+
+   Now a real in-app sheet: both outcomes are named buttons, so neither is the
+   "escape", and closing the sheet records nothing rather than recording a pass. */
 function eqCheck(id) {
-  var ok = confirm('Monthly check for ' + id + '\n\nOK = pass, Cancel = record a problem.');
-  var remarks = '';
-  if (!ok) {
-    remarks = prompt('What is wrong with ' + id + '? (required)') || '';
-    if (!remarks.trim()) { alert('A problem needs remarks. Nothing was recorded.'); return; }
-  }
-  var by = prompt('Your name (recorded against this check):') || '';
-  if (!by.trim()) { alert('A check needs a name. Nothing was recorded.'); return; }
+  eqOpenCheckSheet_(id);
+}
+
+function eqSubmitCheck_(id, ok, remarks, by) {
   google.script.run
     .withSuccessHandler(function(res) {
-      if (!res || !res.success) { alert('Failed: ' + ((res && res.error) || 'unknown')); return; }
+      if (!res || !res.success) { showStatus('Failed: ' + ((res && res.error) || 'unknown'), 'error', 8000); return; }
       _eqData = null;          // force a re-read so the card shows the new state
       loadEquipment();
     })
-    .withFailureHandler(function(e) { alert('Failed: ' + ((e && e.message) || 'unknown')); })
+    .withFailureHandler(function(e) { showStatus('Failed: ' + ((e && e.message) || 'unknown'), 'error', 8000); })
     .submitEquipmentCheck({ id:id, result: ok ? 'OK' : 'NOT_OK', remarks:remarks, doneBy:by });
 }
 
@@ -8084,9 +8150,9 @@ function confirmDeleteMachine(machineId, name) {
       if (r && r.success) {
         _boardData = null;
         loadBoard();
-      } else { alert('Delete failed: ' + ((r&&r.message)||'unknown')); }
+      } else { showStatus('Delete failed: ' + ((r&&r.message)||'unknown'), 'error', 8000); }
     })
-    .withFailureHandler(function(e) { alert('Error: '+((e&&e.message)||'unknown')); })
+    .withFailureHandler(function(e) { showStatus('Error: '+((e&&e.message)||'unknown'), 'error', 8000); })
     .spaDeleteMachine(machineId);
 }
 
@@ -9067,7 +9133,7 @@ var PMAnnot = (function() {
     api.tool('draw'); paintColors();
 
     var img = new Image();
-    img.onerror = function() { alert('Could not open that photo for annotation.'); };
+    img.onerror = function() { showStatus('Could not open that photo for annotation.', 'error', 6000); };
     img.onload = function() {
       // Downscale BEFORE it becomes baseImg so stroke coordinates and the final
       // encode share one coordinate space.
@@ -9607,7 +9673,7 @@ function clUnlockSection(sec) {
 function clSubmitSection(sec) {
   var shift = document.getElementById('cl-shift').value;
   var op    = document.getElementById('cl-operator').value;
-  if (!shift || !op) { alert('Please select Shift and Operator first.'); return; }
+  if (!shift || !op) { showStatus('Please select Shift and Operator first.', 'error', 6000); return; }
 
   var secTasks  = CL_SECTION_TASKS[sec] || [];
   var taskTimes = {}, remarks = {}, images = {}, extraImages = {}, annotations = {};
@@ -9631,10 +9697,10 @@ function clSubmitSection(sec) {
   var bulkBatch = bulkBatchEl ? bulkBatchEl.value.trim() : _clBulkBatch;
 
   if (sec === 'before') {
-    if (!pmBatch || !bulkBatch) { alert('PM Batch No and Bulk Batch No are required.'); return; }
+    if (!pmBatch || !bulkBatch) { showStatus('PM Batch No and Bulk Batch No are required.', 'error', 6000); return; }
     _clPmBatch = pmBatch; _clBulkBatch = bulkBatch;
   } else {
-    if (!pmBatch) { alert('PM Batch No is missing. Cannot submit without a batch number.'); return; }
+    if (!pmBatch) { showStatus('PM Batch No is missing. Cannot submit without a batch number.', 'error', 6000); return; }
   }
 
   var payload = {
@@ -10188,7 +10254,7 @@ function sopPickImage(key, ri) {
     /* 8 MB is the server's cap for images; checking here turns a slow upload
        that ends in a rejection into an instant, specific message. */
     if (f.size > 8 * 1024 * 1024) {
-      alert('That photo is ' + (f.size / 1048576).toFixed(1) + ' MB. The limit is 8 MB.');
+      showStatus('That photo is ' + (f.size / 1048576).toFixed(1) + ' MB. The limit is 8 MB.', 'error', 7000);
       return;
     }
     var cell = document.getElementById('sopimg-' + key + '-' + ri);
@@ -10198,7 +10264,7 @@ function sopPickImage(key, ri) {
       google.script.run
         .withSuccessHandler(function(r) {
           if (!r || !r.success || !r.fileId) {
-            alert('Upload failed: ' + ((r && r.error) || 'unknown'));
+            showStatus('Upload failed: ' + ((r && r.error) || 'unknown'), 'error', 8000);
             sopRenderEditor();
             return;
           }
@@ -10206,7 +10272,7 @@ function sopPickImage(key, ri) {
           sopRenderEditor();
         })
         .withFailureHandler(function(e) {
-          alert('Upload failed: ' + ((e && e.message) || 'unknown'));
+          showStatus('Upload failed: ' + ((e && e.message) || 'unknown'), 'error', 8000);
           sopRenderEditor();
         })
         .spaUploadMachineImage(_sopCurMachine, rd.result, 'Machine Image');
@@ -11169,7 +11235,7 @@ function plSetDue(assetId, freq, idx){
     (cur?'\nCurrently: '+cur:''), iso);
   if(v===null) return;                       // cancelled, as opposed to cleared
   v=v.trim();
-  if(v && !/^\d{4}-\d{2}-\d{2}$/.test(v)){ alert('Use the format yyyy-mm-dd.'); return; }
+  if(v && !/^\d{4}-\d{2}-\d{2}$/.test(v)){ showStatus('Use the format yyyy-mm-dd.', 'error', 5000); return; }
 
   PL.busy=true;
   showStatus(v?'Setting due date\u2026':'Clearing\u2026','info',0);
@@ -11740,9 +11806,9 @@ function showBDForm(machineId) {
         '<div class="form-row"><label for="f-shift">Shift *</label><select id="f-shift"><option value="">Select…</option>'+shOpts+'</select></div>' +
         '<div class="form-row"><label for="f-rc">Root Cause <span style="font-weight:400;color:#64748b">(best guess)</span></label><select id="f-rc"><option value="">Unknown / पता नहीं</option>'+rcOpts+'</select></div>' +
       '</div>' +
-      '<div class="form-row"><label for="f-desc">Problem Description * <span style="color:#64748b;font-weight:400">(समस्या विवरण)</span></label>' +
+      '<div class="form-row"><label for="f-desc">Problem Description *<span class="bi-hi">समस्या विवरण</span></label>' +
         '<textarea id="f-desc" rows="3" placeholder="Describe the breakdown… / खराबी का विवरण दें…"></textarea></div>' +
-      '<div class="form-row"><label for="f-rmk">Remarks <span style="color:#64748b;font-weight:400">(टिप्पणी)</span></label><input id="f-rmk" placeholder="Optional"></div>' +
+      '<div class="form-row"><label for="f-rmk">Remarks<span class="bi-hi">टिप्पणी</span></label><input id="f-rmk" placeholder="Optional"></div>' +
       '<button class="form-submit-btn" id="f-submit" style="background:#b71c1c" onclick="submitBDForm(\''+esc(machineId)+'\')">&#x1F534; Report Breakdown</button>' +
       '<div class="form-msg" id="f-msg"></div>';
   });
@@ -11812,20 +11878,20 @@ function showBDCloseForm(machineId, slipNo, rowNum) {
         '<div class="form-row"><label for="f-ed">End Date *</label><input type="date" id="f-ed" value="'+td+'"></div>' +
         '<div class="form-row"><label for="f-et">End Time *</label><input type="time" id="f-et" value="'+tn+'"></div>' +
       '</div>' +
-      '<div class="form-row"><label>Root Cause * <span style="color:#64748b;font-weight:400">(मूल कारण)</span></label>' +
+      '<div class="form-row"><label for="f-rc2">Root Cause *<span class="bi-hi">मूल कारण</span></label>' +
         '<select id="f-rc2"><option value="">Select…</option>' +
         ['Mechanical Failure','Electrical Failure','Operator Error','Consumable / Wear Part','External Power Failure','No Fault Found','Other'].map(function(o){return '<option>'+o+'</option>';}).join('') +
         '</select></div>' +
-      '<div class="form-row"><label>Action Taken * <span style="color:#64748b;font-weight:400">(की गई कार्रवाई)</span></label>' +
+      '<div class="form-row"><label for="f-action">Action Taken *<span class="bi-hi">की गई कार्रवाई</span></label>' +
         '<textarea id="f-action" rows="3" placeholder="Steps taken to fix… / ठीक करने के कदम…"></textarea></div>' +
       '<div class="form-row-2">' +
         '<div class="form-row"><label for="f-parts">Parts Changed</label><input id="f-parts" placeholder="e.g. Bearing, Belt"></div>' +
         '<div class="form-row"><label for="f-cost">Spare Cost (₹)</label><input type="number" id="f-cost" min="0" step="0.01" placeholder="0"></div>' +
       '</div>' +
-      '<div class="form-row"><label>Rectified By * <span style="color:#64748b;font-weight:400">(किसने ठीक किया)</span></label>' +
+      '<div class="form-row"><label for="f-rby">Rectified By *<span class="bi-hi">किसने ठीक किया</span></label>' +
         '<select id="f-rby"><option value="">Select…</option>'+personnel+'</select></div>' +
-      '<div class="form-row"><label for="f-rmk">Remarks <span style="color:#64748b;font-weight:400">(टिप्पणी)</span></label><input id="f-rmk" placeholder="Optional"></div>' +
-      '<div class="form-row"><label>Photo <span style="color:#64748b;font-weight:400">(after repair / मरम्मत के बाद)</span></label>' +
+      '<div class="form-row"><label for="f-rmk">Remarks<span class="bi-hi">टिप्पणी</span></label><input id="f-rmk" placeholder="Optional"></div>' +
+      '<div class="form-row"><label for="f-img">Photo after repair<span class="bi-hi">मरम्मत के बाद</span></label>' +
         '<input type="file" id="f-img" accept="image/*" capture="environment" style="padding:6px 0"></div>' +
       '<button class="form-submit-btn" id="f-submit" style="background:#16a34a" onclick="submitBDCloseForm(\''+esc(machineId)+'\',\''+esc(slipNo)+'\','+rowNum+')">&#x2713; Close Breakdown</button>' +
       '<div class="form-msg" id="f-msg"></div>';
@@ -11932,7 +11998,13 @@ function submitBDCloseForm(machineId, slipNo, rowNum) {
         .catch(function(err) {
           /* A failed photo must not block the closure. The breakdown record is
              what matters; losing the photo is a smaller harm than leaving a
-             repaired machine showing as still down. */
+             repaired machine showing as still down.
+
+             The last native alert() in the app, and deliberately so: the other 19
+             became showStatus toasts, but this one tells the operator their
+             evidence photo is GONE while the submit proceeds anyway. A toast can
+             be missed on a phone being put down mid-task; this has to be
+             acknowledged before the record closes without it. */
           alert('Photo upload failed: ' + ((err && err.message) || 'unknown') +
                 '\n\nThe breakdown will still be closed, without the photo.');
           _doSubmit('');
@@ -12056,7 +12128,7 @@ function showPMForm(machineId) {
         '<div class="form-row"><label for="f-ed">End Date *</label><input type="date" id="f-ed" value="'+td+'"></div>' +
         '<div class="form-row"><label for="f-et">End Time *</label><input type="time" id="f-et"></div>' +
       '</div>' +
-      '<div class="form-row"><label for="f-tech">Technician * <span style="color:#64748b;font-weight:400">(तकनीशियन)</span></label>' +
+      '<div class="form-row"><label for="f-tech">Technician *<span class="bi-hi">तकनीशियन</span></label>' +
         '<select id="f-tech"><option value="">Select…</option>' + personnel + '</select></div>' +
       '<div class="form-row"><label style="color:#1b5e20">PM Checklist — ' + esc((fd&&fd.category)||'') + ' (' + pmItems.length + ' items)</label>' +
         '<div id="f-pm-tasks" style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;max-height:250px;overflow-y:auto" data-items="' + esc(tasksJson) + '">' +
@@ -12070,7 +12142,7 @@ function showPMForm(machineId) {
         '</button>' +
         '<div class="clit-photo-hint">Tap each item to set <b>&#9675; not done</b> &rarr; <b>&#10003; done</b> &rarr; <b>! issue</b>. Then open a photo and use <b>+ Point</b> to pin any marked item onto it — the pin carries the status you already set. Tap a pin&rsquo;s &#10005; to remove it.</div>' +
       '</div>' +
-      '<div class="form-row"><label for="f-rmk">Remarks <span style="color:#64748b;font-weight:400">(टिप्पणी)</span></label>' +
+      '<div class="form-row"><label for="f-rmk">Remarks<span class="bi-hi">टिप्पणी</span></label>' +
         '<textarea id="f-rmk" placeholder="Parts replaced, observations…"></textarea></div>' +
       '<button class="form-submit-btn" id="f-submit" style="background:#1b5e20" onclick="submitPMForm(\''+esc(machineId)+'\')">&#x1F7E2; Submit PM</button>' +
       '<div class="form-msg" id="f-msg"></div>';
