@@ -14482,8 +14482,13 @@ function pmUploadProofPhotos(kind, machineId, list, onProgress) {
 
   return list.reduce(function (chain, ph, i) {
     return chain.then(function () {
-      // 1000px/q0.6 matches BD and HIRA; the annotator's own copy is untouched.
-      return shrinkPhoto(ph.url, 1000, 0.6)
+      /* 800px/q0.55, not BD's 1000/0.6. Every chunk is a separate JSONP round
+         trip costing ~3s on plant wifi, and measured on the live site a 1000px
+         photo is 17 chunks (~51s) against 12 (~36s) at 800px. PM and CLIT allow
+         several photos per submission where BD allows one, so the operator pays
+         that cost repeatedly. 800px still resolves the part being photographed.
+         The annotator's own copy is untouched — this only affects what is filed. */
+      return shrinkPhoto(ph.url, 800, 0.55)
         .then(function (small) {
           return uploadPhotoChunkedRaw(small, function (d, t, phase) {
             if (onProgress) onProgress(i + 1, list.length, phase, d, t);
