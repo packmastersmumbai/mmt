@@ -14433,15 +14433,29 @@ function uploadPhotoChunkedRaw(dataUrl, onProgress){
     var total=parts.length;
     if(total>400){ reject(new Error('Photo is too large even after resizing.')); return; }
     var sent=0;
-    function step(i){
+    /* Individual chunks fail intermittently on plant wifi — measured on the live
+       site: the same 7,000-char chunk succeeded, succeeded, then timed out. A
+       photo is 8-12 chunks, so without a retry one transient miss loses the whole
+       upload. The server is idempotent per (uid, idx), so re-sending a chunk is
+       always safe. Backs off 1s/2s/3s rather than hammering a busy container. */
+    function step(i, attempt){
+      attempt = attempt || 0;
       if(i>=total){ if(onProgress) onProgress(total,total,'saving'); resolve({uid:uid,total:total}); return; }
+      var settled = false;
+      var retry = function(errMsg){
+        if (settled) return; settled = true;
+        if (attempt >= 3) { reject(new Error(errMsg)); return; }
+        if (onProgress) onProgress(sent, total, 'retry');
+        setTimeout(function(){ step(i, attempt+1); }, 1000*(attempt+1));
+      };
       google.script.run
         .withSuccessHandler(function(r){
-          if(!r||!r.success){ reject(new Error((r&&r.error)||'chunk rejected')); return; }
+          if(!r||!r.success){ retry((r&&r.error)||'chunk rejected'); return; }
+          if (settled) return; settled = true;
           sent++; if(onProgress) onProgress(sent,total,'sending');
           step(i+1);
         })
-        .withFailureHandler(function(e){ reject(new Error((e&&e.message)||'chunk failed')); })
+        .withFailureHandler(function(e){ retry((e&&e.message)||'chunk failed'); })
         .uploadMediaChunk({ uid:uid, idx:i, total:total, data:parts[i] });
     }
     step(0);
@@ -14476,16 +14490,29 @@ function pmUploadProofPhotos(kind, machineId, list, onProgress) {
           });
         })
         .then(function (handle) {
+          /* The commit is a single call after 8-12 successful chunks, so a
+             transient failure here throws away work that already landed. The
+             server caches the result per uid, so retrying cannot double-file. */
           return new Promise(function (resolve) {
-            google.script.run
-              .withSuccessHandler(function (r) {
-                if (r && r.success && r.fileId) ids.push(r.fileId);
-                else errors.push((r && r.error) || 'unknown');
-                resolve();
-              })
-              .withFailureHandler(function (e) { errors.push((e && e.message) || 'unknown'); resolve(); })
-              .commitPmPhoto({ uid: handle.uid, total: handle.total,
-                               machineId: machineId, kind: kind });
+            var attempt = 0;
+            (function send() {
+              var settled = false;
+              var fail = function (m) {
+                if (settled) return; settled = true;
+                if (attempt++ < 3) { setTimeout(send, 1000 * attempt); return; }
+                errors.push(m); resolve();
+              };
+              google.script.run
+                .withSuccessHandler(function (r) {
+                  if (r && r.success && r.fileId) {
+                    if (settled) return; settled = true;
+                    ids.push(r.fileId); resolve();
+                  } else fail((r && r.error) || 'unknown');
+                })
+                .withFailureHandler(function (e) { fail((e && e.message) || 'unknown'); })
+                .commitPmPhoto({ uid: handle.uid, total: handle.total,
+                                 machineId: machineId, kind: kind });
+            })();
           });
         })
         .catch(function (err) { errors.push((err && err.message) || String(err)); });
