@@ -12423,27 +12423,47 @@ function submitPMForm(machineId) {
     remarks: (document.getElementById('f-rmk').value||'').trim()
   };
 
-  google.script.run
-    .withSuccessHandler(function(r) {
-      btn.disabled = false; btn.textContent = 'Submit PM';
-      if (r && r.success) {
-        document.getElementById('form-modal-body').innerHTML = _buildSuccessPanel('pm', r, _pmSnap);
-        loadPM(machineId);
-        _boardRecordsCache['pm'] = null;
-      } else { msg.className='form-msg err'; msg.textContent=(r&&r.message)||'Failed.'; }
-    })
-    .withFailureHandler(function(e) {
-      btn.disabled=false; btn.textContent='Submit PM';
-      msg.className='form-msg err'; msg.textContent='Error: '+((e&&e.message)||'unknown');
-    })
-    .submitPMRecord({ machineId:machineId, technician:tech,
-      startDate:sd, startTime:st, endDate:ed, endTime:et,
-      checklistItems:checklistItems,
-      remarks:(document.getElementById('f-rmk').value||'').trim(),
-      // Annotated proof, same shape CLIT sends: pins stay coordinates so the
-      // stored images remain small and re-annotatable.
-      photos: (_clPhotos['pm'] || []).map(function(ph){ return ph.url; }),
-      annotations: (_clPhotos['pm'] || []).map(function(ph){ return ph.pins; }) });
+  var _pmList = _clPhotos['pm'] || [];
+
+  function _pmSend(photoIds, lost) {
+    google.script.run
+      .withSuccessHandler(function(r) {
+        btn.disabled = false; btn.textContent = 'Submit PM';
+        if (r && r.success) {
+          document.getElementById('form-modal-body').innerHTML = _buildSuccessPanel('pm', r, _pmSnap);
+          loadPM(machineId);
+          _boardRecordsCache['pm'] = null;
+          /* Told AFTER the record is safe, and as an alert rather than a toast:
+             the operator believes the photo is their evidence, so a silent loss
+             is the failure this whole change exists to end. */
+          if (lost) alert(lost + ' photo(s) could not be saved.\n\nThe PM record was saved without them.');
+        } else { msg.className='form-msg err'; msg.textContent=(r&&r.message)||'Failed.'; }
+      })
+      .withFailureHandler(function(e) {
+        btn.disabled=false; btn.textContent='Submit PM';
+        msg.className='form-msg err'; msg.textContent='Error: '+((e&&e.message)||'unknown');
+      })
+      .submitPMRecord({ machineId:machineId, technician:tech,
+        startDate:sd, startTime:st, endDate:ed, endTime:et,
+        checklistItems:checklistItems,
+        remarks:(document.getElementById('f-rmk').value||'').trim(),
+        /* Drive IDs, not bytes: base64 here overflows the JSONP URL and the
+           whole submission fails. Pins still ride as coordinates. */
+        photos: photoIds,
+        annotations: _pmList.map(function(ph){ return ph.pins; }) });
+  }
+
+  if (!_pmList.length) { _pmSend([], 0); return; }
+
+  msg.className = 'form-msg';
+  pmUploadProofPhotos('PM', machineId, _pmList, function(n, total, phase, d, t) {
+    msg.textContent = phase === 'saving'
+      ? 'Saving photo ' + n + '/' + total + '…'
+      : 'Uploading photo ' + n + '/' + total + ' (' + d + '/' + t + ')…';
+  }).then(function(res) {
+    msg.textContent = '';
+    _pmSend(res.ids, _pmList.length - res.ids.length);
+  });
 }
 
 function showCLITForm(machineId) {
@@ -12846,34 +12866,51 @@ function submitCLITForm(machineId) {
     remarks: (document.getElementById('f-rmk').value||'').trim()
   };
 
-  google.script.run
-    .withSuccessHandler(function(r) {
-      btn.disabled = false; btn.textContent = '✓ Submit CLIT Record';
-      if (r && r.success) {
-        document.getElementById('form-modal-body').innerHTML = _buildSuccessPanel('clit', r, _clitSnap);
-        _boardRecordsCache['clit'] = null;
-      } else {
+  var _clitList = _clPhotos['clit'] || [];
+
+  function _clitSend(photoIds, lost) {
+    google.script.run
+      .withSuccessHandler(function(r) {
+        btn.disabled = false; btn.textContent = '✓ Submit CLIT Record';
+        if (r && r.success) {
+          document.getElementById('form-modal-body').innerHTML = _buildSuccessPanel('clit', r, _clitSnap);
+          _boardRecordsCache['clit'] = null;
+          if (lost) alert(lost + ' photo(s) could not be saved.\n\nThe CLIT record was saved without them.');
+        } else {
+          msg.className = 'form-msg err';
+          msg.textContent = (r && r.message) || 'Submission failed.';
+        }
+      })
+      .withFailureHandler(function(e) {
+        btn.disabled = false; btn.textContent = '✓ Submit CLIT Record';
         msg.className = 'form-msg err';
-        msg.textContent = (r && r.message) || 'Submission failed.';
-      }
-    })
-    .withFailureHandler(function(e) {
-      btn.disabled = false; btn.textContent = '✓ Submit CLIT Record';
-      msg.className = 'form-msg err';
-      msg.textContent = 'Error: ' + ((e && e.message) || 'unknown');
-    })
-    .submitCLITRecord({
-      machineId: machineId,
-      performedBy: by,
-      clitDate: document.getElementById('f-dt').value,
-      clitTime: document.getElementById('f-tm').value,
-      checklistItems: items,
-      remarks: (document.getElementById('f-rmk').value || '').trim(),
-      // Annotated proof: image data URLs plus the pins placed on each. Pins stay
-      // coordinates, never burned into the JPEG, so the images stay micro.
-      photos: (_clPhotos['clit'] || []).map(function(ph){ return ph.url; }),
-      annotations: (_clPhotos['clit'] || []).map(function(ph){ return ph.pins; })
-    });
+        msg.textContent = 'Error: ' + ((e && e.message) || 'unknown');
+      })
+      .submitCLITRecord({
+        machineId: machineId,
+        performedBy: by,
+        clitDate: document.getElementById('f-dt').value,
+        clitTime: document.getElementById('f-tm').value,
+        checklistItems: items,
+        remarks: (document.getElementById('f-rmk').value || '').trim(),
+        /* Drive IDs, not bytes — base64 overflows the JSONP URL and fails the
+           whole submission. Pins stay coordinates, never burned into the JPEG. */
+        photos: photoIds,
+        annotations: _clitList.map(function(ph){ return ph.pins; })
+      });
+  }
+
+  if (!_clitList.length) { _clitSend([], 0); return; }
+
+  msg.className = 'form-msg';
+  pmUploadProofPhotos('CLIT', machineId, _clitList, function(n, total, phase, d, t) {
+    msg.textContent = phase === 'saving'
+      ? 'Saving photo ' + n + '/' + total + '…'
+      : 'Uploading photo ' + n + '/' + total + ' (' + d + '/' + t + ')…';
+  }).then(function(res) {
+    msg.textContent = '';
+    _clitSend(res.ids, _clitList.length - res.ids.length);
+  });
 }
 
 // ═══════════════════════════════════════════════════════
@@ -14409,6 +14446,51 @@ function uploadPhotoChunkedRaw(dataUrl, onProgress){
     }
     step(0);
   });
+}
+
+/* ── PM / CLIT proof photos: chunked pre-upload ────────────────────────────
+   PM and CLIT were the last two forms posting base64 photos INLINE in their
+   submit call. The transport is script-tag JSONP, so the whole payload rides in
+   the URL and Google rejects it past ~12,000 characters. Measured on the live
+   site: one resized PM photo is 51,036 URL-encoded characters, two are 73,203.
+   So EVERY PM or CLIT submitted with a photo failed with "Payload too large for
+   this connection" — the record saved, the evidence silently did not.
+
+   Each photo is uploaded first, on its own chunked calls, and only its Drive ID
+   travels in the submit. Same split BD and HIRA already use.
+
+   Returns a promise of { ids, errors }. Never rejects: a lost photo must not
+   block the maintenance record, which is the same call BD makes. */
+function pmUploadProofPhotos(kind, machineId, list, onProgress) {
+  list = list || [];
+  var ids = [], errors = [];
+  if (!list.length) return Promise.resolve({ ids: ids, errors: errors });
+
+  return list.reduce(function (chain, ph, i) {
+    return chain.then(function () {
+      // 1000px/q0.6 matches BD and HIRA; the annotator's own copy is untouched.
+      return shrinkPhoto(ph.url, 1000, 0.6)
+        .then(function (small) {
+          return uploadPhotoChunkedRaw(small, function (d, t, phase) {
+            if (onProgress) onProgress(i + 1, list.length, phase, d, t);
+          });
+        })
+        .then(function (handle) {
+          return new Promise(function (resolve) {
+            google.script.run
+              .withSuccessHandler(function (r) {
+                if (r && r.success && r.fileId) ids.push(r.fileId);
+                else errors.push((r && r.error) || 'unknown');
+                resolve();
+              })
+              .withFailureHandler(function (e) { errors.push((e && e.message) || 'unknown'); resolve(); })
+              .commitPmPhoto({ uid: handle.uid, total: handle.total,
+                               machineId: machineId, kind: kind });
+          });
+        })
+        .catch(function (err) { errors.push((err && err.message) || String(err)); });
+    });
+  }, Promise.resolve()).then(function () { return { ids: ids, errors: errors }; });
 }
 
 /* ── Hierarchy of Controls (ISO 45001 8.1.2) ── */
