@@ -1550,9 +1550,24 @@ select.eq-in { cursor:pointer; }
 .view-cl .sec-result.ok  { background:#c8e6c9; color:#1b5e20; display:block; }
 .view-cl .sec-result.err { background:#ffcdd2; color:#8e1616; display:block; }
 
-/* Image viewer */
-#cl-imgViewer { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.88); z-index:1000; align-items:center; justify-content:center; }
-#cl-imgViewerSrc { max-width:96vw; max-height:92vh; border-radius:4px; box-shadow:0 4px 20px rgba(0,0,0,0.6); }
+/* Image viewer — pinch/double-tap zoom. The photo IS the evidence, so it must
+   be inspectable at pixel level: overflow:auto lets a zoomed image be panned by
+   drag or scroll, and touch-action:pinch-zoom hands the gesture to the browser
+   rather than reimplementing it. transform-origin stays top-left so panning
+   maths is trivial. */
+#cl-imgViewer { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.88); z-index:1000; align-items:center; justify-content:center; overflow:auto; touch-action:pinch-zoom; -webkit-overflow-scrolling:touch; }
+#cl-imgViewerSrc { max-width:96vw; max-height:92vh; border-radius:4px; box-shadow:0 4px 20px rgba(0,0,0,0.6); transform-origin:0 0; transition:transform .18s ease; cursor:zoom-in; }
+#cl-imgViewer.zoomed { align-items:flex-start; justify-content:flex-start; }
+/* At zoom the element is sized by width so the browser lays out a scrollable
+   area; max-height must go or the image is letterboxed back into the viewport.
+   flex-shrink:0 is REQUIRED, not tidiness: the viewer is a flex container, and
+   the default flex-shrink:1 shrank the image back to its natural 1400px however
+   large an inline width was set — so every level above 1x silently did nothing. */
+#cl-imgViewer.zoomed #cl-imgViewerSrc { max-width:none; max-height:none; flex-shrink:0; cursor:grab; transition:none; }
+/* 44px minimum — gloved hands at 2am. */
+#cl-imgZoomBar { position:fixed; bottom:14px; left:50%; transform:translateX(-50%); display:flex; gap:8px; z-index:1001; }
+#cl-imgZoomBar button { min-width:44px; min-height:44px; border:none; border-radius:8px; background:rgba(255,255,255,0.92); color:#0f172a; font-size:17px; font-weight:800; cursor:pointer; box-shadow:0 2px 10px rgba(0,0,0,0.4); }
+#cl-imgZoomBar button:active { background:#e2e8f0; }
 
 /* Photo modal */
 .cl-photo-modal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.55); z-index:999; align-items:center; justify-content:center; }
@@ -4453,8 +4468,11 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
          resolves to the page URL and fires a real request; a missing src still
          ships a broken-image box. The data URI costs nothing and renders as
          nothing until JS swaps in the real photo. -->
-    <div id="cl-imgViewer"><img id="cl-imgViewerSrc" alt="Checklist photo"
-      src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"></div>
+    <!-- The viewer itself lives at body level (see #cl-imgViewer near </body>).
+         It used to sit here, inside #cl-content-wrap, but a position:fixed
+         element still collapses to 0x0 when an ancestor is display:none — so
+         the viewer could only ever open while the Checklist view was the active
+         one, and was unusable from Media, HIRA or Incident. -->
 
     </div><!-- /cl-content-wrap -->
 
@@ -8423,8 +8441,16 @@ function clHandlePhoto(src) {
       if (hint) hint.textContent = '⚠ That file is not a readable image.';
     };
     img.onload = function() {
-      // Multi-photo tasks drop to 500px/q0.45 so three shots cost roughly what
-      // one used to. A lone photo keeps the original 600px/q0.50 fidelity.
+      /* DO NOT RAISE THESE WITHOUT MOVING THE TRANSPORT FIRST. Measured
+         2026-09-22: checklist photos are embedded INLINE in the
+         submitChecklistRecord payload, which rides the JSONP URL capped at
+         MAX_URL = 11000 chars. A realistic 3000x2250 machine photo encodes to
+         ~5,984 chars at 500px/q0.45 (fits) but ~13,166 at 600px/q0.50 and
+         ~41,100 at 1000px/q0.60 — both rejected with "Payload too large".
+         The blur is real, but the fix is to route these through
+         uploadPhotoChunked (as BD/PM/media already do), not to raise the cap.
+         Multi-photo tasks drop to 500px so three shots cost roughly what one
+         used to; a lone photo keeps 600px/q0.50. */
       var multi = (_clPhotos[id] || []).length > 0;
       var MAX = multi ? 500 : 600, q = multi ? 0.45 : 0.50;
       var w=img.width, h=img.height;
@@ -8483,6 +8509,7 @@ function _clHandlePhotoBatch(files) {
   var total = files.length, done = 0, failed = 0;
 
   // A batch is always multi, so use the tighter budget for every shot.
+  // Pinned to the JSONP URL cap — see the note in clHandlePhoto before changing.
   var MAX = 500, q = 0.45;
 
   function finish() {
@@ -8571,11 +8598,81 @@ document.getElementById('cl-photoModal').onclick = function(e) {
   if (e.target.id === 'cl-photoModal') clClosePhoto();
 };
 
+/* ── Image viewer zoom ────────────────────────────────────────────────────
+   A checklist photo is audit evidence; if it cannot be inspected it proves
+   nothing. Zoom is applied as an explicit natural-size multiple rather than a
+   CSS transform: sizing the element makes the overlay scrollable, so panning
+   comes free from the browser (drag, scroll, or a two-finger pan) instead of
+   needing pointer maths. Level 0 = fit to screen. */
+var _clImgZ = 0;                            // 0 = fit, else a natural-size multiple
+var _CL_IMG_STEPS = [1, 1.5, 2, 3, 4];
+
 function clViewImg(src) {
   var v = document.getElementById('cl-imgViewer');
   document.getElementById('cl-imgViewerSrc').src = src;
   v.style.display = 'flex';
+  clImgZoom(0);                              // every open starts fitted
 }
+
+/* dir: -1 out · +1 in · 0 fit. clImgSetZoom sets an absolute level. */
+function clImgZoom(dir) {
+  clImgSetZoom(dir === 0 ? 0
+    : Math.max(0, Math.min(_CL_IMG_STEPS.length, _clImgZ + dir)));
+}
+
+function clImgSetZoom(level) {
+  var v = document.getElementById('cl-imgViewer');
+  var im = document.getElementById('cl-imgViewerSrc');
+  if (!v || !im) return;
+  _clImgZ = level;
+
+  if (_clImgZ === 0) {
+    v.classList.remove('zoomed');
+    im.style.width = ''; im.style.height = '';
+    v.scrollTop = 0; v.scrollLeft = 0;
+    return;
+  }
+
+  /* naturalWidth is 0 until decode finishes. Retry on load rather than
+     writing width:0 and leaving a blank overlay. */
+  if (!im.naturalWidth) { var want = _clImgZ; im.addEventListener('load', function h() {
+    im.removeEventListener('load', h); clImgSetZoom(want); }); return; }
+
+  var f = _CL_IMG_STEPS[_clImgZ - 1];
+  v.classList.add('zoomed');
+  im.style.width = Math.round(im.naturalWidth * f) + 'px';
+  im.style.height = 'auto';
+
+  // Keep the centre of interest centred instead of jumping to the corner.
+  v.scrollLeft = (im.offsetWidth - v.clientWidth) / 2;
+  v.scrollTop  = (im.offsetHeight - v.clientHeight) / 2;
+}
+
+/* Double-tap / double-click toggles fit ↔ 2x — the gesture people already try
+   first. A single tap on the backdrop still closes (handler further down). */
+document.addEventListener('dblclick', function(e) {
+  if (e.target.id !== 'cl-imgViewerSrc') return;
+  e.preventDefault();
+  clImgSetZoom(_clImgZ === 0 ? 3 : 0);   // level 3 === _CL_IMG_STEPS[2] === 2x
+});
+
+/* Drag-to-pan while zoomed. Mouse only — touch panning is native scroll. */
+(function() {
+  var dragging = false, sx = 0, sy = 0, sl = 0, st = 0;
+  document.addEventListener('mousedown', function(e) {
+    var v = document.getElementById('cl-imgViewer');
+    if (e.target.id !== 'cl-imgViewerSrc' || !v.classList.contains('zoomed')) return;
+    dragging = true; sx = e.clientX; sy = e.clientY; sl = v.scrollLeft; st = v.scrollTop;
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    var v = document.getElementById('cl-imgViewer');
+    v.scrollLeft = sl - (e.clientX - sx);
+    v.scrollTop  = st - (e.clientY - sy);
+  });
+  document.addEventListener('mouseup', function() { dragging = false; });
+})();
 
 /* ═══════════════════════════════════════════════════════════════════════
    PHOTO ANNOTATOR — shared by Checklist and CLIT
@@ -9642,7 +9739,12 @@ document.addEventListener('click', function(e) {
 });
 
 document.addEventListener('click', function(e) {
-  if (e.target.id === 'cl-imgViewer') document.getElementById('cl-imgViewer').style.display = 'none';
+  if (e.target.id !== 'cl-imgViewer') return;
+  /* While zoomed the backdrop is also the scroll surface, so a drag that ends
+     on it must not close the viewer and throw away the inspection. Fit first,
+     close only from the fitted state. */
+  if (_clImgZ !== 0) { clImgSetZoom(0); return; }
+  document.getElementById('cl-imgViewer').style.display = 'none';
 });
 
 function clOnShiftChange() {
@@ -9790,6 +9892,67 @@ function clUnlockSection(sec) {
   if (resEl) { resEl.textContent = ''; resEl.className = 'sec-result'; }
 }
 
+/* clUploadTaskPhotos(machineId, list, onProgress) — file a task's photos to
+   Drive BEFORE the record is submitted, and return their Drive IDs.
+
+   WHY: checklist photos used to ride the submit call as inline base64. The
+   transport is script-tag JSONP, so the whole payload sits in the URL against
+   a measured ~11,000-char ceiling — which is why the capture cap had to be
+   500px/q0.45, and why the photos were unreadable. Chunking the upload lifts
+   the cap entirely: the submit then carries a handful of ID strings.
+
+   800px/q0.55 deliberately matches PM/CLIT rather than BD's 1000/0.6. Each
+   chunk is its own JSONP round trip (~3s on plant wifi); measured on the live
+   site a 1000px photo is ~17 chunks against ~12 at 800px, and a checklist task
+   may carry three photos, so the operator pays that cost repeatedly. 800px
+   still resolves a gauge face or a torn belt.
+
+   Never rejects. A lost photo must not block the maintenance record — the same
+   contract BD and PM already use. */
+function clUploadTaskPhotos(machineId, list, onProgress) {
+  list = list || [];
+  var ids = [], errors = [];
+  if (!list.length) return Promise.resolve({ ids: ids, errors: errors });
+
+  return list.reduce(function (chain, ph, i) {
+    return chain.then(function () {
+      return shrinkPhoto(ph.url, 800, 0.55)
+        .then(function (small) {
+          return uploadPhotoChunkedRaw(small, function (d, t, phase) {
+            if (onProgress) onProgress(i + 1, list.length, phase, d, t);
+          });
+        })
+        .then(function (handle) {
+          /* The commit lands after 8-12 successful chunks, so a transient
+             failure here would throw away work already banked. The server
+             caches its result per uid, so a retry cannot double-file. */
+          return new Promise(function (resolve) {
+            var attempt = 0;
+            (function send() {
+              var settled = false;
+              var fail = function (m) {
+                if (settled) return; settled = true;
+                if (attempt++ < 3) { setTimeout(send, 1000 * attempt); return; }
+                errors.push(m); resolve();
+              };
+              google.script.run
+                .withSuccessHandler(function (r) {
+                  if (r && r.success && r.fileId) {
+                    if (settled) return; settled = true;
+                    ids.push(r.fileId); resolve();
+                  } else fail((r && r.error) || 'unknown');
+                })
+                .withFailureHandler(function (e) { fail((e && e.message) || 'unknown'); })
+                .commitPmPhoto({ uid: handle.uid, total: handle.total,
+                                 machineId: machineId, kind: 'CLIT' });
+            })();
+          });
+        })
+        .catch(function (err) { errors.push((err && err.message) || String(err)); });
+    });
+  }, Promise.resolve()).then(function () { return { ids: ids, errors: errors }; });
+}
+
 function clSubmitSection(sec) {
   var shift = document.getElementById('cl-shift').value;
   var op    = document.getElementById('cl-operator').value;
@@ -9833,6 +9996,64 @@ function clSubmitSection(sec) {
   var btn   = document.getElementById('btn-' + sec);
   var resEl = document.getElementById('res-' + sec);
   btn.disabled = true; btn.textContent = '\u23F3 Submitting...';
+
+  /* Photos go to Drive FIRST, then the record carries their IDs. Inline base64
+     cannot cross this transport (JSONP URL, ~11,000-char ceiling): it failed
+     the whole submit while appearing to be a network fault, which is what
+     forced the unreadable 500px cap. See clUploadTaskPhotos. */
+  var _photoTasks = Object.keys(_clPhotos).filter(function(id) {
+    return secTasks.indexOf(id) !== -1 && (_clPhotos[id] || []).length;
+  });
+
+  if (_photoTasks.length) {
+    payload.imageIds = {}; payload.extraImageIds = {};
+    var _upErrors = [];
+    var _nPhotos = _photoTasks.reduce(function(n, id){ return n + _clPhotos[id].length; }, 0);
+    var _nDone = 0;
+
+    _photoTasks.reduce(function(chain, id) {
+      return chain.then(function() {
+        return clUploadTaskPhotos(_mid, _clPhotos[id], function(i, total, phase, d, t) {
+          /* Say what is happening. A 12-chunk upload per photo is long enough
+             that a static "Submitting..." reads as a hang, and the operator
+             closing the form mid-upload is how evidence gets lost. */
+          var pct = (phase === 'saving' || !t) ? '' : ' ' + Math.round((d / t) * 100) + '%';
+          btn.textContent = '\u23F3 Photo ' + Math.min(_nDone + i, _nPhotos) +
+                            '/' + _nPhotos + pct;
+        }).then(function(res) {
+          _nDone += _clPhotos[id].length;
+          if (res.ids.length)     payload.imageIds[id]      = res.ids[0];
+          if (res.ids.length > 1) payload.extraImageIds[id] = res.ids.slice(1);
+          if (res.errors.length)  _upErrors = _upErrors.concat(res.errors);
+        });
+      });
+    }, Promise.resolve()).then(function() {
+      /* The IDs replace the bytes. Sending both would put the payload straight
+         back over the URL ceiling and undo the entire fix. */
+      payload.images = {}; payload.extraImages = {};
+      if (_upErrors.length) {
+        showStatus(_upErrors.length + ' photo' + (_upErrors.length === 1 ? '' : 's') +
+                   ' could not be uploaded. Submitting the record without them.',
+                   'error', 7000);
+      }
+      btn.textContent = '\u23F3 Submitting...';
+      _clSendRecord(payload, sec, btn, resEl, shift, op, pmBatch, bulkBatch);
+    });
+    return;
+  }
+
+  _clSendRecord(payload, sec, btn, resEl, shift, op, pmBatch, bulkBatch);
+}
+
+/* The submit call itself, split out so the photo-upload path above can await
+   its uploads and then reuse exactly this handler \u2014 rather than duplicating
+   the success/failure/WhatsApp logic and letting the two drift apart. */
+function _clSendRecord(payload, sec, btn, resEl, shift, op, pmBatch, bulkBatch) {
+  /* Read from the payload rather than taking more parameters: these were free
+     variables of clSubmitSection before the split, and the handlers below use
+     them for the WhatsApp text and the error line. */
+  var _mid      = payload.machineId;
+  var taskTimes = payload.taskTimes || {};
 
   google.script.run
     .withSuccessHandler(function(r) {
@@ -17769,6 +17990,23 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 
 </script>
+
+<!-- ── Image viewer ─────────────────────────────────────────────────────────
+     At BODY level deliberately. A position:fixed element still collapses to
+     0x0 if any ancestor is display:none, and every .view is display:none when
+     inactive — so while this sat inside #cl-content-wrap it could only open on
+     the Checklist screen. Here it serves any view that has a photo to show.
+     src is a 1x1 transparent GIF, not "" and not absent: an empty src resolves
+     to the page URL and fires a real request; a missing src ships a broken-
+     image box. The data URI costs nothing and renders as nothing until JS
+     swaps in the real photo. -->
+<div id="cl-imgViewer"><img id="cl-imgViewerSrc" alt="Photo"
+  src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+  <div id="cl-imgZoomBar">
+    <button type="button" onclick="clImgZoom(-1)" aria-label="Zoom out">&minus;</button>
+    <button type="button" onclick="clImgZoom(0)" aria-label="Fit to screen">Fit</button>
+    <button type="button" onclick="clImgZoom(1)" aria-label="Zoom in">+</button>
+  </div></div>
 
 </body>
 </html>
