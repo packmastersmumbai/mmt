@@ -5277,6 +5277,13 @@ function _taskHtml(id, en, hi, std, hasPhoto, descEn, descHi) {
     }
   });
   window.google = { script: { run: _run } };
+  /* Exposed so a caller can POST directly, bypassing the JSONP URL ceiling.
+     A photo costs one POST round trip instead of chunk+chunk+commit, and the
+     cost here is per-round-trip (measured: 3.2s-106s for the SAME call), not
+     per-byte. uploadPhotoPost() in SPA.html reads this and falls back to the
+     chunk path when it is absent — which is the case on GAS-served HTML, where
+     this polyfill never runs. */
+  window.GAS_URL = GAS_URL;
 })();
 
 // ═══════════════════════════════════════════════════════
@@ -9909,6 +9916,50 @@ function clUnlockSection(sec) {
 
    Never rejects. A lost photo must not block the maintenance record — the same
    contract BD and PM already use. */
+/* Upload ONE photo in ONE call over POST.
+
+   The chunk+commit path exists because script-tag JSONP puts the whole payload
+   in the URL, against a ~11,000-char ceiling. doPost has no such ceiling, and a
+   POST sent as text/plain is a CORS-"simple" request, so no preflight is issued
+   — which is exactly why the earlier fetch() attempt failed (a JSON
+   content-type triggers a preflight Apps Script never answers). Verified from
+   the live GitHub Pages origin: 200,000-char body delivered intact.
+
+   This matters because the cost here is per-ROUND-TRIP, not per-byte. Measured
+   live: the same trivial call took 26s / 3.2s / 106s / 3.4s. Chunking a photo
+   multiplies the only expensive thing. One photo, one call.
+
+   Returns a fileId, or null so the caller can fall back to chunking. */
+function uploadPhotoPost(dataUrl, machineId, kind) {
+  return new Promise(function (resolve) {
+    var url = (typeof GAS_URL === 'string' && GAS_URL) ? GAS_URL : '';
+    if (!url || typeof fetch !== 'function') { resolve(null); return; }
+
+    /* 45s: a slow Drive write is normal here (measured ~8s, occasionally far
+       worse), but a hung request must not strand the operator — the caller
+       falls back to chunking, which has its own retries. */
+    var done = false;
+    var timer = setTimeout(function () { if (!done) { done = true; resolve(null); } }, 45000);
+
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },  // no preflight
+      body: JSON.stringify({ fn: 'uploadPhotoDirect',
+                             args: [{ data: dataUrl, machineId: machineId, kind: kind || 'CLIT' }] }),
+      redirect: 'follow'
+    })
+      .then(function (r) { return r.text(); })
+      .then(function (t) {
+        if (done) return; done = true; clearTimeout(timer);
+        try {
+          var j = JSON.parse(t);
+          resolve(j && j.success && j.fileId ? j.fileId : null);
+        } catch (e) { resolve(null); }   // an HTML error page, not JSON
+      })
+      .catch(function () { if (!done) { done = true; clearTimeout(timer); resolve(null); } });
+  });
+}
+
 function clUploadTaskPhotos(machineId, list, onProgress) {
   list = list || [];
   var ids = [], errors = [];
@@ -9918,11 +9969,18 @@ function clUploadTaskPhotos(machineId, list, onProgress) {
     return chain.then(function () {
       return shrinkPhoto(ph.url, 800, 0.55)
         .then(function (small) {
-          return uploadPhotoChunkedRaw(small, function (d, t, phase) {
-            if (onProgress) onProgress(i + 1, list.length, phase, d, t);
+          /* ONE round trip if POST works. Only fall back to chunk+commit —
+             which costs 3+ round trips — if it does not. */
+          if (onProgress) onProgress(i + 1, list.length, 'sending', 1, 1);
+          return uploadPhotoPost(small, machineId, 'CLIT').then(function (fileId) {
+            if (fileId) { ids.push(fileId); return null; }   // done, skip chunking
+            return uploadPhotoChunkedRaw(small, function (d, t, phase) {
+              if (onProgress) onProgress(i + 1, list.length, phase, d, t);
+            });
           });
         })
         .then(function (handle) {
+          if (!handle) return;          // POST already filed it — nothing to commit
           /* The commit lands after 8-12 successful chunks, so a transient
              failure here would throw away work already banked. The server
              caches its result per uid, so a retry cannot double-file. */
