@@ -9908,11 +9908,10 @@ function clUnlockSection(sec) {
    500px/q0.45, and why the photos were unreadable. Chunking the upload lifts
    the cap entirely: the submit then carries a handful of ID strings.
 
-   800px/q0.55 deliberately matches PM/CLIT rather than BD's 1000/0.6. Each
-   chunk is its own JSONP round trip (~3s on plant wifi); measured on the live
-   site a 1000px photo is ~17 chunks against ~12 at 800px, and a checklist task
-   may carry three photos, so the operator pays that cost repeatedly. 800px
-   still resolves a gauge face or a torn belt.
+   1000px/q0.6 now matches BD and media. The earlier 800px was chosen to save
+   chunks, but on the POST path a photo is ONE round trip whatever its size —
+   measured live, 800px and 1000px both cost ~6s — so there is no longer a
+   reason to file checklist evidence at lower resolution than a BD photo.
 
    Never rejects. A lost photo must not block the maintenance record — the same
    contract BD and PM already use. */
@@ -9930,6 +9929,45 @@ function clUnlockSection(sec) {
    multiplies the only expensive thing. One photo, one call.
 
    Returns a fileId, or null so the caller can fall back to chunking. */
+/* postPhotoOnce(fn, args) — one POST carrying a whole photo to any endpoint.
+
+   Generalises uploadPhotoPost for the five other forms (Media, BD, HIRA,
+   PM/CLIT, PTW). They each commit through a DIFFERENT backend function
+   (commitMediaUpload / commitHazardPhoto / commitPmPhoto / commitPtwPhoto)
+   with their own extra params — pins and an SR for HIRA, a permit number for
+   PTW — so the photo cannot simply be swapped onto one shared endpoint. The
+   variable part is passed through instead.
+
+   Resolves the endpoint's own reply, or null on ANY failure so the caller
+   falls back to its existing chunk+commit path. Apps Script serves an
+   intermittent 404 HTML page to any endpoint, so that fallback is load-bearing,
+   not defensive decoration. */
+function postPhotoOnce(fn, args) {
+  return new Promise(function (resolve) {
+    var url = (typeof GAS_URL === 'string' && GAS_URL) ? GAS_URL : '';
+    if (!url || typeof fetch !== 'function') { resolve(null); return; }
+
+    var done = false;
+    var timer = setTimeout(function () { if (!done) { done = true; resolve(null); } }, 45000);
+
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },   // simple request: no preflight
+      body: JSON.stringify({ fn: fn, args: [args] }),
+      redirect: 'follow'
+    })
+      .then(function (r) { return r.text(); })
+      .then(function (t) {
+        if (done) return; done = true; clearTimeout(timer);
+        try {
+          var j = JSON.parse(t);
+          resolve(j && j.success ? j : null);
+        } catch (e) { resolve(null); }    // an HTML error page, not JSON
+      })
+      .catch(function () { if (!done) { done = true; clearTimeout(timer); resolve(null); } });
+  });
+}
+
 function uploadPhotoPost(dataUrl, machineId, kind) {
   return new Promise(function (resolve) {
     var url = (typeof GAS_URL === 'string' && GAS_URL) ? GAS_URL : '';
@@ -9967,7 +10005,7 @@ function clUploadTaskPhotos(machineId, list, onProgress) {
 
   return list.reduce(function (chain, ph, i) {
     return chain.then(function () {
-      return shrinkPhoto(ph.url, 800, 0.55)
+      return shrinkPhoto(ph.url, 1000, 0.6)
         .then(function (small) {
           /* ONE round trip if POST works. Only fall back to chunk+commit —
              which costs 3+ round trips — if it does not. */
@@ -11301,8 +11339,14 @@ function imgHandlePhoto() {
       _stampImage(ctx, w, h);
       var b64 = c.toDataURL('image/jpeg', 0.55);
       showStatus('Uploading…', 'info', 0);
-      uploadPhotoChunked(_imgUploadMachineId, b64, _mediaType, function(d,t,ph){
-          showStatus(ph==='saving'?'Saving photo…':('Uploading '+d+'/'+t+'…'),'info',0);
+      /* One POST if it works, chunking if it does not. See postPhotoOnce. */
+      postPhotoOnce('commitMediaUpload',
+          { data: b64, machineId: _imgUploadMachineId, mediaType: _mediaType })
+        .then(function(direct) {
+          if (direct) return direct;
+          return uploadPhotoChunked(_imgUploadMachineId, b64, _mediaType, function(d,t,ph){
+            showStatus(ph==='saving'?'Saving photo…':('Uploading '+d+'/'+t+'…'),'info',0);
+          });
         })
         .then(function(r) {
           if (!r || !r.success) { showStatus('Upload failed: ' + (r&&r.error||'unknown'), 'error', 4000); return; }
@@ -12384,12 +12428,20 @@ function submitBDCloseForm(machineId, slipNo, rowNum) {
     reader.onload = function(e) {
       shrinkPhoto(e.target.result, 1000, 0.6)
         .then(function(small) {
-          return uploadPhotoChunked(machineId, small, 'BD Image', function(done, total, phase) {
-            msg.className = 'form-msg';
-            msg.textContent = phase === 'saving'
-              ? 'Saving photo\u2026'
-              : 'Uploading photo ' + done + '/' + total + '\u2026';
-          });
+          msg.className = 'form-msg';
+          msg.textContent = 'Uploading photo\u2026';
+          /* One POST if it works, chunking if it does not. See postPhotoOnce. */
+          return postPhotoOnce('commitMediaUpload',
+              { data: small, machineId: machineId, mediaType: 'BD Image' })
+            .then(function(direct) {
+              if (direct) return direct;
+              return uploadPhotoChunked(machineId, small, 'BD Image', function(done, total, phase) {
+                msg.className = 'form-msg';
+                msg.textContent = phase === 'saving'
+                  ? 'Saving photo\u2026'
+                  : 'Uploading photo ' + done + '/' + total + '\u2026';
+              });
+            });
         })
         .then(function(r) {
           _doSubmit('https://drive.google.com/file/d/' + r.fileId + '/view');
@@ -14674,12 +14726,21 @@ function hzUploadPhotos(sr, section, done){
 
     shrinkPhoto(ph.url, 1000, 0.6)
       .then(function(small){
-        return uploadPhotoChunkedRaw(small, function(d,t,phase){
-          showStatus('Photo '+(i+1)+'/'+list.length+' — '+
-            (phase==='saving'?'saving…':('sending '+d+'/'+t)),'info',0);
-        });
+        /* One POST if it works, chunking if it does not. The commit carries the
+           SR, section and pin coordinates, so those ride along. */
+        return postPhotoOnce('commitHazardPhoto',
+            { data: small, sr: sr, section: section, pins: ph.pins || [],
+              by: (typeof _operator !== 'undefined' ? _operator : '') })
+          .then(function(direct){
+            if (direct) { uploaded.push.apply(uploaded, (direct.uploaded || [])); return null; }
+            return uploadPhotoChunkedRaw(small, function(d,t,phase){
+              showStatus('Photo '+(i+1)+'/'+list.length+' — '+
+                (phase==='saving'?'saving…':('sending '+d+'/'+t)),'info',0);
+            });
+          });
       })
       .then(function(handle){
+        if (!handle) return;          // POST already filed and recorded it
         return new Promise(function(resolve,reject){
           google.script.run
             .withSuccessHandler(function(res){
@@ -14761,19 +14822,28 @@ function pmUploadProofPhotos(kind, machineId, list, onProgress) {
 
   return list.reduce(function (chain, ph, i) {
     return chain.then(function () {
-      /* 800px/q0.55, not BD's 1000/0.6. Every chunk is a separate JSONP round
-         trip costing ~3s on plant wifi, and measured on the live site a 1000px
-         photo is 17 chunks (~51s) against 12 (~36s) at 800px. PM and CLIT allow
-         several photos per submission where BD allows one, so the operator pays
-         that cost repeatedly. 800px still resolves the part being photographed.
+      /* Raised 800px/q0.55 -> 1000px/q0.6, matching BD and media. The 800px
+         choice was made to save chunks: a 1000px photo was ~17 JSONP round
+         trips against ~12 at 800px, and PM/CLIT allow several photos per
+         submission. On the POST path below a photo is ONE round trip whatever
+         its size (measured live: both ~6s), so that trade-off is gone and there
+         is no reason to file proof at reduced resolution.
          The annotator's own copy is untouched — this only affects what is filed. */
-      return shrinkPhoto(ph.url, 800, 0.55)
+      return shrinkPhoto(ph.url, 1000, 0.6)
         .then(function (small) {
-          return uploadPhotoChunkedRaw(small, function (d, t, phase) {
-            if (onProgress) onProgress(i + 1, list.length, phase, d, t);
-          });
+          /* One POST if it works, chunking if it does not. See postPhotoOnce. */
+          if (onProgress) onProgress(i + 1, list.length, 'sending', 1, 1);
+          return postPhotoOnce('commitPmPhoto',
+              { data: small, machineId: machineId, kind: kind })
+            .then(function (direct) {
+              if (direct && direct.fileId) { ids.push(direct.fileId); return null; }
+              return uploadPhotoChunkedRaw(small, function (d, t, phase) {
+                if (onProgress) onProgress(i + 1, list.length, phase, d, t);
+              });
+            });
         })
         .then(function (handle) {
+          if (!handle) return;        // POST already filed it
           /* The commit is a single call after 8-12 successful chunks, so a
              transient failure here throws away work that already landed. The
              server caches the result per uid, so retrying cannot double-file. */
@@ -18016,11 +18086,16 @@ function pwFlushPhotos(kind, no, done){
   function next(){
     if(i >= queue.length){ done && done(); return; }
     var dataUrl = queue[i++];
-    uploadPhotoChunkedRaw(dataUrl).then(function(h){
-      google.script.run.withSuccessHandler(function(){ next(); })
-        .withFailureHandler(function(){ next(); })
-        .commitPtwPhoto({ uid:h.uid, total:h.total, kind:kind, no:no });
-    })['catch'](function(){ next(); });
+    /* One POST if it works, chunking if it does not. See postPhotoOnce. */
+    postPhotoOnce('commitPtwPhoto', { data:dataUrl, kind:kind, no:no })
+      .then(function(direct){
+        if (direct) { next(); return; }
+        return uploadPhotoChunkedRaw(dataUrl).then(function(h){
+          google.script.run.withSuccessHandler(function(){ next(); })
+            .withFailureHandler(function(){ next(); })
+            .commitPtwPhoto({ uid:h.uid, total:h.total, kind:kind, no:no });
+        });
+      })['catch'](function(){ next(); });
   }
   next();
 }
