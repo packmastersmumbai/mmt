@@ -5297,6 +5297,101 @@ var INIT_SAFETY_SR=_p.get('sr')||'';
 var INIT_ROW=_p.get('row')||'';
 var INIT_TYPE=_p.get('type')||'';
 
+/* ═══════════════════════════════════════════════════════
+   STALE BUILD DETECTION — why this exists
+   ═══════════════════════════════════════════════════════
+   Phones and tablets were running weeks-old JavaScript. Measured 2026-09-22:
+   checklist photos filed at 600x452 — exactly the pre-fix 500/600px capture cap
+   — from devices loading a bundle where the cap had been 1600px for days. The
+   evidence was unreadable because the DEVICE was stale, not because the code
+   was wrong.
+
+   GitHub Pages serves this file with a fixed `cache-control: max-age=600` and
+   permits no custom headers, so a device reuses its copy blind for 10 minutes,
+   and a tab or home-screen app left open holds it indefinitely. Nothing here
+   can change that header. What it CAN do is notice the mismatch and reload.
+
+   __MMT_BUILD__ is substituted by build-ghpages.js at BUILD time. The server
+   returns its own stamp at RUNTIME (getBuildInfo). Different values mean this
+   device is running code older than the deployment.
+
+   Degrades safe in every direction: on GAS-served HTML the placeholder is never
+   substituted and the whole check is skipped; a failed call, a 404, or the
+   server's 'b0' fallback all mean "cannot tell", which leaves the device alone.
+   It reloads only on a POSITIVE mismatch of two known-good stamps. */
+var MMT_BUILD = '7ac0cf71d7';
+
+(function staleBuildWatch() {
+  // Unsubstituted placeholder = GAS-served HTML, or a build that skipped the
+  // transform. Either way there is nothing trustworthy to compare.
+  if (MMT_BUILD.indexOf('MMT_BUILD') !== -1) return;
+
+  var RELOAD_FLAG = 'mmt_reloaded_for';
+
+  /* The reload must be able to fail. A device that reloads into the SAME stale
+     bundle — GH Pages CDN still serving the old copy, a proxy, an aggressive
+     webview cache — would otherwise reload forever and be unusable on the shop
+     floor. So a reload is attempted ONCE per server stamp: if the device comes
+     back still stale, it stops and keeps working on the old code rather than
+     looping. Old code beats a bricked tablet. */
+  function reloadOnce(serverBuild) {
+    try {
+      if (sessionStorage.getItem(RELOAD_FLAG) === serverBuild) return;  // already tried
+      sessionStorage.setItem(RELOAD_FLAG, serverBuild);
+    } catch (e) { return; }   // no sessionStorage = no loop guard = do not reload
+
+    /* Drop anything that could re-serve the old shell, then reload through a
+       URL the HTTP cache has no entry for. A bare location.reload() can be
+       answered from that same max-age=600 entry, which is the whole problem.
+       The ?v= token is QrAtt's trick (index.html), with the build stamp in
+       place of its days-since-epoch value so it rotates per deploy. */
+    try {
+      if (window.caches && caches.keys) {
+        caches.keys().then(function (ks) { ks.forEach(function (k) { caches.delete(k); }); });
+      }
+    } catch (e) {}
+    try { sessionStorage.removeItem('mmt_html_cache'); } catch (e) {}
+
+    try {
+      var u = new URL(window.location.href);
+      u.searchParams.set('v', serverBuild);
+      window.location.replace(u.toString());   // replace: no history entry to Back into
+    } catch (e) {
+      window.location.reload();
+    }
+  }
+
+  function check() {
+    try {
+      if (typeof google === 'undefined' || !google.script || !google.script.run) return;
+      google.script.run
+        .withSuccessHandler(function (r) {
+          if (!r || !r.build) return;          // malformed reply — cannot tell
+          if (r.build === 'b0') return;        // server could not read its own stamp
+          if (r.build !== MMT_BUILD) reloadOnce(r.build);
+        })
+        .withFailureHandler(function () {})    // offline / 404 — say nothing, do nothing
+        .getBuildInfo();
+    } catch (e) {}
+  }
+
+  check();
+
+  /* A shop-floor tablet is rarely reloaded — it is woken, used, and put down.
+     Without this, such a device would never notice a deploy. Checking on
+     visibility change catches it at the moment it is picked up, before the
+     operator starts filling a checklist. Throttled to 5 minutes so putting a
+     phone down and picking it up repeatedly does not call the backend each
+     time (round trips here cost 3-100s; see the polyfill's notes). */
+  var lastCheck = Date.now();
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState !== 'visible') return;
+    if (Date.now() - lastCheck < 5 * 60 * 1000) return;
+    lastCheck = Date.now();
+    check();
+  });
+})();
+
 // ═══════════════════════════════════════════════════════
 // HTML ESCAPE HELPER
 // ═══════════════════════════════════════════════════════
