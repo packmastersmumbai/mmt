@@ -8448,18 +8448,22 @@ function clHandlePhoto(src) {
       if (hint) hint.textContent = '⚠ That file is not a readable image.';
     };
     img.onload = function() {
-      /* DO NOT RAISE THESE WITHOUT MOVING THE TRANSPORT FIRST. Measured
-         2026-09-22: checklist photos are embedded INLINE in the
-         submitChecklistRecord payload, which rides the JSONP URL capped at
-         MAX_URL = 11000 chars. A realistic 3000x2250 machine photo encodes to
-         ~5,984 chars at 500px/q0.45 (fits) but ~13,166 at 600px/q0.50 and
-         ~41,100 at 1000px/q0.60 — both rejected with "Payload too large".
-         The blur is real, but the fix is to route these through
-         uploadPhotoChunked (as BD/PM/media already do), not to raise the cap.
-         Multi-photo tasks drop to 500px so three shots cost roughly what one
-         used to; a lone photo keeps 600px/q0.50. */
+      /* TRANSPORT MOVED, SO THE CAP IS LIFTED. This was 500-600px/q0.45-0.50
+         because the photo was embedded INLINE in the submitChecklistRecord
+         payload, which rode the JSONP URL against MAX_URL = 11000 chars. That
+         is what made checklist evidence unreadable.
+
+         Photos now go to Drive first (clUploadTaskPhotos -> uploadPhotoDirect
+         over POST) and the record carries only Drive IDs, so nothing here has
+         to fit a URL. 1600px/q0.75 keeps enough detail to read a gauge face or
+         a cracked weld at full zoom; the upload is ONE round trip whatever the
+         size, so a larger capture costs no extra time.
+
+         This is the CAPTURE size — what the annotator and the viewer see.
+         clUploadTaskPhotos files its own copy at the same 1600px, so what an
+         auditor opens matches what the operator framed. */
       var multi = (_clPhotos[id] || []).length > 0;
-      var MAX = multi ? 500 : 600, q = multi ? 0.45 : 0.50;
+      var MAX = multi ? 1400 : 1600, q = multi ? 0.70 : 0.75;
       var w=img.width, h=img.height;
       if (w>MAX) { h=Math.round(h*MAX/w); w=MAX; }
       if (h>MAX) { w=Math.round(w*MAX/h); h=MAX; }
@@ -8515,9 +8519,10 @@ function _clHandlePhotoBatch(files) {
   var hint = document.getElementById('cl-photoHint');
   var total = files.length, done = 0, failed = 0;
 
-  // A batch is always multi, so use the tighter budget for every shot.
-  // Pinned to the JSONP URL cap — see the note in clHandlePhoto before changing.
-  var MAX = 500, q = 0.45;
+  // A batch is always multi, so it takes the multi budget for every shot.
+  // No longer pinned to the JSONP URL cap — photos go to Drive over POST and
+  // the record carries only IDs. See the note in clHandlePhoto.
+  var MAX = 1400, q = 0.70;
 
   function finish() {
     _clSyncPhotoRow(id);
@@ -9251,7 +9256,11 @@ var PMAnnot = (function() {
   ];
   /* Downscale cap mirrors the 5S budget — a raw phone photo re-encoded with
      strokes on top is several MB, which google.script.run will not carry. */
-  var MAX_EDGE = 1024, QUALITY = 0.72;
+  /* 1600/0.85, up from 1024/0.72. The annotator re-encodes whatever it is given,
+     so this was silently the real ceiling on checklist and HIRA evidence however
+     large the capture was. Raised to match the capture and filing caps now that
+     a photo is one POST round trip at any size. */
+  var MAX_EDGE = 1600, QUALITY = 0.85;
 
   function el(id) { return document.getElementById(id); }
 
@@ -9521,7 +9530,10 @@ function clAnnBurnBox(photo, cb) {
     ctx.strokeStyle = '#f59e0b';
     ctx.lineWidth = lw;
     ctx.strokeRect(x, y, bw, bh);
-    photo.url = c.toDataURL('image/jpeg', 0.5);
+    /* 0.85, was 0.5. Burning a box re-encodes the WHOLE photo, so a low quality
+       here threw away the detail the capture was raised to keep — a second
+       lossy pass on evidence that an auditor zooms into. */
+    photo.url = c.toDataURL('image/jpeg', 0.85);
     photo.boxBurned = true;
     if (cb) cb();
   };
@@ -9908,10 +9920,13 @@ function clUnlockSection(sec) {
    500px/q0.45, and why the photos were unreadable. Chunking the upload lifts
    the cap entirely: the submit then carries a handful of ID strings.
 
-   1000px/q0.6 now matches BD and media. The earlier 800px was chosen to save
-   chunks, but on the POST path a photo is ONE round trip whatever its size —
-   measured live, 800px and 1000px both cost ~6s — so there is no longer a
-   reason to file checklist evidence at lower resolution than a BD photo.
+   1600px/q0.75, up from 800px. On the POST path a photo is ONE round trip
+   whatever its size (measured live: 800px and 1000px both ~6s), so resolution
+   is now free and the only question is what the evidence has to show. Measured
+   from a 12MP phone photo: 1600px files at 55KB, far under the endpoint's
+   1,200,000-char guard, and 0.2MB of Drive for a 3-photo task.
+   Matches the capture size in clHandlePhoto, so what an auditor opens is what
+   the operator framed.
 
    Never rejects. A lost photo must not block the maintenance record — the same
    contract BD and PM already use. */
@@ -10005,7 +10020,7 @@ function clUploadTaskPhotos(machineId, list, onProgress) {
 
   return list.reduce(function (chain, ph, i) {
     return chain.then(function () {
-      return shrinkPhoto(ph.url, 1000, 0.6)
+      return shrinkPhoto(ph.url, 1600, 0.75)
         .then(function (small) {
           /* ONE round trip if POST works. Only fall back to chunk+commit —
              which costs 3+ round trips — if it does not. */
@@ -11331,13 +11346,15 @@ function imgHandlePhoto() {
   reader.onload = function(e) {
     var img = new Image();
     img.onload = function() {
-      var MAX = 600, w = img.width, h = img.height;
+      /* 1600, was 600. Machine reference photos were downscaled for the old
+         inline/chunked transport; they now ride one POST at any size. */
+      var MAX = 1600, w = img.width, h = img.height;
       if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
       if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
       var c = document.createElement('canvas'); c.width = w; c.height = h;
       var ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
       _stampImage(ctx, w, h);
-      var b64 = c.toDataURL('image/jpeg', 0.55);
+      var b64 = c.toDataURL('image/jpeg', 0.75);
       showStatus('Uploading…', 'info', 0);
       /* One POST if it works, chunking if it does not. See postPhotoOnce. */
       postPhotoOnce('commitMediaUpload',
